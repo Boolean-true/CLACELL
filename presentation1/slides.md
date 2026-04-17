@@ -43,7 +43,7 @@ duration: 35min
   3.3 **Deep Learning**
 4. **Evaluation**
 
-=> Passt die Pipeline so?
+=> Passt die Pipeline so? -> Fertigpiepelien nehmen, NFCORE, nextflow als Sprache, SCDownstream macht alles bis Schritt 2
 
 ---
 
@@ -55,6 +55,9 @@ duration: 35min
 - Ich benötige Count-Matrix (Gene x Zellen) und Markerdefinitionen
 
 => Wie kann ich auf die Daten zugreifen?
+-> Ich kann preprocessed Daten bekommen (keine FastQ file sondern eine Matrix, mehr nicht), muss keine Exakte Übereinstimmung mit R package sein, 95% reichen auch
+
+pixie statt conda zur requirements Verwaltung
 
 ---
 
@@ -64,3 +67,5 @@ duration: 35min
 - A comparison of automatic cell identification methods for single-cell RNA sequencing data, Tamim Abdelaal1,2†, Lieke Michielsen1,2†, Davy Cats3, Dylan Hoogduin3, Hailiang Mei3, Marcel J. T. Reinders1,2 and Ahmed Mahfouz (2019), https://link.springer.com/content/pdf/10.1186/s13059-019-1795-z.pdf : Vergleich unterschiedlicher Klassifikationsmethoden für scRNA
 
 
+
+Nächstes Treffen: Mo, 27.04. 16 Uhr - alle zwei Wochen, 21. Mai 14:30 ist Ausweichtermin wegen Pfingsten (über Zoom)

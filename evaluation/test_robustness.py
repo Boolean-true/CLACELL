@@ -40,13 +40,33 @@ def compute_robustness_random_dropout(model, X, y):
         scores.append(accuracy)
     print(f"Random dropout accuracy score {np.mean(scores):.4f}")
 
+# Computes the robustness of the model by executing it multiple times and check if the predictions are consistent across executions.
+# The average score is reported.
+def compute_robustness_multiple_executions(model, X, y, n_executions=5):
+    results = []
+    for _ in range(n_executions):
+        y_pred = model.predict(X)
+        results.append(y_pred)
+    
+    # Check if the predictions are consistent across executions
+    num_samples = len(y)
+    num_different_predictions = 0
+    for i in range(num_samples):
+        for j in range(n_executions):
+            for k in range(j + 1, n_executions):
+                if results[j][i] != results[k][i]:
+                    num_different_predictions += 1
+
+    print(f"Total samples: {num_samples}")
+    print(f"Number of inconsistent predictions: {num_different_predictions}")
+
 
 # Computes the score and robustness of the given model
 # If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
 def compute_model_score_and_robustness(model, X, y, dataset_path='../blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender'):
     if X is None or y is None:
         dataset = ad.io.read_h5ad(dataset_path)
-        X = dataset.X #TODO: Ist das der richtige Weg um die Genexpressionsdaten zu erhalten?
+        X = dataset.to_df(layer="counts")
         y = dataset.obs['annotation']
 
     # Basline
@@ -54,3 +74,4 @@ def compute_model_score_and_robustness(model, X, y, dataset_path='../blood/10x-r
 
     # Robustness
     compute_robustness_random_dropout(model, X, y)
+    compute_robustness_multiple_executions(model, X, y, 5)

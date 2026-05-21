@@ -69,7 +69,7 @@ def compute_model_score_and_robustness(model, X, y, dataset_path='../blood/10x-r
         X = dataset.to_df(layer="counts")
         y = dataset.obs['annotation']
 
-    # Basline
+    # Baseline
     compute_baseline_score(model, X, y)
 
     # Robustness

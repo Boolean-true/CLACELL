@@ -2,21 +2,34 @@
 
 ## Robustness Tests
 
-TODO
+Siehe Code
 
 ## Results
-
-- Method: Baseline accuracy, random dropout score (both on test split), train time, robustness test time
-
-- RF: 0.7996, 0.7890, 35s, 17s
-- LogisticRegression: 0.9177, 0.9148, 57s, 32s
-- SVM: 0.5064, 0.4571, 1h35, 6h11
-- LightGBM: 0.2856, 0.2559, 11m, 14s
-- XGBoost: 0.9166, 0.9011, 37m, 31s
+| Method | Baseline accuracy | Random dropout score | Train time | Robustness test time |
+|---|---:|---:|---:|---:|
+| RF | 0.7996 | 0.7890 | 35s | 17s |
+| LogisticRegression | 0.9177 | 0.9148 | 57s | 32s |
+| SVM | 0.5064 | 0.4571 | 1h35 | 6h11 |
+| LightGBM | 0.2856 | 0.2559 | 11m | 14s |
+| XGBoost | 0.9166 | 0.9011 | 37m | 31s |
 
 nur SVM hatte angepasste Hyperparameter: kernel="poly", C=0.001, sonst 10h ohne Ergebnis
 
-TODO: weiteren robustness test, der entweder default relevante gene löscht und dann prüft oder mit feature importance die relevantesten gene löscht und dann prüft. evtl mit dict für die verschiedenen wege für feature importance
-TODO: erweiterten robustness test testen
-TODO: siehe gemini die dataframes vergleichen
-TODO: robustness test auf den anderen Daten
+## Weitere Schritte
+
+- Weiteren robustness test, der entweder default relevante gene löscht und dann prüft oder mit feature importance die relevantesten gene löscht und dann prüft. evtl mit dict für die verschiedenen wege für feature importance
+- Robustness test auf den anderen Daten
+
+## Mitschrieb
+
+- die processed Daten sind nicht zum Testen gedacht, Rohdaten suchen
+- Bei CellTypist statt random train test split einfach nach Datensätzen splitten, damit die Modelle die Daten nicht gesehen haben
+- Wenn ich dann CellTypist evaluiere muss ich es noch selber trainieren
+- Oder ich suche weitere Datensätze zum Testen
+- CellTypist auf jeden Fall evaluieren
+- decoupler anschauen
+- evtl eher von einem Modell das ich nicht verwende z.B. RF die Feature Importance zum rauschmeißen nehmen, dann werden die anderen Modelle nicht unfair geschadet. Oder marker gene dafür verwenden
+- weitere Abstufungen bei Tests: within data distribution, out of distribution, outof distribution und random dropout
+- Hyperparametertuning
+- HPC anschauen, Anne schickt mir nen Link, bei Fragen melden
+- cd $WORK um in Verzeichnis mit mehr Speicherplatz zu kommen

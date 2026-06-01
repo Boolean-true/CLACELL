@@ -23,7 +23,7 @@ nur SVM hatte angepasste Hyperparameter: kernel="poly", C=0.001, sonst 10h ohne 
 ## Mitschrieb
 
 - die processed Daten sind nicht zum Testen gedacht, Rohdaten suchen
-- Bei CellTypist statt random train test split einfach nach Datensätzen splitten, damit die Modelle die Daten nicht gesehen haben
+X- Bei CellTypist statt random train test split einfach nach Datensätzen splitten, damit die Modelle die Daten nicht gesehen haben
 - Wenn ich dann CellTypist evaluiere muss ich es noch selber trainieren
 - Oder ich suche weitere Datensätze zum Testen
 - CellTypist auf jeden Fall evaluieren

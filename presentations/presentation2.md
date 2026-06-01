@@ -46,3 +46,39 @@
 - trainingsdaten suchen 
 - Random Forest anschauen
 - scumi-dev evaluieren und welche Markergene relevant sind
+
+
+
+
+[workspace]
+authors = ["Julian Kraus <j.kraus.2301@gmail.com>"]
+channels = ["conda-forge", "bioconda"]
+name = "Project_CLACELL"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+# R-Basisversion (4.0/4.1 ist ideal für Seurat v3)
+r-base = ">=4.0,<4.1"
+# Seurat v3-Ära
+r-seurat = "3.2.3"
+# Notwendige Abhängigkeiten für scumi-dev / sc-Bioinformatik
+r-devtools = "*"
+r-biocmanager = "*"
+r-rcpp = "*"
+
+# --- Python-Stack ---
+# Python massiv modernisieren
+python = "3.10.*" # 3.10 ist oft stabiler für rpy2 als 3.9
+anndata = ">=0.10.7" 
+scanpy = ">=1.9"
+pandas = ">=2.0"
+numpy = ">=1.23,<2.0"
+rpy2 = "*"
+h5py = ">=3.10"
+
+[tasks]
+# Task zum Installieren von scumi-dev direkt aus GitHub innerhalb der R-Umgebung
+install-scumi = "Rscript -e 'devtools::install_github(\"igrabski/scumi-dev\")'"
+# Startet eine interaktive R-Session in der Umgebung
+r-shell = "R"

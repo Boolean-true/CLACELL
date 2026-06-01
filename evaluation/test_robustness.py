@@ -1,6 +1,8 @@
 import anndata as ad
 import numpy as np
 from sklearn.metrics import accuracy_score
+import scipy.sparse as sp
+import scanpy as sc
 
 
 def _drop_features(X, pct: float, rng: np.random.Generator):
@@ -150,7 +152,7 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
 
 # Computes the score and robustness of the given model
 # If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
-def compute_model_score_and_robustness(model, X, y, dataset_path='../blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
+def compute_model_score_and_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
     if X is None or y is None:
         dataset = ad.io.read_h5ad(dataset_path)
         X = dataset.X#dataset.to_df(layer="counts")
@@ -164,3 +166,45 @@ def compute_model_score_and_robustness(model, X, y, dataset_path='../blood/10x-r
     compute_robustness_multiple_executions(model, X, y, 5)
     if feature_importances is not None:
         compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
+
+    print("Out of data distribution")
+
+    dataset = ad.io.read_h5ad(dataset_path)
+
+    # Normalizing to median total counts
+    sc.pp.normalize_total(dataset)
+    # Logarithmize the data
+    sc.pp.log1p(dataset)
+
+    X_oodd = dataset.X 
+    y_oodd = dataset.obs['anno']
+
+    # Filter genes that are not in the training set and reorder the remaining genes to match the training set
+    ## Save mapping from gene name to index in training set for quick lookup
+    train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
+
+    M_test = dataset.shape[1]   # Number of genes in the loaded dataset
+    M_train = len(X.columns)    # Number of genes in the training set
+
+    ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
+    P = sp.lil_matrix((M_test, M_train))
+
+    ## Fill the mapping matrix
+    for test_idx, gene in enumerate(dataset.var_names):
+        if gene in train_gene_to_idx:
+            train_idx = train_gene_to_idx[gene]
+            P[test_idx, train_idx] = 1
+
+    P = P.tocsr() # More efficient for matrix multiplication
+
+    ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
+    X_test = X_oodd @ P
+
+    # Print gene comparison and max value for debugging
+    matched_genes = [gene for gene in dataset.var_names if gene in train_gene_to_idx]
+    print(f"Genes expected in training set: {len(X.columns)}")
+    print(f"Genes actually matched in test set: {len(matched_genes)}")
+    print("Training data Max-Value:", np.max(X.values))
+    print("Test data Max-Value:", X_test.max())
+
+    compute_baseline_score(model, X_test, y_oodd)

@@ -34,8 +34,8 @@
 - CodeProfiler, wo ist Bottleneck bei python reimplementierung
 - pca und knn graph aus loop raus (alles was nur einmal berechnet werden muss)
 - sc-type als Alternative -> Vergleichen bzgl Laufzeit und Ergebnissen
-X- Testdaten mit marker based annotieren
-X- scanpy anschauen für Preprocessing oder sc-best-practices (Buch) als Bckground
+- Testdaten mit marker based annotieren
+- scanpy anschauen für Preprocessing oder sc-best-practices (Buch) als Background
 - Zellzyklusgene, Mitochondrial genes und Ribosomialgenes alles raus
 - Pipeline aufbauen und dann alle drei versionen testen
 - scumi-dev bzw sc-type soll ziemlich schnell sein (evtl parallelisieren)

@@ -74,11 +74,11 @@ y_test = adata_test.obs['Manually_curated_celltype']
 
 # Model training
 
-model = LogisticRegression(solver='saga', max_iter=1000, random_state=42)
+model = LogisticRegression(max_iter=100)
 
 search_space = {
-    'C': Real(1e-4, 1e+2, prior='log-uniform'),
-    'penalty': Categorical(['l1', 'l2'])
+    'C': Real(1e-4, 1e-2, prior='log-uniform'),
+    #'penalty': Categorical(['l1', 'l2'])
 }
 
 my_stopper = CustomStopper(patience=2, min_delta=0.002, min_iter=4) 
@@ -89,8 +89,8 @@ opt = BayesSearchCV(
     n_iter=10,
     cv=5,
     scoring='accuracy',
-    random_state=42,
-    n_jobs=-1
+    n_jobs=-1,
+    verbose=10
 )
 
 print("Start BayesSearch with Early Stopping...")

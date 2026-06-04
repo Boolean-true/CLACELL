@@ -10,7 +10,7 @@ import pandas as pd
 import os
 
 # Load training data
-adata = ad.io.read_h5ad('../data/CellTypistDataset/global.h5ad')
+adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/global.h5ad')
 
 # Filter blood data
 adata = adata[adata.obs['Organ'] == 'BLD'].copy()
@@ -46,7 +46,6 @@ adata.layers["counts"] = adata.X.copy()
 sc.pp.normalize_total(adata)
 # Logarithmize the data
 sc.pp.log1p(adata)
-
 
 # Create train test split
 
@@ -85,7 +84,7 @@ search_space = {
     #'penalty': Categorical(['l1', 'l2'])
 }
 
-my_stopper = CustomStopper(patience=2, min_delta=0.002, min_iter=4) 
+my_stopper = CustomStopper(patience=2, min_delta=0.002, min_iter=4)
 
 opt = BayesSearchCV(
     estimator=model,

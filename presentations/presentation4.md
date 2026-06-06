@@ -23,13 +23,13 @@ nur SVM hatte angepasste Hyperparameter: kernel="poly", C=0.001, sonst 10h ohne 
 ## Mitschrieb
 
 - die processed Daten sind nicht zum Testen gedacht, Rohdaten suchen
-X- Bei CellTypist statt random train test split einfach nach Datensätzen splitten, damit die Modelle die Daten nicht gesehen haben
+X- Bei CellTypist statt random train test split einfach nach Datensätzen splitten, damit die Modelle die Daten nicht gesehen haben -> LR ist jetzt 1,5% schlechter bbei random Dropout, vorher war sie nur 0,3% schlechter
 - Wenn ich dann CellTypist evaluiere muss ich es noch selber trainieren
 - Oder ich suche weitere Datensätze zum Testen
 - CellTypist auf jeden Fall evaluieren
 - decoupler anschauen
-- evtl eher von einem Modell das ich nicht verwende z.B. RF die Feature Importance zum rauschmeißen nehmen, dann werden die anderen Modelle nicht unfair geschadet. Oder marker gene dafür verwenden
+- evtl eher von einem Modell das ich nicht verwende z.B. RF die Feature Importance zum rauschmeißen nehmen, dann werden die anderen Modelle nicht unfair geschadet. Oder marker gene dafür verwenden -> TODO: zuerst einmal überschneidung von Feature Importance von RF mit marker genen anschauen, evtl sind die ja sehr ähnlich
 - weitere Abstufungen bei Tests: within data distribution, out of distribution, outof distribution und random dropout
-- Hyperparametertuning
+- Hyperparametertuning schonmal machen
 - HPC anschauen, Anne schickt mir nen Link, bei Fragen melden
 - cd $WORK um in Verzeichnis mit mehr Speicherplatz zu kommen

@@ -54,6 +54,6 @@ Submitted batch job 11829068
 Submitted batch job 11835882
 
 ### Final Jobs
-LogisitcRegression: Submitted batch job 11839954
+LogisticRegression: Submitted batch job 11839954
 RandomForest: Submitted batch job 11839951
 XGBoost: Submitted batch job 11841031

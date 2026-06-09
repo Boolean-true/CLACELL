@@ -67,7 +67,7 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
 # feature_importances should be a pandas dataframe with columns "feature" and "importance" sorted by importance in descending order. The "feature" column can contain feature names that are not present in the dataset.
 def compute_robustness_feature_importance_dropout(model, X, y, feature_importances):
     scores = []
-    for pct in [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]:
+    for pct in [0.001, 0.005, 0.01, 0.02]:
         n_features = X.shape[1]
         n_drop = max(1, int(n_features * pct))
 
@@ -113,7 +113,8 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
                         else:
                             print(f"Warning: feature index {idx} out of range; skipping.")
                     except Exception:
-                        print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
+                        continue
+                        #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
 
             if drop_idx:
                 X_dropped.iloc[:, drop_idx] = 0

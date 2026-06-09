@@ -57,3 +57,9 @@
 - nur wenige Gene aus Feature Imporance löschen (0,1 0,5 1 2%)
 - Ensemble Modell auch mit denselben Modellen auf jeweils unterschiedlichen Daten trainiert (also über Feature Importance Dropout werden Features gelöscht) (evtl hierbei testen ob ein Stacking/Voting Classifier oder ein regelbasiertes matching auf das Modell mit den meisten übereinstimmenden Features besser ist). Trotzdem auch ein normales Ensemble Modell testen und dann vergleichen
 - Vor den Ensemble Modellen nochmal recherchieren ob es noch weitere relevante Modelle gibt und dann entscheiden welche Modelle in das Ensemble aufgenommen werden
+
+
+
+LightGBM: Submitted batch job 11849786
+LinearSVC: Submitted batch job 11870566
+9.6. & 10.6. sind Server down, daher erst am Donnerstag Ergebnisse

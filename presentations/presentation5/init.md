@@ -1,14 +1,38 @@
+---
+# try also 'default' to start simple
+theme: seriph
+# random image from a curated Unsplash collection by Anthony
+# like them? see https://unsplash.com/collections/94734566/slidev
+
+# apply any unocss classes to the current slide
+class: 'text-center'
+# some information about the slides, markdown enabled
+info: |
+  ## Slidev Starter Template
+  Presentation slides for developers.
+
+  Learn more at [Sli.dev](https://sli.dev)
+transition: slide-left
+title: Presentation 5 am 8.6.26
+mdc: true
+---
+
 # Presentation 5 am 8.6.26
+
+
+---
 
 ## Code Improvements
 
 - Split nach donor gemacht (siehe check_dataset.ipynb)
 - Genfiltering
-![Genfiltering](../training/gene_count_elbow_plot.png)
+![Genfiltering](/gene_count_elbow_plot.png)
 - Bayes search mit custom stopper
 
+---
 
-## Results
+
+## Results I
 
 - Ergebnisse HPC
 
@@ -18,42 +42,36 @@
 | **Random Forest** | 19 | 1h1m | 3m | 0.8197 | `max_depth=30, max_features=sqrt, n_estimators=100` |
 | **XGBoost** | 10 | 6h32m | 39m | 0.9240 | `colsample_bytree=0.3244, learning_rate=0.1728, max_depth=5` |
 
+---
+
+## Results II
+
 - Ergebnisse robustness tests
+
+<div class="text-[15px] leading-tight">
 
 | Modell | Test Accuracy | Random Dropout | Multiple Executions | Feature Importance Dropout | Out of Distribution Accuracy |
 |---|---|---|---|---|---|
 | **Logistic Regression** | 0.9011 | 0.8803 | No Inconsistent Predictions | 5%: 0.4316<br>10%: 0.3699<br>15%: 0.4173<br>20%: 0.3631<br>25%: 0.3266<br>30%: 0.2988 | 0.1638 |
 | **Random Forest** | 0.7474 | 0.7462 | No Inconsistent Predictions | 5%: 0.3461<br>10%: 0.0431<br>15%: 0.0145<br>20%: 0.0119<br>25%: 0.0118<br>30%: 0.0117 | 0.1136 |
 
+</div>
 
-## New Dataset
-
-- HumanCellAtlas
+---
 
 
 ## Weiteres Vorgehen
 
 - Klassen mit wenigen Trainingsdaten herausfiltern
-- Weiteren Datensatz analysieren
+- Weiteren Datensatz (HumanCellAtlas) analysieren
 - Decoupler testen
 - Robustness Tests mit out of distribution tests erweitern
 - Ensemble Modelle / Ansätze für robustere Modelle trainieren
 
+---
+
 
 ## Fragen
 
-- Was soll mit Klassen mit sehr wenigen Trainingsdaten gemacht werden?
-
-
-
-
-
-
-
-- Python package mit gridsearch, train und predict (wahrscheinlich in einem eigenen Repo)
-- nach gridsearch und train wird reported auf hold out datensatz, gridsearch wechselt dann in train
-- hold out split wird von mir gesetzt bei gridsearch(user gibt nur prozentteil an; wird dann an train weitergegeben), bei train kann user selber hold out datensatz angeben
-- Comparison mit Celltypist -> schauen wie man es trainieren kann
-- nur wenige Gene aus Feature Imporance löschen (0,1 0,5 1 2%)
-- Ensemble Modell auch mit denselben Modellen auf jeweils unterschiedlichen Daten trainiert (also über Feature Importance Dropout werden Features gelöscht) (evtl hierbei testen ob ein Stacking/Voting Classifier oder ein regelbasiertes matching auf das Modell mit den meisten übereinstimmenden Features besser ist). Trotzdem auch ein normales Ensemble Modell testen und dann vergleichen
-- Vor den Ensemble Modellen nochmal recherchieren ob es noch weitere relevante Modelle gibt und dann entscheiden welche Modelle in das Ensemble aufgenommen werden
+- Passt das Filtering auf Klassen mit mindestens 10-20 samples?
+- Möchtest du Zugriff auf das Github Repo?

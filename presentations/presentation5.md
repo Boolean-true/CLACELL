@@ -68,6 +68,7 @@ LinearSVC: Submitted batch job 11870566 -> Cancelled wegen time limit, keine pri
 2. Versuch mit angepasstem Hyperparameterraum: Submitted batch job 11893131
 Parallel ein Versuch auf meinem PC: Ergebnis nach 19 Iterationen in 34m: Test-Split Accuracy:  0.8959, Hyperparameters: {'C': 0.05907694609979313, 'class_weight': None, 'penalty': 'l1', 'tol': 0.0004717746164106244}
 
+ExtraTrees: Submitted batch job 11895804
 
 
 

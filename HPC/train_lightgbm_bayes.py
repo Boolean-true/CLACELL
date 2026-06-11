@@ -92,7 +92,7 @@ y_test = adata_test.obs['Manually_curated_celltype']
 
 # Model training
 
-model = lgbm.LGBMClassifier(objective='multiclass')
+model = lgbm.LGBMClassifier(objective='multiclass', n_jobs=1)
 
 search_space = {
     'num_leaves': Integer(20, 150),
@@ -109,7 +109,7 @@ opt = BayesSearchCV(
     n_iter=30,
     cv=5,
     scoring='accuracy',
-    n_jobs=-1,
+    n_jobs=5,
     verbose=10
 )
 

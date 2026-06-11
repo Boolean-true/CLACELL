@@ -60,6 +60,9 @@
 
 
 
-LightGBM: Submitted batch job 11849786
-LinearSVC: Submitted batch job 11870566
+LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iterationen, best score: score=0.863; Hyperparameters: feature_fraction=0.691167806437252, learning_rate=0.011884061970449536, n_estimators=114, num_leaves=96; Grund: ein Split startet erst wenn der vorherige beendet ist
+2. Versuch mit Parallelisierung auf CV: Submitted batch job 11893005
+
+LinearSVC: Submitted batch job 11870566 -> Cancelled wegen time limit, keine prints im .out log
 9.6. & 10.6. sind Server down, daher erst am Donnerstag Ergebnisse
+2. Versuch mit angepasstem Hyperparameterraum: Submitted batch job 11893131

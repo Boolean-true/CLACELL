@@ -66,3 +66,51 @@ LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iter
 LinearSVC: Submitted batch job 11870566 -> Cancelled wegen time limit, keine prints im .out log
 9.6. & 10.6. sind Server down, daher erst am Donnerstag Ergebnisse
 2. Versuch mit angepasstem Hyperparameterraum: Submitted batch job 11893131
+Parallel ein Versuch auf meinem PC: Ergebnis nach 19 Iterationen in 34m: Test-Split Accuracy:  0.8959, Hyperparameters: {'C': 0.05907694609979313, 'class_weight': None, 'penalty': 'l1', 'tol': 0.0004717746164106244}
+
+
+
+
+## Robustness Comparison
+
+### LogisticRegression
+Baseline accuracy score 0.9011
+Random dropout accuracy score 0.8900
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8916
+Feature importance dropout (0% features dropped) accuracy score 0.6949
+Feature importance dropout (1% features dropped) accuracy score 0.6024
+Feature importance dropout (2% features dropped) accuracy score 0.5374
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.1638
+
+### RandomForest
+Baseline accuracy score 0.7474
+Random dropout accuracy score 0.7403
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.7215
+Feature importance dropout (0% features dropped) accuracy score 0.6272
+Feature importance dropout (1% features dropped) accuracy score 0.5912
+Feature importance dropout (2% features dropped) accuracy score 0.5720
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.1136
+
+### LinearSVC
+Baseline accuracy score 0.8979
+Random dropout accuracy score 0.8833
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8738
+Feature importance dropout (0% features dropped) accuracy score 0.7098
+Feature importance dropout (1% features dropped) accuracy score 0.5743
+Feature importance dropout (2% features dropped) accuracy score 0.4372

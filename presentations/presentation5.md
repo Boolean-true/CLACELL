@@ -61,7 +61,7 @@
 
 
 LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iterationen, best score: score=0.863; Hyperparameters: feature_fraction=0.691167806437252, learning_rate=0.011884061970449536, n_estimators=114, num_leaves=96; Grund: ein Split startet erst wenn der vorherige beendet ist
-2. Versuch mit Parallelisierung auf CV: Submitted batch job 11893005
+2. Versuch mit Parallelisierung auf CV: Submitted batch job 11893005 -> Wieder cancelled wegen time limit, ein zwischenergebnis: [CV 4/5; 1/1] END feature_fraction=0.6606968391259233, learning_rate=0.018412588192430017, n_estimators=128, num_leaves=28;, score=0.903 total time=47.7min
 
 LinearSVC: Submitted batch job 11870566 -> Cancelled wegen time limit, keine prints im .out log
 9.6. & 10.6. sind Server down, daher erst am Donnerstag Ergebnisse
@@ -69,6 +69,16 @@ LinearSVC: Submitted batch job 11870566 -> Cancelled wegen time limit, keine pri
 Parallel ein Versuch auf meinem PC: Ergebnis nach 19 Iterationen in 34m: Test-Split Accuracy:  0.8959, Hyperparameters: {'C': 0.05907694609979313, 'class_weight': None, 'penalty': 'l1', 'tol': 0.0004717746164106244}
 
 ExtraTrees: Submitted batch job 11895804
+
+
+
+
+Set 1 | Voting: hard | Modelle: ['rf', 'et', 'lr'] -> Accuracy: 0.7689
+Set 2 | Voting: soft | Modelle: ['rf', 'et', 'lr'] -> Accuracy: 0.8939
+Set 3 | Voting: hard | Modelle: ['rf', 'linsvc', 'lr'] -> Accuracy: 0.8965
+Set 4 | Voting: hard | Modelle: ['et', 'linsvc', 'lr'] -> Accuracy: 0.8956
+Set 5 | Voting: hard | Modelle: ['rf', 'linsvc', 'et', 'lr'] -> Accuracy: 0.7914
+Set 6 | Voting: hard | Modelle: ['rf', 'linsvc', 'et', 'lr', 'lgbm'] -> Accuracy: 0.7806
 
 
 
@@ -106,6 +116,22 @@ Training data Max-Value: 2.6092522
 Test data Max-Value: 3.0608508586883545
 Baseline accuracy score 0.1136
 
+### ExtraTrees
+Baseline accuracy score 0.7526
+Random dropout accuracy score 0.7405
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.7232
+Feature importance dropout (0% features dropped) accuracy score 0.6088
+Feature importance dropout (1% features dropped) accuracy score 0.5674
+Feature importance dropout (2% features dropped) accuracy score 0.5622
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522144317627
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.1190
+
 ### LinearSVC
 Baseline accuracy score 0.8979
 Random dropout accuracy score 0.8833
@@ -115,3 +141,35 @@ Feature importance dropout (0% features dropped) accuracy score 0.8738
 Feature importance dropout (0% features dropped) accuracy score 0.7098
 Feature importance dropout (1% features dropped) accuracy score 0.5743
 Feature importance dropout (2% features dropped) accuracy score 0.4372
+
+### VotingClassifier
+Baseline accuracy score 0.8993
+Random dropout accuracy score 0.8869
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8817
+Feature importance dropout (0% features dropped) accuracy score 0.7044
+Feature importance dropout (1% features dropped) accuracy score 0.6072
+Feature importance dropout (2% features dropped) accuracy score 0.4892
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522144317627
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.1624
+
+### StackingClassifier
+Baseline accuracy score 0.9013
+Random dropout accuracy score 0.8897
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8912
+Feature importance dropout (0% features dropped) accuracy score 0.6880
+Feature importance dropout (1% features dropped) accuracy score 0.5918
+Feature importance dropout (2% features dropped) accuracy score 0.5346
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522144317627
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.1664

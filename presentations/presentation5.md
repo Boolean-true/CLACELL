@@ -59,6 +59,36 @@
 - Vor den Ensemble Modellen nochmal recherchieren ob es noch weitere relevante Modelle gibt und dann entscheiden welche Modelle in das Ensemble aufgenommen werden
 
 
+## Entscheidung für min_genes
+
+### Score bei optimaler LR mit jeweils train und test mit min_genes
+Ohne: 0.9011296395911781, Macro F1: 0.504096164631464
+20: 0.90224186247036, Macro F1: 0.5744418750743242
+100: 0.9091800065338125, Macro F1: 0.7760799430608922
+150: 0.9174180778535298, Macro F1: 0.8617811577208385
+200: 0.9174180778535298, Macro F1: 0.8484774676167686
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 0.915858687172629
+20: 0.9167502507522568
+100: 0.9175303688844311
+150: 0.9176418143318845
+200: 0.917753259779338
+NEU
+Ohne: 0.9164284143391247, Macro F1: 0.7122163277778566
+20: 0.916318451726413, Macro F1: 0.7929844825760659
+100: 0.916648339564548, Macro F1: 0.7950758496854666
+150: 0.9176380030789532, Macro F1: 0.8508946077305661
+200: 0.9174180778535298, Macro F1: 0.8484774676167686
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=20
+Ohne: 0.90224186247036, Macro F1: 0.5811079720161112
+20: 0.9029963354171158, Macro F1: 0.5840748885803906
+100: 0.9004095710282388, Macro F1: 0.5182459015849566
+150: 0.9001940073291658, Macro F1: 0.4826242326190024
+200: 0.8872601853847812, Macro F1: 0.3724735797384595
+
+
 
 LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iterationen, best score: score=0.863; Hyperparameters: feature_fraction=0.691167806437252, learning_rate=0.011884061970449536, n_estimators=114, num_leaves=96; Grund: ein Split startet erst wenn der vorherige beendet ist
 2. Versuch mit Parallelisierung auf CV: Submitted batch job 11893005 -> Wieder cancelled wegen time limit, ein zwischenergebnis: [CV 4/5; 1/1] END feature_fraction=0.6606968391259233, learning_rate=0.018412588192430017, n_estimators=128, num_leaves=28;, score=0.903 total time=47.7min
@@ -80,6 +110,17 @@ Set 4 | Voting: hard | Modelle: ['et', 'linsvc', 'lr'] -> Accuracy: 0.8956
 Set 5 | Voting: hard | Modelle: ['rf', 'linsvc', 'et', 'lr'] -> Accuracy: 0.7914
 Set 6 | Voting: hard | Modelle: ['rf', 'linsvc', 'et', 'lr', 'lgbm'] -> Accuracy: 0.7806
 
+
+CellTypist: Submitted batch job 11905024
+Submitted batch job 11905067
+Robustness: Submitted batch job 11905075
+Submitted batch job 11905078: Score auf Test data: 0.8727
+Submitted batch job 11905081: Score auf Test data: 0.8727
+Submitted batch job 11905082
+Submitted batch job 11905603
+
+
+Autoencoder: Submitted batch job 11906564
 
 
 ## Robustness Comparison

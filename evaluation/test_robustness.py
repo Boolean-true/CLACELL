@@ -3,6 +3,24 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 import scipy.sparse as sp
 import scanpy as sc
+import celltypist
+
+
+def _predict_labels(model, X):
+    if hasattr(model, "predict"):
+        return model.predict(X)
+    
+    # Not a scikit-learn style model, try CellTypist-style annotation
+    try:
+        predictions = celltypist.annotate(
+            filename=X, 
+            model=model
+        )
+
+        return predictions.predicted_labels["predicted_labels"]
+    
+    except TypeError:
+        raise AttributeError("Model does not have a predict method and cannot be annotated with celltypist.annotate()")
 
 
 def _drop_features(X, pct: float, rng: np.random.Generator):
@@ -26,7 +44,7 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
 
 # Computes the score on all features (baseline)
 def compute_baseline_score(model, X, y):
-    y_pred = model.predict(X)
+    y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
     print(f"Baseline accuracy score {accuracy:.4f}")
 
@@ -37,7 +55,7 @@ def compute_robustness_random_dropout(model, X, y):
     for _ in range(10):
         rng = np.random.default_rng()
         dropped = _drop_features(X, 0.10, rng)
-        y_pred = model.predict(dropped)
+        y_pred = _predict_labels(model, dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
     print(f"Random dropout accuracy score {np.mean(scores):.4f}")
@@ -47,7 +65,7 @@ def compute_robustness_random_dropout(model, X, y):
 def compute_robustness_multiple_executions(model, X, y, n_executions=5):
     results = []
     for _ in range(n_executions):
-        y_pred = model.predict(X)
+        y_pred = _predict_labels(model, X)
         results.append(y_pred)
     
     # Check if the predictions are consistent across executions
@@ -143,7 +161,7 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
             if int_idx:
                 X_dropped[:, int_idx] = 0
 
-        y_pred = model.predict(X_dropped)
+        y_pred = _predict_labels(model, X_dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
         print(f"Feature importance dropout ({pct*100:.0f}% features dropped) accuracy score {accuracy:.4f}")

@@ -88,7 +88,21 @@ Ohne: 0.90224186247036, Macro F1: 0.5811079720161112
 150: 0.9001940073291658, Macro F1: 0.4826242326190024
 200: 0.8872601853847812, Macro F1: 0.3724735797384595
 
+=> min_samples=150
 
+## Entscheidung ob zusätzlich Standardscaler
+### LR ohne Standardscaler
+0.9173081152408181
+Macro F1: 0.8603947961498007
+
+### LR mit Standardscaler
+0.9066417418077853
+Macro F1: 0.7843370852693642
+
+=> Ohne Standardscaler
+
+
+## Train Models
 
 LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iterationen, best score: score=0.863; Hyperparameters: feature_fraction=0.691167806437252, learning_rate=0.011884061970449536, n_estimators=114, num_leaves=96; Grund: ein Split startet erst wenn der vorherige beendet ist
 2. Versuch mit Parallelisierung auf CV: Submitted batch job 11893005 -> Wieder cancelled wegen time limit, ein zwischenergebnis: [CV 4/5; 1/1] END feature_fraction=0.6606968391259233, learning_rate=0.018412588192430017, n_estimators=128, num_leaves=28;, score=0.903 total time=47.7min
@@ -121,6 +135,10 @@ Submitted batch job 11905603
 
 
 Autoencoder: Submitted batch job 11906564
+Submitted batch job 11906614 -> 0.8298 in 17min
+Submitted batch job 11906733
+Submitted batch job 11906736
+V1 ohne Standardscaler: Submitted batch job 11906746 -> geht nicht
 
 
 ## Robustness Comparison

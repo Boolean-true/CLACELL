@@ -102,6 +102,34 @@ Macro F1: 0.7843370852693642
 => Ohne Standardscaler
 
 
+## Annotate Data
+
+### CellTypist Dataset
+
+Annotation: Submitted batch job 11906765
+Submitted batch job 11906767
+Submitted batch job 11906783
+Submitted batch job 11906786
+Submitted batch job 11906805
+Im neuen venv: Submitted batch job 11910671
+Submitted batch job 11910890
+Im 3.12 venv: Submitted batch job 11911153
+Submitted batch job 11911338
+Submitted batch job 11911503 -> zu wenig RAM
+Maximaler RAM auf Woody: Submitted batch job 11914679 -> zu wenig RAM
+Auf TinyFat: Submitted batch job 1407154 on cluster tinyfat
+Submitted batch job 1407228 on cluster tinyfat
+Submitted batch job 1407371 on cluster tinyfat
+Submitted batch job 1407375 on cluster tinyfat
+Submitted batch job 1407505 on cluster tinyfat
+Submitted batch job 1408307 on cluster tinyfat
+Submitted batch job 1408530 on cluster tinyfat
+Submitted batch job 1409026 on cluster tinyfat
+
+- Many Problems with RAM and with Segmentation Faults
+- Final try took 1:16 hours and 245GB RAM
+
+
 ## Train Models
 
 LightGBM: Submitted batch job 11849786 -> Cancelled wegen time limit nach 9 Iterationen, best score: score=0.863; Hyperparameters: feature_fraction=0.691167806437252, learning_rate=0.011884061970449536, n_estimators=114, num_leaves=96; Grund: ein Split startet erst wenn der vorherige beendet ist
@@ -139,6 +167,15 @@ Submitted batch job 11906614 -> 0.8298 in 17min
 Submitted batch job 11906733
 Submitted batch job 11906736
 V1 ohne Standardscaler: Submitted batch job 11906746 -> geht nicht
+V1 mit Robustnesstest: Submitted batch job 11906766
+Submitted batch job 11906784
+Submitted batch job 11906804
+Submitted batch job 11908792
+Eigene Klasse für Model: Submitted batch job 11914920
+Submitted batch job 11915328 -> Ergebnis, aber das Löschen mit Feature Importance gibt immer dasselbe Ergebnis
+Submitted batch job 11915851
+
+Vergleich LR: Submitted batch job 11915836
 
 
 ## Robustness Comparison
@@ -232,3 +269,74 @@ Genes actually matched in test set: 8408
 Training data Max-Value: 2.6092522144317627
 Test data Max-Value: 3.0608508586883545
 Baseline accuracy score 0.1664
+
+### DAE
+Mit test_data.X
+Baseline accuracy score 0.8415
+Random dropout accuracy score 0.8279
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8415
+Feature importance dropout (0% features dropped) accuracy score 0.8415
+Feature importance dropout (1% features dropped) accuracy score 0.8415
+Feature importance dropout (2% features dropped) accuracy score 0.8415
+Out of Distribution wurde auf dem HPC nicht getestet
+
+Mit test_data.to_df()
+Baseline accuracy score 0.8409
+Random dropout accuracy score 0.8267
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8298
+Feature importance dropout (0% features dropped) accuracy score 0.7621
+Feature importance dropout (1% features dropped) accuracy score 0.7416
+Feature importance dropout (2% features dropped) accuracy score 0.7265
+Out of data distribution
+
+### Ensemble mit LogisticRegression mit unterschiedlichen Features
+#### Im Training Feature Importance der LogisticRegression
+Mit Feature Importance der LogisticRegression (Problem: Bereits im Training vorhanden)
+Baseline accuracy score 0.9082
+Random dropout accuracy score 0.8932
+Total samples: 9094
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8945
+Feature importance dropout (0% features dropped) accuracy score 0.8843
+Feature importance dropout (1% features dropped) accuracy score 0.8651
+Feature importance dropout (2% features dropped) accuracy score 0.7857
+Out of data distribution nicht gemacht
+-> Problem: Feature Importance Drop ist derselbe wie im Training
+
+Mit Feature Importance des RandomForests
+Baseline accuracy score 0.9082
+Random dropout accuracy score 0.9002
+Total samples: 9094
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8965
+Feature importance dropout (0% features dropped) accuracy score 0.8123
+Feature importance dropout (1% features dropped) accuracy score 0.7515
+Feature importance dropout (2% features dropped) accuracy score 0.6019
+Out of data distribution
+
+#### Im Training Feature Importance des RandomForest
+Mit Feature Importance der LogisticRegression
+Baseline accuracy score 0.9161
+Random dropout accuracy score 0.9087
+Total samples: 9094
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8204
+Feature importance dropout (0% features dropped) accuracy score 0.7724
+Feature importance dropout (1% features dropped) accuracy score 0.7686
+Feature importance dropout (2% features dropped) accuracy score 0.7866
+Out of data distribution
+
+Mit Feature Importance des RandomForests (Problem: Bereits im Training vorhanden)
+Baseline accuracy score 0.9161
+Random dropout accuracy score 0.9071
+Total samples: 9094
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.9164
+Feature importance dropout (0% features dropped) accuracy score 0.9036
+Feature importance dropout (1% features dropped) accuracy score 0.8726
+Feature importance dropout (2% features dropped) accuracy score 0.6310
+Out of data distribution

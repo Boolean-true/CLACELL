@@ -129,6 +129,12 @@ Submitted batch job 1409026 on cluster tinyfat
 - Many Problems with RAM and with Segmentation Faults
 - Final try took 1:16 hours and 245GB RAM
 
+### humancellatlas
+
+Submitted batch job 1410282 on cluster tinyfat
+Submitted batch job 1410306 on cluster tinyfat -> Zu wenig RAM
+Limit Anndata to 15.000 Cells: Submitted batch job 1413673 on cluster tinyfat
+
 
 ## Train Models
 
@@ -181,6 +187,7 @@ Vergleich LR: Submitted batch job 11915836
 ## Robustness Comparison
 
 ### LogisticRegression
+#### Trained on CellTypist Labels
 Baseline accuracy score 0.9011
 Random dropout accuracy score 0.8900
 Total samples: 9295
@@ -195,6 +202,24 @@ Genes actually matched in test set: 8408
 Training data Max-Value: 2.6092522
 Test data Max-Value: 3.0608508586883545
 Baseline accuracy score 0.1638
+
+#### Trained on scumi annotated Labels
+Baseline accuracy score 0.9495
+Random dropout accuracy score 0.9396
+Total samples: 9094
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8189
+Feature importance dropout (0% features dropped) accuracy score 0.7161
+Feature importance dropout (1% features dropped) accuracy score 0.7160
+Feature importance dropout (2% features dropped) accuracy score 0.7108
+Out of data distribution
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6020768
+Test data Max-Value: 3.0608508586883545
+Baseline accuracy score 0.0000
+
+Macro F1: 0.9578187526238896
 
 ### RandomForest
 Baseline accuracy score 0.7474

@@ -90,7 +90,7 @@ Ohne: 0.90224186247036, Macro F1: 0.5811079720161112
 
 => min_samples=150
 
-## Entscheidung für min_samples with scumi annotated labels
+## Entscheidung für min_samples with scumi annotated labels (min_samples auf alten Labels)
 
 ### Score bei optimaler LR mit jeweils train und test mit min_samples
 Ohne: 27620 Samples, 0.9469607315761162, Macro F1: 0.9342823501005492, Trainingszeit: 4m
@@ -105,6 +105,35 @@ Ohne: 27620 Samples, 0.9482893123815892, Macro F1: 0.9386498875090699, Trainings
 100: 27168 Samples, 0.9505182213306587, Macro F1: 0.9408314789887745, Trainingszeit: 3m33s
 150: 26850 Samples, 0.9481778669341357, Macro F1: 0.9369782452286406, Trainingszeit: 3m19s
 200: 26322 Samples, 0.9495152123035774, Macro F1: 0.9375371081102105, Trainingszeit: 2m46s
+
+## Entscheidung für min_samples with scumi annotated labels
+### Score bei optimaler LR mit jeweils train und test mit min_samples
+Ohne: 0.9471759010220548, Macro F1: 0.9346292498962252
+20: 0.9464228079612695, Macro F1: 0.934069322139417
+100: 0.9469607315761162, Macro F1: 0.9344464715135901
+150: 0.9472204196409258, Macro F1: 0.9340161783842248
+200: 0.9462121212121212, Macro F1: 0.9555834124274184
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 0.9472943722943723, Macro F1: 0.956862148933851
+20: 0.9470779220779221, Macro F1: 0.9566281273786036
+100: 0.9470779220779221, Macro F1: 0.9569383475576984
+150: 0.945995670995671, Macro F1: 0.9551546538135683
+200: 0.9462121212121212, Macro F1: 0.9555834124274184
+
+=> No Filtering on min_samples
+
+
+## Retraining of the Models with scumi annotated labels
+
+RandomForest: Submitted batch job 11951208
+LogisticRegression: Submitted batch job 11951209
+LinearSVC: Submitted batch job 11951210
+ExtraTrees: Submitted batch job 11951211
+LightGBM: Submitted batch job 11951212
+XGBoost: Submitted batch job 11951213
+Autoencoder: Wait on LogisticRegression
+CellTypist: TODO: Create Script for Hyperparametertuning
 
 
 ## Entscheidung ob zusätzlich Standardscaler

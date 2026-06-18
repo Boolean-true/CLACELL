@@ -10,7 +10,7 @@ import pandas as pd
 import os
 
 # Load training data
-adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/global.h5ad')
+adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/global_annotated.h5ad')
 
 # Filter blood data
 adata = adata[adata.obs['Organ'] == 'BLD'].copy()
@@ -35,9 +35,6 @@ adata = adata[:, ~adata.var["hb"]].copy()
 
 # Doublet Detection
 sc.pp.scrublet(adata, batch_key="Donor")
-
-# Filter only highly variable genes
-sc.pp.highly_variable_genes(adata)
 
 
 # Normalization
@@ -81,13 +78,13 @@ print(adata_train.obs['Donor'].unique())
 print(adata_test.obs['Donor'].unique())
 
 # Prepare Data for training
-X_train = adata_train.X#.to_df()
+X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-y_train = adata_train.obs['Manually_curated_celltype']
+y_train = adata_train.obs['scumi-annotation']
 
-X_test = adata_test.X#to_df()
-gene_names_train = adata_train.var_names
-y_test = adata_test.obs['Manually_curated_celltype']
+X_test = adata_test.to_df()
+gene_names_test = adata_test.var_names
+y_test = adata_test.obs['scumi-annotation']
 
 
 # Model training
@@ -106,7 +103,7 @@ my_stopper = CustomStopper(patience=5, min_delta=0.002, min_iter=15)
 opt = BayesSearchCV(
     estimator=model,
     search_spaces=search_space,
-    n_iter=10,
+    n_iter=30,
     cv=5,
     scoring='accuracy',
     n_jobs=-1,

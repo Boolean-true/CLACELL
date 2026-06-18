@@ -90,6 +90,23 @@ Ohne: 0.90224186247036, Macro F1: 0.5811079720161112
 
 => min_samples=150
 
+## Entscheidung für min_samples with scumi annotated labels
+
+### Score bei optimaler LR mit jeweils train und test mit min_samples
+Ohne: 27620 Samples, 0.9469607315761162, Macro F1: 0.9342823501005492, Trainingszeit: 4m
+20: 27560 Samples, 0.9470791118775598, Macro F1: 0.9283774859041692, Trainingszeit: 4m
+100: 27168 Samples, 0.9503430251551781, Macro F1: 0.9651265111037655, Trainingszeit: 3m37s
+150: 26850 Samples, 0.9487574224763581, Macro F1: 0.9572966777914522, Trainingszeit: 3m19s
+200: 26322 Samples, 0.9495152123035774, Macro F1: 0.9375371081102105, Trainingszeit: 2m46s
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 27620 Samples, 0.9482893123815892, Macro F1: 0.9386498875090699, Trainingszeit: 4m
+20: 27560 Samples, 0.9495152123035774, Macro F1: 0.9396189606405038, Trainingszeit: 4m
+100: 27168 Samples, 0.9505182213306587, Macro F1: 0.9408314789887745, Trainingszeit: 3m33s
+150: 26850 Samples, 0.9481778669341357, Macro F1: 0.9369782452286406, Trainingszeit: 3m19s
+200: 26322 Samples, 0.9495152123035774, Macro F1: 0.9375371081102105, Trainingszeit: 2m46s
+
+
 ## Entscheidung ob zusätzlich Standardscaler
 ### LR ohne Standardscaler
 0.9173081152408181
@@ -133,7 +150,8 @@ Submitted batch job 1409026 on cluster tinyfat
 
 Submitted batch job 1410282 on cluster tinyfat
 Submitted batch job 1410306 on cluster tinyfat -> Zu wenig RAM
-Limit Anndata to 15.000 Cells: Submitted batch job 1413673 on cluster tinyfat
+Limit Anndata to 15.000 Cells: Submitted batch job 1413673 on cluster tinyfat -> Segmentation Fault
+Limit Anndata to 15.000 Cells: Submitted batch job 1413786 on cluster tinyfat
 
 
 ## Train Models

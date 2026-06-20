@@ -106,34 +106,6 @@ Ohne: 27620 Samples, 0.9482893123815892, Macro F1: 0.9386498875090699, Trainings
 150: 26850 Samples, 0.9481778669341357, Macro F1: 0.9369782452286406, Trainingszeit: 3m19s
 200: 26322 Samples, 0.9495152123035774, Macro F1: 0.9375371081102105, Trainingszeit: 2m46s
 
-## Entscheidung für min_samples with scumi annotated labels
-### Score bei optimaler LR mit jeweils train und test mit min_samples
-Ohne: 0.9471759010220548, Macro F1: 0.9346292498962252
-20: 0.9464228079612695, Macro F1: 0.934069322139417
-100: 0.9469607315761162, Macro F1: 0.9344464715135901
-150: 0.9472204196409258, Macro F1: 0.9340161783842248
-200: 0.9462121212121212, Macro F1: 0.9555834124274184
-
-### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
-Ohne: 0.9472943722943723, Macro F1: 0.956862148933851
-20: 0.9470779220779221, Macro F1: 0.9566281273786036
-100: 0.9470779220779221, Macro F1: 0.9569383475576984
-150: 0.945995670995671, Macro F1: 0.9551546538135683
-200: 0.9462121212121212, Macro F1: 0.9555834124274184
-
-=> No Filtering on min_samples
-
-
-## Retraining of the Models with scumi annotated labels
-
-RandomForest: Submitted batch job 11951208
-LogisticRegression: Submitted batch job 11951209
-LinearSVC: Submitted batch job 11951210
-ExtraTrees: Submitted batch job 11951211
-LightGBM: Submitted batch job 11951212
-XGBoost: Submitted batch job 11951213
-Autoencoder: Wait on LogisticRegression
-CellTypist: TODO: Create Script for Hyperparametertuning
 
 
 ## Entscheidung ob zusätzlich Standardscaler
@@ -147,40 +119,6 @@ Macro F1: 0.7843370852693642
 
 => Ohne Standardscaler
 
-
-## Annotate Data
-
-### CellTypist Dataset
-
-Annotation: Submitted batch job 11906765
-Submitted batch job 11906767
-Submitted batch job 11906783
-Submitted batch job 11906786
-Submitted batch job 11906805
-Im neuen venv: Submitted batch job 11910671
-Submitted batch job 11910890
-Im 3.12 venv: Submitted batch job 11911153
-Submitted batch job 11911338
-Submitted batch job 11911503 -> zu wenig RAM
-Maximaler RAM auf Woody: Submitted batch job 11914679 -> zu wenig RAM
-Auf TinyFat: Submitted batch job 1407154 on cluster tinyfat
-Submitted batch job 1407228 on cluster tinyfat
-Submitted batch job 1407371 on cluster tinyfat
-Submitted batch job 1407375 on cluster tinyfat
-Submitted batch job 1407505 on cluster tinyfat
-Submitted batch job 1408307 on cluster tinyfat
-Submitted batch job 1408530 on cluster tinyfat
-Submitted batch job 1409026 on cluster tinyfat
-
-- Many Problems with RAM and with Segmentation Faults
-- Final try took 1:16 hours and 245GB RAM
-
-### humancellatlas
-
-Submitted batch job 1410282 on cluster tinyfat
-Submitted batch job 1410306 on cluster tinyfat -> Zu wenig RAM
-Limit Anndata to 15.000 Cells: Submitted batch job 1413673 on cluster tinyfat -> Segmentation Fault
-Limit Anndata to 15.000 Cells: Submitted batch job 1413786 on cluster tinyfat
 
 
 ## Train Models
@@ -412,3 +350,122 @@ Feature importance dropout (0% features dropped) accuracy score 0.9036
 Feature importance dropout (1% features dropped) accuracy score 0.8726
 Feature importance dropout (2% features dropped) accuracy score 0.6310
 Out of data distribution
+
+
+
+# Scumi annotated Labels (Final results)
+
+## Annotate Data
+
+### CellTypist Dataset
+
+Annotation: Submitted batch job 11906765
+Submitted batch job 11906767
+Submitted batch job 11906783
+Submitted batch job 11906786
+Submitted batch job 11906805
+Im neuen venv: Submitted batch job 11910671
+Submitted batch job 11910890
+Im 3.12 venv: Submitted batch job 11911153
+Submitted batch job 11911338
+Submitted batch job 11911503 -> zu wenig RAM
+Maximaler RAM auf Woody: Submitted batch job 11914679 -> zu wenig RAM
+Auf TinyFat: Submitted batch job 1407154 on cluster tinyfat
+Submitted batch job 1407228 on cluster tinyfat
+Submitted batch job 1407371 on cluster tinyfat
+Submitted batch job 1407375 on cluster tinyfat
+Submitted batch job 1407505 on cluster tinyfat
+Submitted batch job 1408307 on cluster tinyfat
+Submitted batch job 1408530 on cluster tinyfat
+Submitted batch job 1409026 on cluster tinyfat
+
+- Many Problems with RAM and with Segmentation Faults
+- Final try took 1:16 hours and 245GB RAM
+
+### humancellatlas
+
+Submitted batch job 1410282 on cluster tinyfat
+Submitted batch job 1410306 on cluster tinyfat -> Zu wenig RAM
+Limit Anndata to 15.000 Cells: Submitted batch job 1413673 on cluster tinyfat -> Segmentation Fault
+Limit Anndata to 15.000 Cells: Submitted batch job 1413786 on cluster tinyfat -> Segmentation Fault
+
+=> Annotate parts of the humancellatlas local
+
+## Decision for min_samples with scumi annotated labels
+### Score bei optimaler LR mit jeweils train und test mit min_samples
+Ohne: 0.9471759010220548, Macro F1: 0.9346292498962252
+20: 0.9464228079612695, Macro F1: 0.934069322139417
+100: 0.9469607315761162, Macro F1: 0.9344464715135901
+150: 0.9472204196409258, Macro F1: 0.9340161783842248
+200: 0.9462121212121212, Macro F1: 0.9555834124274184
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 0.9472943722943723, Macro F1: 0.956862148933851
+20: 0.9470779220779221, Macro F1: 0.9566281273786036
+100: 0.9470779220779221, Macro F1: 0.9569383475576984
+150: 0.945995670995671, Macro F1: 0.9551546538135683
+200: 0.9462121212121212, Macro F1: 0.9555834124274184
+
+=> No Filtering on min_samples
+
+## Retraining of the Models with scumi annotated labels
+
+RandomForest: Submitted batch job 11951208
+LogisticRegression: Submitted batch job 11951209
+Submitted batch job 11955510
+LinearSVC: Submitted batch job 11951210
+ExtraTrees: Submitted batch job 11951211
+LightGBM: Submitted batch job 11951212
+XGBoost: Submitted batch job 11951213
+Submitted batch job 11955512
+Autoencoder: Wait on LogisticRegression
+CellTypist: TODO: Create Script for Hyperparametertuning
+
+## Optimal Hyperparameters
+
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Bester Score | Beste Parameter |
+RandomForest, 19, 1h5m, 4m, 0.8691, [('max_depth', 26), ('max_features', 'sqrt'), ('n_estimators', 151)]
+LogisticRegression, 
+LinearSVC, 15, 6h50m, 27m, 0.9523, [('C', 0.004240705571724369), ('dual', False), ('penalty', 'l1'), ('tol', 0.009170815634047421)]
+ExtraTrees, 19, 45m, 2m, 0.8795, [('max_depth', 28), ('max_features', 'sqrt'), ('n_estimators', 250)]
+LightGBM, 22, 7h1m, 19m, 0.8445, [('feature_fraction', 0.6763225686917771), ('learning_rate', 0.031197042137161936), ('n_estimators', 50), ('num_leaves', 91)]
+XGBoost, 
+
+
+
+## Robustness Comparison
+
+### Random Forest
+--- In distribution testset ---
+Baseline accuracy score 0.8735
+Random dropout accuracy score 0.8610
+Total samples: 9295
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8331
+Feature importance dropout (0% features dropped) accuracy score 0.7678
+Feature importance dropout (1% features dropped) accuracy score 0.7293
+Feature importance dropout (2% features dropped) accuracy score 0.7196
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8408
+Training data Max-Value: 2.6092522
+Test data Max-Value: AL627309.3    0.000000
+AL627309.5    0.000000
+FAM87B        1.039725
+AL645608.4    0.000000
+KLHL17        1.791775
+                ...   
+AC240274.1    2.142636
+AC233755.2    0.000000
+AC136616.2    0.000000
+AC007325.4    1.530589
+AC007325.2    0.000000
+Length: 10000, dtype: float64
+Baseline accuracy score 0.8843
+Random dropout accuracy score 0.8748
+Total samples: 3000
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8387
+Feature importance dropout (0% features dropped) accuracy score 0.7353
+Feature importance dropout (1% features dropped) accuracy score 0.7207
+Feature importance dropout (2% features dropped) accuracy score 0.6933

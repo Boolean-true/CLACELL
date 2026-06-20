@@ -1,5 +1,6 @@
 import anndata as ad
 import numpy as np
+import pandas as pd
 from sklearn.metrics import accuracy_score
 import scipy.sparse as sp
 import scanpy as sc
@@ -169,14 +170,8 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
     return scores
 
 
-# Computes the score and robustness of the given model
-# If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
-def compute_model_score_and_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
-    if X is None or y is None:
-        dataset = ad.io.read_h5ad(dataset_path)
-        X = dataset.X#dataset.to_df(layer="counts")
-        y = dataset.obs['anno']#dataset.obs['annotation']
-
+# Computes the score and robustness of the given model on the given dataset (X, y) and feature importance
+def compute_model_score_and_robustness(model, X, y, feature_importances=None):
     # Baseline
     compute_baseline_score(model, X, y)
 
@@ -186,30 +181,62 @@ def compute_model_score_and_robustness(model, X, y, dataset_path='../data/blood/
     if feature_importances is not None:
         compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
 
-    print("Out of data distribution")
 
-    dataset = ad.io.read_h5ad(dataset_path)
+# Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
+# The score and robustness are computed on both datasets and reported.
+# If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
+def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
+    print("--- In distribution testset ---")
+    compute_model_score_and_robustness(model, X, y, feature_importances)
+
+    print("--- Out of data distribution ---")
+    adata = ad.io.read_h5ad(dataset_path)
+
+    # Preprocess the dataset in the same way as the training data
+
+    # mitochondrial genes, "MT-" for human, "Mt-" for mouse
+    adata.var["mt"] = adata.var_names.str.startswith("MT-")
+    # ribosomal genes
+    adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
+    # hemoglobin genes
+    adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
+
+    sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
+
+    # Remove mitochondrial, ribosomal and hemoglobin
+    adata = adata[:, ~adata.var["mt"]].copy()
+    adata = adata[:, ~adata.var["ribo"]].copy()
+    adata = adata[:, ~adata.var["hb"]].copy()
+
+    # Doublet Detection
+    sc.pp.scrublet(adata, batch_key="Donor")
+
+    # Normalization
+
+    # Saving count data
+    adata.layers["counts"] = adata.X.copy()
 
     # Normalizing to median total counts
-    sc.pp.normalize_total(dataset)
+    sc.pp.normalize_total(adata, target_sum=2080.401855)
     # Logarithmize the data
-    sc.pp.log1p(dataset)
+    sc.pp.log1p(adata)
 
-    X_oodd = dataset.X 
-    y_oodd = dataset.obs['anno']
+
+    X_oodd = adata.X
+    y_oodd = adata.obs['scumi-annotation']
 
     # Filter genes that are not in the training set and reorder the remaining genes to match the training set
     ## Save mapping from gene name to index in training set for quick lookup
     train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
 
-    M_test = dataset.shape[1]   # Number of genes in the loaded dataset
+    M_test = adata.shape[1]   # Number of genes in the loaded dataset
     M_train = len(X.columns)    # Number of genes in the training set
 
     ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
     P = sp.lil_matrix((M_test, M_train))
 
     ## Fill the mapping matrix
-    for test_idx, gene in enumerate(dataset.var_names):
+    for test_idx, gene in enumerate(adata.var_names):
         if gene in train_gene_to_idx:
             train_idx = train_gene_to_idx[gene]
             P[test_idx, train_idx] = 1
@@ -219,11 +246,17 @@ def compute_model_score_and_robustness(model, X, y, dataset_path='../data/blood/
     ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
     X_test = X_oodd @ P
 
+    # Convert to dense DataFrame with training feature names so sklearn feature checks remain consistent.
+    if sp.issparse(X_test):
+        X_test = X_test.toarray()
+    X_test = pd.DataFrame(X_test, index=adata.obs_names, columns=X.columns)
+
     # Print gene comparison and max value for debugging
-    matched_genes = [gene for gene in dataset.var_names if gene in train_gene_to_idx]
+    matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
     print(f"Genes expected in training set: {len(X.columns)}")
     print(f"Genes actually matched in test set: {len(matched_genes)}")
     print("Training data Max-Value:", np.max(X.values))
     print("Test data Max-Value:", X_test.max())
 
-    compute_baseline_score(model, X_test, y_oodd)
+
+    compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances)

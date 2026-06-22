@@ -10,11 +10,14 @@ import pandas as pd
 import os
 
 # Load training data
-adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/global_annotated.h5ad')
+adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad')
 
 # Filter blood data
 adata = adata[adata.obs['Organ'] == 'BLD'].copy()
 print(adata)
+
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
 
 
 # Preprocessing
@@ -35,6 +38,7 @@ adata = adata[:, ~adata.var["hb"]].copy()
 
 # Doublet Detection
 sc.pp.scrublet(adata, batch_key="Donor")
+adata = adata[adata.obs['predicted_doublet'] == False].copy()
 
 
 # Normalization
@@ -43,7 +47,7 @@ sc.pp.scrublet(adata, batch_key="Donor")
 adata.layers["counts"] = adata.X.copy()
 
 # Normalizing to median total counts
-sc.pp.normalize_total(adata)
+sc.pp.normalize_total(adata, target_sum=1e4)
 # Logarithmize the data
 sc.pp.log1p(adata)
 
@@ -78,11 +82,11 @@ print(adata_train.obs['Donor'].unique())
 print(adata_test.obs['Donor'].unique())
 
 # Prepare Data for training
-X_train = adata_train.to_df()
+X_train = adata_train.X#to_df()
 gene_names_train = adata_train.var_names
 y_train = adata_train.obs['scumi-annotation']
 
-X_test = adata_test.to_df()
+X_test = adata_test.X#to_df()
 gene_names_test = adata_test.var_names
 y_test = adata_test.obs['scumi-annotation']
 

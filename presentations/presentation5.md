@@ -353,7 +353,7 @@ Out of data distribution
 
 
 
-# Scumi annotated Labels (Final results)
+# Scumi annotated Labels
 
 ## Annotate Data
 
@@ -381,6 +381,10 @@ Submitted batch job 1409026 on cluster tinyfat
 
 - Many Problems with RAM and with Segmentation Faults
 - Final try took 1:16 hours and 245GB RAM
+
+### CellTypist Raw Dataset
+
+Submitted batch job 1418596 on cluster tinyfat
 
 ### humancellatlas
 
@@ -425,11 +429,11 @@ CellTypist: TODO: Create Script for Hyperparametertuning
 
 | Modell | Iterationen | Laufzeit | Zeit/Iteration | Bester Score | Beste Parameter |
 RandomForest, 19, 1h5m, 4m, 0.8691, [('max_depth', 26), ('max_features', 'sqrt'), ('n_estimators', 151)]
-LogisticRegression, 
+LogisticRegression, 19, 2h23m, 8m, 0.9323, [('C', 0.0011618814443186676), ('class_weight', None), ('penalty', 'l2'), ('tol', 0.0001500440991786258)]
 LinearSVC, 15, 6h50m, 27m, 0.9523, [('C', 0.004240705571724369), ('dual', False), ('penalty', 'l1'), ('tol', 0.009170815634047421)]
 ExtraTrees, 19, 45m, 2m, 0.8795, [('max_depth', 28), ('max_features', 'sqrt'), ('n_estimators', 250)]
 LightGBM, 22, 7h1m, 19m, 0.8445, [('feature_fraction', 0.6763225686917771), ('learning_rate', 0.031197042137161936), ('n_estimators', 50), ('num_leaves', 91)]
-XGBoost, 
+XGBoost, 19, 4h32m, 14m, 0.9275, [('colsample_bytree', 0.5), ('learning_rate', 0.29999999999999993), ('max_depth', 3)]
 
 
 
@@ -469,3 +473,56 @@ Feature importance dropout (0% features dropped) accuracy score 0.8387
 Feature importance dropout (0% features dropped) accuracy score 0.7353
 Feature importance dropout (1% features dropped) accuracy score 0.7207
 Feature importance dropout (2% features dropped) accuracy score 0.6933
+
+
+# Scumi annotated Labels and raw counts (Final results)
+
+## Retraining of the Models with scumi annotated labels
+
+RandomForest: Submitted batch job 11956561
+LogisticRegression: Submitted batch job 11956560
+LinearSVC: Submitted batch job 11956562
+ExtraTrees: Submitted batch job 11956563
+LightGBM: Submitted batch job 11956565
+XGBoost: Submitted batch job 11956564
+Autoencoder: Wait on LogisticRegression
+CellTypist: TODO: Create Script for Hyperparametertuning
+
+## Optimal Hyperparameters
+
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Bester Score | Beste Parameter |
+|---|---|---|---|---|---|
+| RandomForest | 19 | 42m | 2m | 0.8757 | [('max_depth', 21), ('max_features', 'sqrt'), ('n_estimators', 250)] |
+| LogisticRegression | 19 | 3h5m | 10m | 0.9296 | [('C', 0.002962549745300248), ('class_weight', None), ('penalty', 'l2'), ('tol', 0.00021859149419693706)] |
+| LinearSVC | 34 | 6h52m | 12m | 0.9247 | [('C', 0.0018560502473331671), ('dual', True), ('penalty', 'l2'), ('tol', 0.002277116094508008)] |
+| ExtraTrees | 19 | 36m | 2m | 0.8980 | [('max_depth', 28), ('max_features', 'sqrt'), ('n_estimators', 250)] |
+| LightGBM | 19 | 8h21m | 26m | 0.8406 | [('feature_fraction', 0.9121585265495722), ('learning_rate', 0.07155740596305549), ('n_estimators', 81), ('num_leaves', 146)] |
+| XGBoost | 19 | 4h43m | 15m | 0.8763 | [('colsample_bytree', 0.1155642369806889), ('learning_rate', 0.12210351372522388), ('max_depth', 9)] |
+
+
+## Decision for min_samples with scumi annotated labels
+### Score bei optimaler LR mit jeweils train und test mit min_samples
+Ohne: 0.9297180043383948, Macro F1: 0.9286042555614614
+150: 0.9304772234273319, Macro F1: 0.9292255740290368
+200: 0.9330802603036876, Macro F1: 0.9316392607098006
+
+### Score bei optimaler LR mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 0.9295334554466114, Macro F1: 0.898993216989008
+150: 0.930421588815433, Macro F1: 0.9408641536792869
+200: 0.9330802603036876, Macro F1: 0.9316392607098006
+
+
+### Score bei optimalem RF mit jeweils train und test mit min_samples
+Ohne: 0.8772761555866825, Macro F1: 0.801927853434784
+150: 0.8775333261081608, Macro F1: 0.8610759622881408
+200: 0.8867678958785249, Macro F1: 0.8492096623238797
+
+### Score bei optimalem RF mit jeweils train mit min_genes, test fest auf min_genes=200
+Ohne: 0.8925162689804772, Macro F1: 0.8565990797216909
+150: 0.8870932754880694, Macro F1: 0.8483928669441909
+200: 0.8867678958785249, Macro F1: 0.8492096623238797
+
+
+## Robustness Comparison
+
+### Random Forest

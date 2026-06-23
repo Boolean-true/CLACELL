@@ -485,8 +485,12 @@ LinearSVC: Submitted batch job 11956562
 ExtraTrees: Submitted batch job 11956563
 LightGBM: Submitted batch job 11956565
 XGBoost: Submitted batch job 11956564
-Autoencoder: Wait on LogisticRegression
-CellTypist: TODO: Create Script for Hyperparametertuning
+Autoencoder: Submitted batch job 11966348
+Submitted batch job 11969505
+Conditional Autoencoder: Submitted batch job 
+Submitted batch job 11969577
+Submitted batch job 11969589
+CellTypist: TODO: Create Script for Hyperparametertuning: Submitted batch job 11966630
 
 ## Optimal Hyperparameters
 
@@ -498,6 +502,7 @@ CellTypist: TODO: Create Script for Hyperparametertuning
 | ExtraTrees | 19 | 36m | 2m | 0.8980 | [('max_depth', 28), ('max_features', 'sqrt'), ('n_estimators', 250)] |
 | LightGBM | 19 | 8h21m | 26m | 0.8406 | [('feature_fraction', 0.9121585265495722), ('learning_rate', 0.07155740596305549), ('n_estimators', 81), ('num_leaves', 146)] |
 | XGBoost | 19 | 4h43m | 15m | 0.8763 | [('colsample_bytree', 0.1155642369806889), ('learning_rate', 0.12210351372522388), ('max_depth', 9)] |
+| Autoencoder | 150 Epochs + 50 RandomSearch | 37m | <1m | 0.9059 | {'C': np.float64(0.009741536184500488), 'class_weight': None, 'l1_ratio': 0.0, 'tol': np.float64(0.002507487802750016)} |
 
 
 ## Decision for min_samples with scumi annotated labels
@@ -526,3 +531,36 @@ Ohne: 0.8925162689804772, Macro F1: 0.8565990797216909
 ## Robustness Comparison
 
 ### Random Forest
+
+
+### Autoencoder
+
+--- EVALUATION AUF DEN TESTDATEN ---
+Test Accuracy: 0.9059
+
+                     precision    recall  f1-score   support
+
+             B cell       0.95      0.99      0.97       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.88      0.99      0.93      3910
+   Cytotoxic T cell       0.95      0.58      0.72      1824
+     Dendritic cell       1.00      0.20      0.33         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.72      0.92      0.81       791
+        Plasma cell       0.98      0.90      0.94        49
+
+           accuracy                           0.91      9281
+          macro avg       0.93      0.82      0.84      9281
+       weighted avg       0.92      0.91      0.90      9281
+
+
+--- Robustness Evaluation ---
+Baseline accuracy score 0.9059
+Random dropout accuracy score 0.8902
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8916
+Feature importance dropout (0% features dropped) accuracy score 0.8518
+Feature importance dropout (1% features dropped) accuracy score 0.8377
+Feature importance dropout (2% features dropped) accuracy score 0.8383
+Out of data distribution was skipped

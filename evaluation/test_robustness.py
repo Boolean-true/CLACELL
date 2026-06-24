@@ -1,7 +1,7 @@
 import anndata as ad
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
 import scipy.sparse as sp
 import scanpy as sc
 import celltypist
@@ -47,7 +47,8 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
 def compute_baseline_score(model, X, y):
     y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
-    print(f"Baseline accuracy score {accuracy:.4f}")
+    print(f"Baseline accuracy score {accuracy:.4f}\n")
+    print(classification_report(y, y_pred))
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
@@ -165,7 +166,7 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
         y_pred = _predict_labels(model, X_dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
-        print(f"Feature importance dropout ({pct*100:.0f}% features dropped) accuracy score {accuracy:.4f}")
+        print(f"Feature importance dropout ({pct*100:.1f}% features dropped) accuracy score {accuracy:.4f}")
 
     return scores
 

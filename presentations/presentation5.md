@@ -490,7 +490,13 @@ Submitted batch job 11969505
 Conditional Autoencoder: Submitted batch job 
 Submitted batch job 11969577
 Submitted batch job 11969589
+Submitted batch job 11969612
+Submitted batch job 11969620
 CellTypist: TODO: Create Script for Hyperparametertuning: Submitted batch job 11966630
+job_11966630 -> cancelled nach 24h
+Submitted batch job 11971698
+Submitted batch job 
+Submitted batch job 11971752
 
 ## Optimal Hyperparameters
 
@@ -564,3 +570,35 @@ Feature importance dropout (0% features dropped) accuracy score 0.8518
 Feature importance dropout (1% features dropped) accuracy score 0.8377
 Feature importance dropout (2% features dropped) accuracy score 0.8383
 Out of data distribution was skipped
+
+### Conditional Autoencoder
+
+--- EVALUATION AUF DEN TESTDATEN ---
+Test Accuracy: 0.9050
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.98      0.99       120
+     CD14+ monocyte       0.99      1.00      0.99      2575
+        CD4+ T cell       0.90      0.99      0.95      3910
+   Cytotoxic T cell       0.84      0.68      0.75      1824
+     Dendritic cell       1.00      0.40      0.57         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.71      0.68      0.70       791
+        Plasma cell       1.00      0.94      0.97        49
+
+           accuracy                           0.90      9281
+          macro avg       0.93      0.83      0.86      9281
+       weighted avg       0.90      0.90      0.90      9281
+
+
+--- Robustness Evaluation ---
+Baseline accuracy score 0.9050
+Random dropout accuracy score 0.8969
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8935
+Feature importance dropout (0% features dropped) accuracy score 0.8511
+Feature importance dropout (1% features dropped) accuracy score 0.8393
+Feature importance dropout (2% features dropped) accuracy score 0.8242
+Out of data distribution

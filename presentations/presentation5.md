@@ -510,6 +510,56 @@ Submitted batch job 11971752
 | XGBoost | 19 | 4h43m | 15m | 0.8763 | [('colsample_bytree', 0.1155642369806889), ('learning_rate', 0.12210351372522388), ('max_depth', 9)] |
 | Autoencoder | 150 Epochs + 50 RandomSearch | 37m | <1m | 0.9059 | {'C': np.float64(0.009741536184500488), 'class_weight': None, 'l1_ratio': 0.0, 'tol': np.float64(0.002507487802750016)} |
 
+### Retraining on current scikit learn version
+
+11973941      work conditional_autoencoder_lr
+11973939      work autoencoder_lr
+11973645      work extratrees_bayes_sea iwbn133h
+11973334      work linearsvc_bayes_sear iwbn133h
+11973333      work randomforest_bayes_s iwbn133h
+LightGBM: Submitted batch job 11974147
+XGBoost: Submitted batch job 11974148
+
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Bester Score | Beste Parameter |
+|---|---|---|---|---|---|
+| RandomForest | 19 | 40m | 2m | 0.8892 | [('max_depth', 30), ('max_features', 'sqrt'), ('n_estimators', 250)] |
+| LogisticRegression | 19 | 3h25m | 11m | 0.9227 | {'C': 1.0066879125200452, 'class_weight': None, 'l1_ratio': 0.07930266894136596, 'tol': 0.009321342796093207} |
+| LinearSVC | 
+| ExtraTrees | 19 | 44m | 2m | 0.8949 | [('max_depth', 29), ('max_features', 'sqrt'), ('n_estimators', 250)] |
+| LightGBM | 
+| XGBoost | 
+| Autoencoder | 
+
+#### LogisticRegression
+3h25m
+Iter: 19,
+Score: 0.9656,
+Best: 0.9656,
+Seit letzter Verbesserung: 5
+Search terminated after 19 Iterations.
+Best hyperparameters: OrderedDict({'C': 1.0066879125200452, 'class_weight': None, 'l1_ratio': 0.07930266894136596, 'tol': 0.009321342796093207})
+Test-Split Accuracy:  0.9227
+
+#### RandomForest
+40m
+Iter: 19,
+Score: 0.9759,
+Best: 0.9759,
+Seit letzter Verbesserung: 5
+Search terminated after 19 Iterations.
+Best hyperparameters: OrderedDict({'max_depth': 30, 'max_features': 'sqrt', 'n_estimators': 250})
+Test-Split Accuracy:  0.8892
+
+#### ExtraTrees
+44m
+Iter: 19,
+Score: 0.9740,
+Best: 0.9736,
+Seit letzter Verbesserung: 5
+Search terminated after 19 Iterations.
+Best hyperparameters: OrderedDict({'max_depth': 29, 'max_features': 'sqrt', 'n_estimators': 250})
+Test-Split Accuracy:  0.8949
+
 
 ## Decision for min_samples with scumi annotated labels
 ### Score bei optimaler LR mit jeweils train und test mit min_samples
@@ -602,3 +652,10 @@ Feature importance dropout (0% features dropped) accuracy score 0.8511
 Feature importance dropout (1% features dropped) accuracy score 0.8393
 Feature importance dropout (2% features dropped) accuracy score 0.8242
 Out of data distribution
+
+
+# Fragen
+
+- Anne nicht auf dem Paper als Betreuerin erwähnen?
+- Ist das Paper richtig, es ist nicht zweispaltig?
+- Passt die Gliederung?

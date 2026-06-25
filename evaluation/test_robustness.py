@@ -186,12 +186,17 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None):
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
 # The score and robustness are computed on both datasets and reported.
 # If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
-def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
+def test_robustness(model, X, y, dataset_path='../data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad', feature_importances=None):
     print("--- In distribution testset ---")
     compute_model_score_and_robustness(model, X, y, feature_importances)
 
     print("--- Out of data distribution ---")
-    adata = ad.io.read_h5ad(dataset_path)
+    adata_preprocessed = ad.io.read_h5ad(dataset_path)
+    adata = adata_preprocessed.raw.to_adata()
+
+    # Delete log1p stamp to remove Warnings that data might be already log1p transformed even though we use raw data
+    if "log1p" in adata.uns:
+        del adata.uns["log1p"]
 
     # Preprocess the dataset in the same way as the training data
 
@@ -218,7 +223,7 @@ def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-c
     adata.layers["counts"] = adata.X.copy()
 
     # Normalizing to median total counts
-    sc.pp.normalize_total(adata, target_sum=2080.401855)
+    sc.pp.normalize_total(adata, target_sum=1e4)
     # Logarithmize the data
     sc.pp.log1p(adata)
 
@@ -257,7 +262,7 @@ def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-c
     print(f"Genes expected in training set: {len(X.columns)}")
     print(f"Genes actually matched in test set: {len(matched_genes)}")
     print("Training data Max-Value:", np.max(X.values))
-    print("Test data Max-Value:", X_test.max())
+    print("Test data Max-Value:", np.max(X_test.values))
 
 
     compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances)

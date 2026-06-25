@@ -481,6 +481,7 @@ Feature importance dropout (2% features dropped) accuracy score 0.6933
 
 RandomForest: Submitted batch job 11956561
 LogisticRegression: Submitted batch job 11956560
+with l1_ratio instead of penalty_ Submitted batch job 11971871
 LinearSVC: Submitted batch job 11956562
 ExtraTrees: Submitted batch job 11956563
 LightGBM: Submitted batch job 11956565
@@ -497,6 +498,24 @@ job_11966630 -> cancelled nach 24h
 Submitted batch job 11971698
 Submitted batch job 
 Submitted batch job 11971752
+Submitted batch job 11976757
+Submitted batch job 11977623
+Submitted batch job 11978087
+Submitted batch job 11978229
+
+### Scikitlearn version 1.9.0
+
+11973941      work conditional_autoencoder_lr
+11973939      work autoencoder_lr
+11973645      work extratrees_bayes_sea iwbn133h
+11973334      work linearsvc_bayes_sear iwbn133h
+11973333      work randomforest_bayes_s iwbn133h
+LightGBM: Submitted batch job 11974147
+XGBoost: Submitted batch job 11974148
+LogisticRegression: Submitted batch job 11972516
+
+CellTypist can't be retrained on scikitlearn 1.9.0, it needs the older version
+
 
 ## Optimal Hyperparameters
 
@@ -512,22 +531,15 @@ Submitted batch job 11971752
 
 ### Retraining on current scikit learn version
 
-11973941      work conditional_autoencoder_lr
-11973939      work autoencoder_lr
-11973645      work extratrees_bayes_sea iwbn133h
-11973334      work linearsvc_bayes_sear iwbn133h
-11973333      work randomforest_bayes_s iwbn133h
-LightGBM: Submitted batch job 11974147
-XGBoost: Submitted batch job 11974148
 
 | Modell | Iterationen | Laufzeit | Zeit/Iteration | Bester Score | Beste Parameter |
 |---|---|---|---|---|---|
 | RandomForest | 19 | 40m | 2m | 0.8892 | [('max_depth', 30), ('max_features', 'sqrt'), ('n_estimators', 250)] |
 | LogisticRegression | 19 | 3h25m | 11m | 0.9227 | {'C': 1.0066879125200452, 'class_weight': None, 'l1_ratio': 0.07930266894136596, 'tol': 0.009321342796093207} |
-| LinearSVC | 
+| LinearSVC | 15 | 8h17m | 33m | 0.9244 | {'C': 0.0018990687352059977, 'dual': True, 'penalty': 'l2', 'tol': 0.009190337212689565} |
 | ExtraTrees | 19 | 44m | 2m | 0.8949 | [('max_depth', 29), ('max_features', 'sqrt'), ('n_estimators', 250)] |
 | LightGBM | 
-| XGBoost | 
+| XGBoost | 19 | 1h47m | 6m | 0.9030 | {'colsample_bytree': 0.10176001540819818, 'learning_rate': 0.1679654265637675, 'max_depth': 4} |
 | Autoencoder | 
 
 #### LogisticRegression
@@ -559,6 +571,100 @@ Seit letzter Verbesserung: 5
 Search terminated after 19 Iterations.
 Best hyperparameters: OrderedDict({'max_depth': 29, 'max_features': 'sqrt', 'n_estimators': 250})
 Test-Split Accuracy:  0.8949
+
+#### LinearSVC
+8h17m
+Iter: 15,
+Score: 0.9618,
+Best: 0.9634,
+Seit letzter Verbesserung: 6
+
+Search terminated after 34 Iterations.
+Best hyperparameters: OrderedDict({'C': 0.0018990687352059977, 'dual': True, 'penalty': 'l2', 'tol': 0.009190337212689565})
+Test-Split Accuracy:  0.9244
+
+#### XGBoost
+1h47m
+Iter: 19,
+Score: 0.9934,
+Best: 0.9926,
+Seit letzter Verbesserung: 5
+
+Search terminated after 19 Iterations.
+Best hyperparameters: OrderedDict({'colsample_bytree': 0.10176001540819818, 'learning_rate': 0.1679654265637675, 'max_depth': 4})
+Test-Split Accuracy:  0.9030
+
+#### Autoencoder
+2h47m
+--- TUNING FINISHED ---
+Beste Parameter: {'C': np.float64(0.012223644997433204), 'class_weight': None, 'l1_ratio': 0.0, 'tol': np.float64(0.001362031829986868)}
+Bester CV-Score: 0.9640
+
+--- EVALUATION AUF DEN TESTDATEN ---
+Test Accuracy: 0.8932
+
+                     precision    recall  f1-score   support
+
+             B cell       0.97      0.97      0.97       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.87      0.99      0.93      3910
+   Cytotoxic T cell       0.95      0.51      0.66      1824
+     Dendritic cell       1.00      0.40      0.57         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.66      0.92      0.77       791
+        Plasma cell       0.98      0.90      0.94        49
+
+           accuracy                           0.89      9281
+          macro avg       0.93      0.84      0.86      9281
+       weighted avg       0.91      0.89      0.88      9281
+
+
+--- Robustness Evaluation ---
+Baseline accuracy score 0.8932
+Random dropout accuracy score 0.8780
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.8790
+Feature importance dropout (0% features dropped) accuracy score 0.8405
+Feature importance dropout (1% features dropped) accuracy score 0.8281
+Feature importance dropout (2% features dropped) accuracy score 0.8181
+Out of data distribution ignored
+
+#### Conditional Autoencoder
+1h3m
+--- TUNING FINISHED ---
+Beste Parameter: {'C': np.float64(0.01715298936876021), 'class_weight': None, 'l1_ratio': 0.0, 'tol': np.float64(0.0011006696963727297)}
+Bester CV-Score: 0.9610
+
+--- EVALUATION AUF DEN TESTDATEN ---
+Test Accuracy: 0.9229
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.95      0.97       120
+     CD14+ monocyte       0.99      1.00      0.99      2575
+        CD4+ T cell       0.94      0.99      0.97      3910
+   Cytotoxic T cell       0.85      0.77      0.81      1824
+     Dendritic cell       1.00      0.40      0.57         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.72      0.69      0.70       791
+        Plasma cell       1.00      0.94      0.97        49
+
+           accuracy                           0.92      9281
+          macro avg       0.94      0.84      0.87      9281
+       weighted avg       0.92      0.92      0.92      9281
+
+
+--- Robustness Evaluation ---
+Baseline accuracy score 0.9229
+Random dropout accuracy score 0.9130
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0% features dropped) accuracy score 0.9108
+Feature importance dropout (0% features dropped) accuracy score 0.8694
+Feature importance dropout (1% features dropped) accuracy score 0.8559
+Feature importance dropout (2% features dropped) accuracy score 0.8320
+Out of data distribution ignored
 
 
 ## Decision for min_samples with scumi annotated labels

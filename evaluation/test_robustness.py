@@ -14,7 +14,7 @@ def _predict_labels(model, X):
     # Not a scikit-learn style model, try CellTypist-style annotation
     try:
         predictions = celltypist.annotate(
-            filename=X, 
+            filename=ad.anndata(X), 
             model=model
         )
 
@@ -23,6 +23,22 @@ def _predict_labels(model, X):
     except TypeError:
         raise AttributeError("Model does not have a predict method and cannot be annotated with celltypist.annotate()")
 
+def _prepare_sparse_input(X, gene_names=None):
+    if not sp.issparse(X):
+        return X
+
+    if gene_names is None:
+        print("Error: sparse input requires gene_names. Skipping robustness test.")
+        return None
+
+    gene_names = list(gene_names)
+    if len(gene_names) != X.shape[1]:
+        print(
+            f"Error: gene_names length ({len(gene_names)}) does not match the number of features in X ({X.shape[1]}). Skipping robustness test."
+        )
+        return None
+
+    return pd.DataFrame(X.toarray(), columns=gene_names)
 
 def _drop_features(X, pct: float, rng: np.random.Generator):
     if pct <= 0:
@@ -31,28 +47,8 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
     n_drop = max(1, int(n_features * pct))
     drop_idx = rng.choice(n_features, size=n_drop, replace=False)
 
-    # Case 1: X is an AnnData object
-    if hasattr(X, "X") and hasattr(X, "var_names"):
-        X_copy = X.copy()
-        
-        if sp.issparse(X_copy.X):
-            X_copy.X = X_copy.X.tolil()
-            X_copy.X[:, drop_idx] = 0
-            X_copy.X = X_copy.X.tocsr()
-        else:
-            X_copy.X[:, drop_idx] = 0
-        return X_copy
-
-    # Case 2: X is a DataFrame
-    if hasattr(X, "iloc") and hasattr(X, "columns"):
-        X_copy = X.copy()
-        X_copy.iloc[:, drop_idx] = 0
-        return X_copy
-
-    # Case 3: X is a scipy sparse matrix (adata.X) or similar
-    print('No DataFrame')
-    X_copy = np.array(X, copy=True)
-    X_copy[:, drop_idx] = 0
+    X_copy = X.copy()
+    X_copy.iloc[:, drop_idx] = 0
     return X_copy
 
 
@@ -130,51 +126,25 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
                 continue
 
         # Prepare a copy of X with selected features zeroed
-        if hasattr(X, "iloc") and hasattr(X, "columns"):
-            # X has column names -> interpret top_features as names when possible
-            X_dropped = X.copy()
-            drop_idx = []
-            for feat in top_features:
-                if feat in X_dropped.columns:
-                    drop_idx.append(X_dropped.columns.get_loc(feat))
-                else:
-                    # If features were provided as integer indices, allow that too
-                    try:
-                        idx = int(feat)
-                        if 0 <= idx < n_features:
-                            drop_idx.append(idx)
-                        else:
-                            print(f"Warning: feature index {idx} out of range; skipping.")
-                    except Exception:
-                        continue
-                        #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
-
-            if drop_idx:
-                X_dropped.iloc[:, drop_idx] = 0
-
-        else:
-            # X is array-like / sparse: interpret top_features as integer indices
-            X_dropped = np.array(X, copy=True)
-            int_idx = []
-            for feat in top_features:
-                if isinstance(feat, (int, np.integer)):
+        X_dropped = X.copy()
+        drop_idx = []
+        for feat in top_features:
+            if feat in X_dropped.columns:
+                drop_idx.append(X_dropped.columns.get_loc(feat))
+            else:
+                # If features were provided as integer indices, allow that too
+                try:
                     idx = int(feat)
                     if 0 <= idx < n_features:
-                        int_idx.append(idx)
+                        drop_idx.append(idx)
                     else:
                         print(f"Warning: feature index {idx} out of range; skipping.")
-                else:
-                    # cannot map string feature names to array columns
-                    try:
-                        # attempt numeric conversion
-                        idx = int(feat)
-                        if 0 <= idx < n_features:
-                            int_idx.append(idx)
-                    except Exception:
-                        print(f"Warning: feature '{feat}' is not an integer and X has no column labels; skipping.")
+                except Exception:
+                    continue
+                    #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
 
-            if int_idx:
-                X_dropped[:, int_idx] = 0
+        if drop_idx:
+            X_dropped.iloc[:, drop_idx] = 0
 
         y_pred = _predict_labels(model, X_dropped)
         accuracy = accuracy_score(y, y_pred)
@@ -198,14 +168,25 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None):
 
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
 # The score and robustness are computed on both datasets and reported.
-# If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
-def test_robustness(model, X, y, dataset_path='../data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad', feature_importances=None):
+# If X is sparse then gene_names must be provided to convert it into a dataframe. If it is not provided the test will be skipped.
+def test_robustness(model, X, y, ood_dataset_path='../data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad', feature_importances=None, gene_names=None):
     print("--- In distribution testset ---")
-    compute_model_score_and_robustness(model, X, y, feature_importances)
+    if sp.issparse(X):
+        X = _prepare_sparse_input(X, gene_names=gene_names)
+        if X is None:
+            print("Skipping robustness tests due to sparse input without gene names.")
+            return
+
+    compute_model_score_and_robustness(model, X, y, feature_importances=feature_importances)
+
+    train_classes = set(y.unique())
 
     print("--- Out of data distribution ---")
     # Assume the dataset at the given path contains raw counts
-    adata = ad.io.read_h5ad(dataset_path)
+    complete_adata = ad.io.read_h5ad(ood_dataset_path)
+    adata = complete_adata[
+        complete_adata.obs['scumi-annotation'].isin(train_classes)
+    ].copy()
 
     # Preprocess the dataset in the same way as the training data
 

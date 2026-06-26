@@ -395,6 +395,11 @@ Limit Anndata to 15.000 Cells: Submitted batch job 1413786 on cluster tinyfat ->
 
 => Annotate parts of the humancellatlas local
 
+With raw data and .copy after limiting to 15.000 samples: Submitted batch job 1424543 on cluster tinyfat
+With 50.000 Samples: Submitted batch job 1424550 on cluster tinyfat -> Segmentation Fault
+With 30.000 Samples: Submitted batch job 1424565 on cluster tinyfat -> Success
+With 40.000 Samples: Submitted batch job 1424610 on cluster tinyfat
+
 ## Decision for min_samples with scumi annotated labels
 ### Score bei optimaler LR mit jeweils train und test mit min_samples
 Ohne: 0.9471759010220548, Macro F1: 0.9346292498962252
@@ -501,7 +506,11 @@ Submitted batch job 11971752
 Submitted batch job 11976757
 Submitted batch job 11977623
 Submitted batch job 11978087
-Submitted batch job 11978229
+Submitted batch job 
+Adjusted predict method of CellTypistWrapper: Submitted batch job 11993925
+create tmp adata ind predict: Submitted batch job 11993978 -> works
+adjusted Hyperparameterspace: Submitted batch job 11994536
+with new version of robustness test: Submitted batch job 11995092
 
 ### Scikitlearn version 1.9.0
 
@@ -538,7 +547,7 @@ CellTypist can't be retrained on scikitlearn 1.9.0, it needs the older version
 | LogisticRegression | 19 | 3h25m | 11m | 0.9227 | {'C': 1.0066879125200452, 'class_weight': None, 'l1_ratio': 0.07930266894136596, 'tol': 0.009321342796093207} |
 | LinearSVC | 15 | 8h17m | 33m | 0.9244 | {'C': 0.0018990687352059977, 'dual': True, 'penalty': 'l2', 'tol': 0.009190337212689565} |
 | ExtraTrees | 19 | 44m | 2m | 0.8949 | [('max_depth', 29), ('max_features', 'sqrt'), ('n_estimators', 250)] |
-| LightGBM | 
+| LightGBM | 19 | 8h37m | 27m | 0.8522 | {'feature_fraction': 0.7872768819915803, 'learning_rate': 0.06936928915508847, 'n_estimators': 123, 'num_leaves': 113} |
 | XGBoost | 19 | 1h47m | 6m | 0.9030 | {'colsample_bytree': 0.10176001540819818, 'learning_rate': 0.1679654265637675, 'max_depth': 4} |
 | Autoencoder | 
 
@@ -593,6 +602,13 @@ Seit letzter Verbesserung: 5
 Search terminated after 19 Iterations.
 Best hyperparameters: OrderedDict({'colsample_bytree': 0.10176001540819818, 'learning_rate': 0.1679654265637675, 'max_depth': 4})
 Test-Split Accuracy:  0.9030
+
+#### LightGBM
+8h37m
+[CV 5/5; 1/1] END feature_fraction=0.7872768819915803, learning_rate=0.06936928915508847, n_estimators=123, num_leaves=113;, score=0.959 total time=35.0min
+Search terminated after 19 Iterations.
+Best hyperparameters: OrderedDict({'feature_fraction': 0.7872768819915803, 'learning_rate': 0.06936928915508847, 'n_estimators': 123, 'num_leaves': 113})
+Test-Split Accuracy:  0.8522
 
 #### Autoencoder
 2h47m

@@ -31,12 +31,25 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
     n_drop = max(1, int(n_features * pct))
     drop_idx = rng.choice(n_features, size=n_drop, replace=False)
 
-    # Keep DataFrame columns so sklearn models fitted with feature names still match.
+    # Case 1: X is an AnnData object
+    if hasattr(X, "X") and hasattr(X, "var_names"):
+        X_copy = X.copy()
+        
+        if sp.issparse(X_copy.X):
+            X_copy.X = X_copy.X.tolil()
+            X_copy.X[:, drop_idx] = 0
+            X_copy.X = X_copy.X.tocsr()
+        else:
+            X_copy.X[:, drop_idx] = 0
+        return X_copy
+
+    # Case 2: X is a DataFrame
     if hasattr(X, "iloc") and hasattr(X, "columns"):
         X_copy = X.copy()
         X_copy.iloc[:, drop_idx] = 0
         return X_copy
 
+    # Case 3: X is a scipy sparse matrix (adata.X) or similar
     print('No DataFrame')
     X_copy = np.array(X, copy=True)
     X_copy[:, drop_idx] = 0
@@ -191,12 +204,8 @@ def test_robustness(model, X, y, dataset_path='../data/humancellatlas/5f29c29a-5
     compute_model_score_and_robustness(model, X, y, feature_importances)
 
     print("--- Out of data distribution ---")
-    adata_preprocessed = ad.io.read_h5ad(dataset_path)
-    adata = adata_preprocessed.raw.to_adata()
-
-    # Delete log1p stamp to remove Warnings that data might be already log1p transformed even though we use raw data
-    if "log1p" in adata.uns:
-        del adata.uns["log1p"]
+    # Assume the dataset at the given path contains raw counts
+    adata = ad.io.read_h5ad(dataset_path)
 
     # Preprocess the dataset in the same way as the training data
 

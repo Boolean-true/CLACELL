@@ -510,7 +510,9 @@ Submitted batch job
 Adjusted predict method of CellTypistWrapper: Submitted batch job 11993925
 create tmp adata ind predict: Submitted batch job 11993978 -> works
 adjusted Hyperparameterspace: Submitted batch job 11994536
-with new version of robustness test: Submitted batch job 11995092
+with new version of robustness test: Submitted batch job 
+Submitted batch job 11995446
+Submitted batch job 11995956
 
 ### Scikitlearn version 1.9.0
 
@@ -524,6 +526,14 @@ XGBoost: Submitted batch job 11974148
 LogisticRegression: Submitted batch job 11972516
 
 CellTypist can't be retrained on scikitlearn 1.9.0, it needs the older version
+
+#### New version of robustness test
+
+Autoencoder: Submitted batch job 11995447
+Submitted batch job 11995954
+Conditional Autoencoder: Submitted batch job 11995448
+Submitted batch job 11995872
+Submitted batch job 11995953
 
 
 ## Optimal Hyperparameters
@@ -708,72 +718,480 @@ Ohne: 0.8925162689804772, Macro F1: 0.8565990797216909
 
 ## Robustness Comparison
 
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Train Score | Test Score | Macro F1-Score | Random Dropout | OOD Test Score | OOD Macro F1 | OOD Random Dropout |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RandomForest | 19 | 40m | 2m | 0.9759 | 0.8868 | 0.81 | 0.8776 | 0.9065 | 0.80 | 0.8925 |
+| LogisticRegression | 19 | 3h25m | 11m | 0.9656 | 0.9213 | 0.92 | 0.9041 | 0.8763 | 0.79 | 0.8734 |
+| LinearSVC | 15 | 8h17m | 33m | 0.9634 | 0.9244 | 0.92 | 0.9250 | 0.8751 | 0.79 | 0.8725 |
+| ExtraTrees | 19 | 44m | 2m | 0.9736 | 0.8877 | 0.82 | 0.8777 | 0.8897 | 0.75 | 0.8753 |
+| LightGBM | 19 | 8h37m | 27m | 0.9590 | 0.8501 | 0.81 | 0.8447 | 0.8883 | 0.82 | 0.8760 |
+| XGBoost | 19 | 1h47m | 6m | 0.9926 | 0.9030 
+| Autoencoder | 50 | 2h21m | 3m | 0.9574 | 0.8798 | 0.83 | 0.8566 | 0.8440 | 0.76 | 0.8283 |
+| Conditional Autoencoder | 50 | 1h7m | 1m | 0.9631 | 0.9148 | 0.89 | 0.9031 | 0.8669 | 0.83 | 0.8457 |
+| CellTypist | 50 | 1h35m | 2m | 0.918 | 0.8033 | 0.72 | 0.7782 | 0.7067 | 0.51 | 0.6388 |
+
 ### Random Forest
+
+--- In distribution testset ---
+Baseline accuracy score 0.8868
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.99      1.00       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.94      1.00      0.97      3910
+   Cytotoxic T cell       1.00      0.44      0.61      1824
+     Dendritic cell       1.00      0.20      0.33         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.50      0.99      0.66       791
+        Plasma cell       1.00      0.86      0.92        49
+
+           accuracy                           0.89      9281
+          macro avg       0.93      0.81      0.81      9281
+       weighted avg       0.93      0.89      0.88      9281
+
+Random dropout accuracy score 0.8776
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8429
+Feature importance dropout (0.5% features dropped) accuracy score 0.8200
+Feature importance dropout (1.0% features dropped) accuracy score 0.7916
+Feature importance dropout (2.0% features dropped) accuracy score 0.7102
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.9065
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.87      1.00      0.93      3135
+        CD4+ T cell       0.92      1.00      0.96     13677
+   Cytotoxic T cell       0.81      0.71      0.76      4843
+     Dendritic cell       0.99      0.17      0.30       529
+      Megakaryocyte       1.00      0.57      0.73        86
+Natural killer cell       0.88      0.72      0.79      2751
+        Plasma cell       1.00      0.91      0.95        23
+
+           accuracy                           0.91     29004
+          macro avg       0.93      0.76      0.80     29004
+       weighted avg       0.91      0.91      0.90     29004
+
+Random dropout accuracy score 0.8925
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8984
+Feature importance dropout (0.5% features dropped) accuracy score 0.8551
+Feature importance dropout (1.0% features dropped) accuracy score 0.6923
+Feature importance dropout (2.0% features dropped) accuracy score 0.5765
+
+
+### LogisticRegression
+
+--- In distribution testset ---
+Baseline accuracy score 0.9213
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.99      1.00       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.87      1.00      0.93      3910
+   Cytotoxic T cell       0.98      0.62      0.76      1824
+     Dendritic cell       1.00      0.60      0.75         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.88      0.96      0.92       791
+        Plasma cell       1.00      0.98      0.99        49
+
+           accuracy                           0.92      9281
+          macro avg       0.97      0.89      0.92      9281
+       weighted avg       0.93      0.92      0.92      9281
+
+Random dropout accuracy score 0.9041
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.9192
+Feature importance dropout (0.5% features dropped) accuracy score 0.8443
+Feature importance dropout (1.0% features dropped) accuracy score 0.7861
+Feature importance dropout (2.0% features dropped) accuracy score 0.7327
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8763
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.91      1.00      0.95      3135
+        CD4+ T cell       0.95      0.99      0.97     13677
+   Cytotoxic T cell       0.62      0.84      0.71      4843
+     Dendritic cell       0.99      0.62      0.76       529
+      Megakaryocyte       1.00      0.59      0.74        86
+Natural killer cell       0.94      0.13      0.22      2751
+        Plasma cell       1.00      1.00      1.00        23
+
+           accuracy                           0.88     29004
+          macro avg       0.93      0.77      0.79     29004
+       weighted avg       0.90      0.88      0.85     29004
+
+Random dropout accuracy score 0.8734
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8762
+Feature importance dropout (0.5% features dropped) accuracy score 0.8496
+Feature importance dropout (1.0% features dropped) accuracy score 0.8174
+Feature importance dropout (2.0% features dropped) accuracy score 0.7338
+
+
+### LinearSVC
+
+--- In distribution testset ---
+Baseline accuracy score 0.9244
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.99      1.00       120
+     CD14+ monocyte       0.99      1.00      1.00      2575
+        CD4+ T cell       0.89      1.00      0.94      3910
+   Cytotoxic T cell       0.97      0.65      0.78      1824
+     Dendritic cell       1.00      0.60      0.75         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.82      0.95      0.88       791
+        Plasma cell       1.00      1.00      1.00        49
+
+           accuracy                           0.92      9281
+          macro avg       0.96      0.90      0.92      9281
+       weighted avg       0.93      0.92      0.92      9281
+
+Random dropout accuracy score 0.9250
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.9238
+Feature importance dropout (0.5% features dropped) accuracy score 0.8389
+Feature importance dropout (1.0% features dropped) accuracy score 0.7857
+Feature importance dropout (2.0% features dropped) accuracy score 0.7291
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8751
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.90      1.00      0.95      3135
+        CD4+ T cell       0.95      0.98      0.97     13677
+   Cytotoxic T cell       0.61      0.86      0.72      4843
+     Dendritic cell       0.99      0.61      0.75       529
+      Megakaryocyte       1.00      0.58      0.74        86
+Natural killer cell       0.92      0.10      0.18      2751
+        Plasma cell       1.00      1.00      1.00        23
+
+           accuracy                           0.88     29004
+          macro avg       0.92      0.77      0.79     29004
+       weighted avg       0.90      0.88      0.85     29004
+
+Random dropout accuracy score 0.8725
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8755
+Feature importance dropout (0.5% features dropped) accuracy score 0.8533
+Feature importance dropout (1.0% features dropped) accuracy score 0.8230
+Feature importance dropout (2.0% features dropped) accuracy score 0.7082
+
+
+### ExtraTrees
+
+--- In distribution testset ---
+Baseline accuracy score 0.8877
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.99      1.00       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.91      1.00      0.95      3910
+   Cytotoxic T cell       1.00      0.45      0.62      1824
+     Dendritic cell       1.00      0.20      0.33         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.54      0.99      0.70       791
+        Plasma cell       1.00      0.86      0.92        49
+
+           accuracy                           0.89      9281
+          macro avg       0.93      0.81      0.82      9281
+       weighted avg       0.92      0.89      0.88      9281
+
+Random dropout accuracy score 0.8777
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8548
+Feature importance dropout (0.5% features dropped) accuracy score 0.8181
+Feature importance dropout (1.0% features dropped) accuracy score 0.7954
+Feature importance dropout (2.0% features dropped) accuracy score 0.7250
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8897
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.85      1.00      0.92      3135
+        CD4+ T cell       0.89      1.00      0.94     13677
+   Cytotoxic T cell       0.82      0.60      0.69      4843
+     Dendritic cell       1.00      0.02      0.04       529
+      Megakaryocyte       1.00      0.57      0.73        86
+Natural killer cell       0.87      0.76      0.81      2751
+        Plasma cell       1.00      0.78      0.88        23
+
+           accuracy                           0.89     29004
+          macro avg       0.93      0.72      0.75     29004
+       weighted avg       0.89      0.89      0.88     29004
+
+Random dropout accuracy score 0.8753
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8829
+Feature importance dropout (0.5% features dropped) accuracy score 0.8484
+Feature importance dropout (1.0% features dropped) accuracy score 0.7316
+Feature importance dropout (2.0% features dropped) accuracy score 0.5826
+
+
+### LightGBM
+
+--- In distribution testset ---
+Baseline accuracy score 0.8501
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.93      0.96       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.87      1.00      0.93      3910
+   Cytotoxic T cell       0.98      0.26      0.41      1824
+     Dendritic cell       1.00      0.40      0.57         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.49      0.99      0.66       791
+        Plasma cell       1.00      0.92      0.96        49
+
+           accuracy                           0.85      9281
+          macro avg       0.92      0.81      0.81      9281
+       weighted avg       0.90      0.85      0.82      9281
+
+Random dropout accuracy score 0.8447
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8425
+Feature importance dropout (0.5% features dropped) accuracy score 0.8105
+Feature importance dropout (1.0% features dropped) accuracy score 0.7057
+Feature importance dropout (2.0% features dropped) accuracy score 0.6993
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8883
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.92      1.00      0.96      3135
+        CD4+ T cell       0.95      0.98      0.97     13677
+   Cytotoxic T cell       0.67      0.79      0.72      4843
+     Dendritic cell       0.98      0.59      0.73       529
+      Megakaryocyte       1.00      0.57      0.73        86
+Natural killer cell       0.75      0.38      0.50      2751
+        Plasma cell       0.92      0.96      0.94        23
+
+           accuracy                           0.89     29004
+          macro avg       0.90      0.78      0.82     29004
+       weighted avg       0.89      0.89      0.88     29004
+
+Random dropout accuracy score 0.8760
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8868
+Feature importance dropout (0.5% features dropped) accuracy score 0.8032
+Feature importance dropout (1.0% features dropped) accuracy score 0.5864
+Feature importance dropout (2.0% features dropped) accuracy score 0.5510
 
 
 ### Autoencoder
 
---- EVALUATION AUF DEN TESTDATEN ---
-Test Accuracy: 0.9059
+--- In distribution testset ---
+Baseline accuracy score 0.8798
 
                      precision    recall  f1-score   support
 
-             B cell       0.95      0.99      0.97       120
+             B cell       0.98      0.99      0.99       120
      CD14+ monocyte       1.00      1.00      1.00      2575
-        CD4+ T cell       0.88      0.99      0.93      3910
-   Cytotoxic T cell       0.95      0.58      0.72      1824
+        CD4+ T cell       0.83      1.00      0.90      3910
+   Cytotoxic T cell       0.87      0.48      0.62      1824
      Dendritic cell       1.00      0.20      0.33         5
       Megakaryocyte       1.00      1.00      1.00         7
-Natural killer cell       0.72      0.92      0.81       791
-        Plasma cell       0.98      0.90      0.94        49
+Natural killer cell       0.80      0.82      0.81       791
+        Plasma cell       1.00      0.94      0.97        49
 
-           accuracy                           0.91      9281
-          macro avg       0.93      0.82      0.84      9281
-       weighted avg       0.92      0.91      0.90      9281
+           accuracy                           0.88      9281
+          macro avg       0.94      0.80      0.83      9281
+       weighted avg       0.88      0.88      0.87      9281
 
-
---- Robustness Evaluation ---
-Baseline accuracy score 0.9059
-Random dropout accuracy score 0.8902
+Random dropout accuracy score 0.8566
 Total samples: 9281
 Number of inconsistent predictions: 0
-Feature importance dropout (0% features dropped) accuracy score 0.8916
-Feature importance dropout (0% features dropped) accuracy score 0.8518
-Feature importance dropout (1% features dropped) accuracy score 0.8377
-Feature importance dropout (2% features dropped) accuracy score 0.8383
-Out of data distribution was skipped
+Feature importance dropout (0.1% features dropped) accuracy score 0.8801
+Feature importance dropout (0.5% features dropped) accuracy score 0.8542
+Feature importance dropout (1.0% features dropped) accuracy score 0.8293
+Feature importance dropout (2.0% features dropped) accuracy score 0.7800
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8440
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3960
+     CD14+ monocyte       0.90      1.00      0.94      3135
+        CD4+ T cell       0.87      1.00      0.93     13677
+   Cytotoxic T cell       0.58      0.59      0.59      4843
+     Dendritic cell       0.99      0.40      0.57       529
+      Megakaryocyte       1.00      0.66      0.80        86
+Natural killer cell       0.91      0.21      0.35      2751
+        Plasma cell       0.88      0.91      0.89        23
+
+           accuracy                           0.84     29004
+          macro avg       0.89      0.72      0.76     29004
+       weighted avg       0.85      0.84      0.82     29004
+
+Random dropout accuracy score 0.8283
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8441
+Feature importance dropout (0.5% features dropped) accuracy score 0.8232
+Feature importance dropout (1.0% features dropped) accuracy score 0.7989
+Feature importance dropout (2.0% features dropped) accuracy score 0.7247
+
 
 ### Conditional Autoencoder
 
---- EVALUATION AUF DEN TESTDATEN ---
-Test Accuracy: 0.9050
+--- In distribution testset ---
+Baseline accuracy score 0.9148
 
                      precision    recall  f1-score   support
 
-             B cell       1.00      0.98      0.99       120
-     CD14+ monocyte       0.99      1.00      0.99      2575
-        CD4+ T cell       0.90      0.99      0.95      3910
-   Cytotoxic T cell       0.84      0.68      0.75      1824
-     Dendritic cell       1.00      0.40      0.57         5
+             B cell       1.00      0.96      0.98       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.93      0.99      0.96      3910
+   Cytotoxic T cell       0.88      0.69      0.77      1824
+     Dendritic cell       1.00      0.60      0.75         5
       Megakaryocyte       1.00      1.00      1.00         7
-Natural killer cell       0.71      0.68      0.70       791
-        Plasma cell       1.00      0.94      0.97        49
+Natural killer cell       0.65      0.77      0.70       791
+        Plasma cell       1.00      0.96      0.98        49
 
-           accuracy                           0.90      9281
-          macro avg       0.93      0.83      0.86      9281
-       weighted avg       0.90      0.90      0.90      9281
+           accuracy                           0.91      9281
+          macro avg       0.93      0.87      0.89      9281
+       weighted avg       0.92      0.91      0.91      9281
 
-
---- Robustness Evaluation ---
-Baseline accuracy score 0.9050
-Random dropout accuracy score 0.8969
+Random dropout accuracy score 0.9031
 Total samples: 9281
 Number of inconsistent predictions: 0
-Feature importance dropout (0% features dropped) accuracy score 0.8935
-Feature importance dropout (0% features dropped) accuracy score 0.8511
-Feature importance dropout (1% features dropped) accuracy score 0.8393
-Feature importance dropout (2% features dropped) accuracy score 0.8242
-Out of data distribution
+Feature importance dropout (0.1% features dropped) accuracy score 0.9127
+Feature importance dropout (0.5% features dropped) accuracy score 0.8909
+Feature importance dropout (1.0% features dropped) accuracy score 0.8603
+Feature importance dropout (2.0% features dropped) accuracy score 0.8303
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.8669
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.96      0.98      3960
+     CD14+ monocyte       0.81      1.00      0.89      3135
+        CD4+ T cell       0.92      0.98      0.95     13677
+   Cytotoxic T cell       0.73      0.58      0.65      4843
+     Dendritic cell       0.99      0.49      0.66       529
+      Megakaryocyte       1.00      0.77      0.87        86
+Natural killer cell       0.65      0.62      0.63      2751
+        Plasma cell       0.96      1.00      0.98        23
+
+           accuracy                           0.87     29004
+          macro avg       0.88      0.80      0.83     29004
+       weighted avg       0.86      0.87      0.86     29004
+
+Random dropout accuracy score 0.8457
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8624
+Feature importance dropout (0.5% features dropped) accuracy score 0.8341
+Feature importance dropout (1.0% features dropped) accuracy score 0.7975
+Feature importance dropout (2.0% features dropped) accuracy score 0.7262
+
+
+### CellTypist
+
+--- In distribution testset ---
+Baseline accuracy score 0.8033
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.91      0.95       120
+     CD14+ monocyte       0.84      1.00      0.91      2575
+        CD4+ T cell       0.77      1.00      0.87      3910
+   Cytotoxic T cell       1.00      0.07      0.13      1824
+     Dendritic cell       1.00      0.20      0.33         5
+      Megakaryocyte       1.00      0.71      0.83         7
+Natural killer cell       0.82      0.89      0.85       791
+        Plasma cell       1.00      0.78      0.87        49
+
+           accuracy                           0.80      9281
+          macro avg       0.93      0.69      0.72      9281
+       weighted avg       0.84      0.80      0.73      9281
+
+Random dropout accuracy score 0.7782
+Total samples: 9281
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.8000
+Feature importance dropout (0.5% features dropped) accuracy score 0.7659
+Feature importance dropout (1.0% features dropped) accuracy score 0.7438
+Feature importance dropout (2.0% features dropped) accuracy score 0.7044
+--- Out of data distribution ---
+Genes expected in training set: 10000
+Genes actually matched in test set: 8693
+Training data Max-Value: 8.634057
+Test data Max-Value: 8.726716041564941
+Baseline accuracy score 0.7067
+
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.52      0.68      3960
+     CD14+ monocyte       0.33      1.00      0.50      3135
+        CD4+ T cell       0.88      1.00      0.93     13677
+   Cytotoxic T cell       0.82      0.16      0.27      4843
+     Dendritic cell       1.00      0.12      0.22       529
+      Megakaryocyte       1.00      0.49      0.66        86
+Natural killer cell       0.88      0.29      0.43      2751
+        Plasma cell       1.00      0.22      0.36        23
+
+           accuracy                           0.71     29004
+          macro avg       0.86      0.47      0.51     29004
+       weighted avg       0.83      0.71      0.68     29004
+
+Random dropout accuracy score 0.6388
+Total samples: 29004
+Number of inconsistent predictions: 0
+Feature importance dropout (0.1% features dropped) accuracy score 0.6901
+Feature importance dropout (0.5% features dropped) accuracy score 0.5942
+Feature importance dropout (1.0% features dropped) accuracy score 0.5793
+Feature importance dropout (2.0% features dropped) accuracy score 0.5772
 
 
 # Fragen

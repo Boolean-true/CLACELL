@@ -1,7 +1,7 @@
 import anndata as ad
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
 import scipy.sparse as sp
 import scanpy as sc
 import celltypist
@@ -14,7 +14,7 @@ def _predict_labels(model, X):
     # Not a scikit-learn style model, try CellTypist-style annotation
     try:
         predictions = celltypist.annotate(
-            filename=X, 
+            filename=ad.anndata(X), 
             model=model
         )
 
@@ -23,6 +23,22 @@ def _predict_labels(model, X):
     except TypeError:
         raise AttributeError("Model does not have a predict method and cannot be annotated with celltypist.annotate()")
 
+def _prepare_sparse_input(X, gene_names=None):
+    if not sp.issparse(X):
+        return X
+
+    if gene_names is None:
+        print("Error: sparse input requires gene_names. Skipping robustness test.")
+        return None
+
+    gene_names = list(gene_names)
+    if len(gene_names) != X.shape[1]:
+        print(
+            f"Error: gene_names length ({len(gene_names)}) does not match the number of features in X ({X.shape[1]}). Skipping robustness test."
+        )
+        return None
+
+    return pd.DataFrame(X.toarray(), columns=gene_names)
 
 def _drop_features(X, pct: float, rng: np.random.Generator):
     if pct <= 0:
@@ -31,15 +47,8 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
     n_drop = max(1, int(n_features * pct))
     drop_idx = rng.choice(n_features, size=n_drop, replace=False)
 
-    # Keep DataFrame columns so sklearn models fitted with feature names still match.
-    if hasattr(X, "iloc") and hasattr(X, "columns"):
-        X_copy = X.copy()
-        X_copy.iloc[:, drop_idx] = 0
-        return X_copy
-
-    print('No DataFrame')
-    X_copy = np.array(X, copy=True)
-    X_copy[:, drop_idx] = 0
+    X_copy = X.copy()
+    X_copy.iloc[:, drop_idx] = 0
     return X_copy
 
 
@@ -47,7 +56,8 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
 def compute_baseline_score(model, X, y):
     y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
-    print(f"Baseline accuracy score {accuracy:.4f}")
+    print(f"Baseline accuracy score {accuracy:.4f}\n")
+    print(classification_report(y, y_pred))
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
@@ -116,56 +126,30 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
                 continue
 
         # Prepare a copy of X with selected features zeroed
-        if hasattr(X, "iloc") and hasattr(X, "columns"):
-            # X has column names -> interpret top_features as names when possible
-            X_dropped = X.copy()
-            drop_idx = []
-            for feat in top_features:
-                if feat in X_dropped.columns:
-                    drop_idx.append(X_dropped.columns.get_loc(feat))
-                else:
-                    # If features were provided as integer indices, allow that too
-                    try:
-                        idx = int(feat)
-                        if 0 <= idx < n_features:
-                            drop_idx.append(idx)
-                        else:
-                            print(f"Warning: feature index {idx} out of range; skipping.")
-                    except Exception:
-                        continue
-                        #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
-
-            if drop_idx:
-                X_dropped.iloc[:, drop_idx] = 0
-
-        else:
-            # X is array-like / sparse: interpret top_features as integer indices
-            X_dropped = np.array(X, copy=True)
-            int_idx = []
-            for feat in top_features:
-                if isinstance(feat, (int, np.integer)):
+        X_dropped = X.copy()
+        drop_idx = []
+        for feat in top_features:
+            if feat in X_dropped.columns:
+                drop_idx.append(X_dropped.columns.get_loc(feat))
+            else:
+                # If features were provided as integer indices, allow that too
+                try:
                     idx = int(feat)
                     if 0 <= idx < n_features:
-                        int_idx.append(idx)
+                        drop_idx.append(idx)
                     else:
                         print(f"Warning: feature index {idx} out of range; skipping.")
-                else:
-                    # cannot map string feature names to array columns
-                    try:
-                        # attempt numeric conversion
-                        idx = int(feat)
-                        if 0 <= idx < n_features:
-                            int_idx.append(idx)
-                    except Exception:
-                        print(f"Warning: feature '{feat}' is not an integer and X has no column labels; skipping.")
+                except Exception:
+                    continue
+                    #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
 
-            if int_idx:
-                X_dropped[:, int_idx] = 0
+        if drop_idx:
+            X_dropped.iloc[:, drop_idx] = 0
 
         y_pred = _predict_labels(model, X_dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
-        print(f"Feature importance dropout ({pct*100:.0f}% features dropped) accuracy score {accuracy:.4f}")
+        print(f"Feature importance dropout ({pct*100:.1f}% features dropped) accuracy score {accuracy:.4f}")
 
     return scores
 
@@ -184,13 +168,28 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None):
 
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
 # The score and robustness are computed on both datasets and reported.
-# If X and y are not provided the dataset is loaded from the given path and the score and robustness are computed on that dataset.
-def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-cellbender/10x-rep1-kallisto-cellbender', feature_importances=None):
+# If X is sparse then gene_names must be provided to convert it into a dataframe. If it is not provided the test will be skipped.
+def test_robustness(model, X, y, ood_dataset_path=None, feature_importances=None, gene_names=None):
     print("--- In distribution testset ---")
-    compute_model_score_and_robustness(model, X, y, feature_importances)
+    if sp.issparse(X):
+        X = _prepare_sparse_input(X, gene_names=gene_names)
+        if X is None:
+            print("Skipping robustness tests due to sparse input without gene names.")
+            return
+
+    compute_model_score_and_robustness(model, X, y, feature_importances=feature_importances)
+
+    train_classes = set(y.unique())
 
     print("--- Out of data distribution ---")
-    adata = ad.io.read_h5ad(dataset_path)
+    if ood_dataset_path is None:
+        print("No out-of-distribution dataset path provided. Skipping out-of-distribution tests.")
+        return
+    # Assume the dataset at the given path contains raw counts
+    complete_adata = ad.io.read_h5ad(ood_dataset_path)
+    adata = complete_adata[
+        complete_adata.obs['scumi-annotation'].isin(train_classes)
+    ].copy()
 
     # Preprocess the dataset in the same way as the training data
 
@@ -217,7 +216,7 @@ def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-c
     adata.layers["counts"] = adata.X.copy()
 
     # Normalizing to median total counts
-    sc.pp.normalize_total(adata, target_sum=2080.401855)
+    sc.pp.normalize_total(adata, target_sum=1e4)
     # Logarithmize the data
     sc.pp.log1p(adata)
 
@@ -256,7 +255,7 @@ def test_robustness(model, X, y, dataset_path='../data/blood/10x-rep1-kallisto-c
     print(f"Genes expected in training set: {len(X.columns)}")
     print(f"Genes actually matched in test set: {len(matched_genes)}")
     print("Training data Max-Value:", np.max(X.values))
-    print("Test data Max-Value:", X_test.max())
+    print("Test data Max-Value:", np.max(X_test.values))
 
 
     compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances)

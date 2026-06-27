@@ -1,3 +1,3 @@
-from classifier import BloodCellClassifier
+from .classifier import BloodCellClassifier
 
 __all__ = ["BloodCellClassifier"]

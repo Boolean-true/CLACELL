@@ -530,10 +530,15 @@ CellTypist can't be retrained on scikitlearn 1.9.0, it needs the older version
 #### New version of robustness test
 
 Autoencoder: Submitted batch job 11995447
-Submitted batch job 11995954
+Submitted batch job 11995954 -> Success
+30 Iterations: Submitted batch job 11996032
+Autoencoder LinearSVC: Submitted batch job 11996106
 Conditional Autoencoder: Submitted batch job 11995448
 Submitted batch job 11995872
 Submitted batch job 11995953
+Conditional Autoencoder LinearSVC: Submitted batch job 11996107
+
+Voting: Submitted batch job 11996030
 
 
 ## Optimal Hyperparameters
@@ -1199,3 +1204,12 @@ Feature importance dropout (2.0% features dropped) accuracy score 0.5772
 - Anne nicht auf dem Paper als Betreuerin erwähnen?
 - Ist das Paper richtig, es ist nicht zweispaltig?
 - Passt die Gliederung?
+
+
+# TODO
+
+## Package
+
+- Handling unterschiedlicher Inputs
+- Mein Preprocessing noch einfügen
+- Anleitung schreiben (erwähnen dass aktuell nur dataframe als Input)

@@ -155,7 +155,7 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None):
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
 # The score and robustness are computed on both datasets and reported.
 # If X is sparse then gene_names must be provided to convert it into a dataframe. If it is not provided the test will be skipped.
-def test_robustness(model, X, y, ood_dataset_path=None, feature_importances=None, gene_names=None):
+def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None, gene_names=None):
     print("--- In distribution testset ---")
     if sp.issparse(X):
         X = _prepare_sparse_input(X, gene_names=gene_names)
@@ -174,7 +174,7 @@ def test_robustness(model, X, y, ood_dataset_path=None, feature_importances=None
     # Assume the dataset at the given path contains raw counts
     complete_adata = ad.io.read_h5ad(ood_dataset_path)
     adata = complete_adata[
-        complete_adata.obs['scumi-annotation'].isin(train_classes)
+        complete_adata.obs[labels].isin(train_classes)
     ].copy()
 
     # Preprocess the dataset in the same way as the training data
@@ -209,7 +209,7 @@ def test_robustness(model, X, y, ood_dataset_path=None, feature_importances=None
 
 
     X_oodd = adata.X
-    y_oodd = adata.obs['scumi-annotation']
+    y_oodd = adata.obs[labels]
 
     # Filter genes that are not in the training set and reorder the remaining genes to match the training set
     ## Save mapping from gene name to index in training set for quick lookup

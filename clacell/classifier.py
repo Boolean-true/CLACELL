@@ -3,11 +3,12 @@ import scipy.stats as stats
 from scipy.sparse import csr_matrix
 import scanpy as sc
 import anndata as ad
-import pandas as pd
-from .test_robustness import test_robustness
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
+
+from .test_robustness import test_robustness
+
 
 class BloodCellClassifier:
     def __init__(self):
@@ -59,7 +60,7 @@ class BloodCellClassifier:
 
         return adata
 
-    def grid_search(self, X_train, y_train=None, X_test=None, y_test=None, val_size=0.25, n_jobs=1):
+    def grid_search(self, X_train, y_train=None, X_test=None, y_test=None, labels='scumi-annotation', val_size=0.25, n_jobs=1):
         """
         Executes a hyperparameter tuning on the training set and returns the score on the test set.
         Automatically followed by a final training with the best parameters.
@@ -70,7 +71,7 @@ class BloodCellClassifier:
             # X_train is an AnnData object -> preprocess it
             adata = self._preprocess_adata(X_train)
             X = adata.to_df()
-            y = adata.obs['scumi-annotation']
+            y = adata.obs[labels]
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_size)
         else:
             # X_train is a DataFrame -> check if y_train and test split are provided
@@ -98,7 +99,7 @@ class BloodCellClassifier:
         tuned_classifier = RandomizedSearchCV(
             estimator=base_logreg,
             param_distributions=param_distributions,
-            n_iter=5,#30,
+            n_iter=5,
             cv=3,
             scoring='accuracy',
             n_jobs=n_jobs,
@@ -116,16 +117,15 @@ class BloodCellClassifier:
         self.is_trained = True
 
         # Compute Robustness score on test set with best parameters
-        #TODO: feature importance and out of distribution are missing
-        self.evaluate(X_test, y_test)
+        self.evaluate(X_test, y_test, labels=labels)
         
         # Automatically call train with best parameters on complete dataset after grid search
         print("\nStart final training with best parameters on complete training data...")
         X = pd.concat([X_train, X_test], axis=0, ignore_index=True)
         y = pd.concat([y_train, y_test], axis=0, ignore_index=True)
-        self.train(X, y, **self.best_params_)
+        self.train(X, y, labels=labels, **self.best_params_)
 
-    def train(self, X_train, y_train=None, **hyperparameters):
+    def train(self, X_train, y_train=None, labels='scumi-annotation', **hyperparameters):
         """
         Trains the model one the complete dataset with the given hyperparameters.
         Can be either called automatically after grid search or manually with custom hyperparameters.
@@ -135,7 +135,7 @@ class BloodCellClassifier:
             # X_train is an AnnData object -> preprocess it
             adata = self._preprocess_adata(X_train)
             X_train = adata.to_df()
-            y_train = adata.obs['scumi-annotation']
+            y_train = adata.obs[labels]
         else:
             # X_train is a DataFrame -> check if y_train is provided
             if y_train is None:
@@ -147,7 +147,7 @@ class BloodCellClassifier:
         self.model.fit(X_train, y_train)
         self.is_trained = True
 
-    def evaluate(self, X_test, y_test=None, ood_dataset_path=None, feature_importances=None):
+    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None):
         """
         Evaluates the model on the test set and returns the score.
         If the model is not trained yet, it raises an error.
@@ -157,7 +157,7 @@ class BloodCellClassifier:
             # X_test is an AnnData object -> preprocess it
             adata = self._preprocess_adata(X_test)
             X_test = adata.to_df()
-            y_test = adata.obs['scumi-annotation']
+            y_test = adata.obs[labels]
         else:
             # X_test is a DataFrame -> check if y_test is provided
             if y_test is None:
@@ -167,7 +167,7 @@ class BloodCellClassifier:
             raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
         
         print("Evaluate model on test data...")
-        test_robustness(self.model, X_test, y_test, ood_dataset_path, feature_importances)
+        test_robustness(self.model, X_test, y_test, labels, ood_dataset_path, feature_importances)
 
     def predict(self, X):
         """

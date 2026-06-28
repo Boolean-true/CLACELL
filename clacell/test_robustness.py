@@ -4,24 +4,10 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 import scipy.sparse as sp
 import scanpy as sc
-import celltypist
 
 
 def _predict_labels(model, X):
-    if hasattr(model, "predict"):
-        return model.predict(X)
-    
-    # Not a scikit-learn style model, try CellTypist-style annotation
-    try:
-        predictions = celltypist.annotate(
-            filename=ad.anndata(X), 
-            model=model
-        )
-
-        return predictions.predicted_labels["predicted_labels"]
-    
-    except TypeError:
-        raise AttributeError("Model does not have a predict method and cannot be annotated with celltypist.annotate()")
+    return model.predict(X)
 
 def _prepare_sparse_input(X, gene_names=None):
     if not sp.issparse(X):
@@ -57,7 +43,7 @@ def compute_baseline_score(model, X, y):
     y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
     print(f"Baseline accuracy score {accuracy:.4f}\n")
-    print(classification_report(y, y_pred))
+    print(classification_report(y, y_pred, zero_division=0))
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
@@ -209,6 +195,7 @@ def test_robustness(model, X, y, ood_dataset_path=None, feature_importances=None
 
     # Doublet Detection
     sc.pp.scrublet(adata, batch_key="Donor")
+    adata = adata[adata.obs['predicted_doublet'] == False].copy()
 
     # Normalization
 

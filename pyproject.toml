@@ -1,17 +1,25 @@
 [project]
 name = "clacell"
-license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
+license = "MIT"
 version = "0.1.0"
 description = "robust cell type classifier for immune cells"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "numpy>=2.4.4"
+    "numpy>=2.4.6",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.8.0",
+    "anndata>=0.12.16",
+    "scanpy>=1.12.1",
+    "scipy>=1.17.1",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-include = ["clacell*"]
+[tool.hatch.build]
+include = [
+    "clacell/**/*.py",
+    "clacell/**/*.json"
+]

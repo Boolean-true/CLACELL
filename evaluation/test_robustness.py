@@ -206,6 +206,7 @@ def test_robustness(model, X, y, ood_dataset_path='../data/humancellatlas/5f29c2
 
     # Doublet Detection
     sc.pp.scrublet(adata, batch_key="Donor")
+    adata = adata[adata.obs['predicted_doublet'] == False].copy()
 
     # Normalization
 

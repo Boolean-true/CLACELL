@@ -59,8 +59,8 @@ mdc: true
 
 ### Robustheitstest
 
-- TODO: Aufbau zeigen
-- Feature Importance Dropout wird jetzt über die Markergene gemacht. Da es nicht genügend Markergene gibt, werden die restlichen aufgefüllt mit Genen aus einer differentiellen Genexpression. TODO: wie werden sie aufgefüllt?
+- Aufbau zeigen
+- Feature Importance Dropout wird jetzt über die Markergene gemacht. Da es nicht genügend Markergene gibt, werden die restlichen aufgefüllt mit Genen aus einer differentiellen Genexpression.
 Dabei wird interleaved, also jeweils ein Markergen pro Klasse, dann das nächste pro Klasse
 
 ---
@@ -90,22 +90,23 @@ Dabei wird interleaved, also jeweils ein Markergen pro Klasse, dann das nächste
 
 ## Results I
 
-| Modell | Iterationen | Laufzeit | 
-Z<div class="text-[9.5px] leading-tight">
-eit/Iteration | Train Score | Test Score | Macro F1-Score | Random Dropout | OOD Test Score | OOD Macro F1 | OOD Random Dropout |
+<div class="text-[9.5px] leading-tight">
+
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Train Score | Test Score | Macro F1-Score | Random Dropout | OOD Test Score | OOD Macro F1 | OOD Random Dropout |
 |---|---|---|---|---|---|---|---|---|---|---|
 | RandomForest | 19 | 40m | 2m | 0.9759 | 0.8868 | 0.81 | 0.8582 | 0.9068 | 0.80 | 0.8954 |
 | LogisticRegression | 19 | 3h25m | 11m | 0.9656 | 0.9213 | 0.92 | 0.9123 | 0.8765 | 0.80 | 0.8707 |
 | LinearSVC | 15 | 8h17m | 33m | 0.9634 | 0.9244 | 0.92 | 0.9244 | 0.8752 | 0.79 | 0.8727 |·
 | ExtraTrees | 19 | 44m | 2m | 0.9736 | 0.8877 | 0.82 | 0.8728 | 0.8898 | 0.75 | 0.8811 |
 | LightGBM | 19 | 8h37m | 27m | 0.9590 | 0.8501 | 0.81 | 0.8427 | 0.8886 | 0.82 | 0.8812 |
-| XGBoost | 19 | 1h47m | 6m | 0.9926 | 0.9030 
-2 | 0.8743 | 0.8915 | 0.78 | 0.8820 |
+| Voting | 18 | 9h | 30m | 0.9750 | 0.8920 | 0.82 | 0.8743 | 0.8915 | 0.78 | 0.8820 |
 | Autoencoder | 150 + 50 | 2h56m | unknown | 0.9609 | 0.9004 | 0.83 | 0.8848 | 0.8496 | 0.75 | 0.8413 |
 | Conditional Autoencoder | 40 + 50 | 1h3m | unknown | 0.9588 | 00.9052 | 0.87 | 0.8951 | 0.8533 | 0.81 | 0.8188 |
 | Custom Ensemble LR | 1 | 9m | 9m | unknown | 0.9126 | 0.91 | 0.9044 | 0.8698 | 0.79 | 0.8696 |
 | Custom Ensemble LinSVC | 1 | 30s | 30s | unknown | 0.9359 | 0.92 | 0.9330 | 0.8688 | 0.77 | 0.8642 |
 | CellTypist | 50 | 1h35m | 2m | 0.918 | 0.8033 | 0.72 | 0.7782 | 0.7067 | 0.51 | 0.6388 |
+
+</div>
 
 ---
 

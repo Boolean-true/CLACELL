@@ -49,7 +49,6 @@ mdc: true
 </table>
 
 </div>
-TODO: Püfen ob das stimmt
 
 <br><br>
 
@@ -61,7 +60,7 @@ TODO: Püfen ob das stimmt
 ### Robustheitstest
 
 - TODO: Aufbau zeigen
-- Feature Importance Dropout wird jetzt über die Markergene gemacht. Da es nicht genügend Markergene gibt, werden die restlichen aufgefüllt. TODO: wie werden sie aufgefüllt?
+- Feature Importance Dropout wird jetzt über die Markergene gemacht. Da es nicht genügend Markergene gibt, werden die restlichen aufgefüllt mit Genen aus einer differentiellen Genexpression. TODO: wie werden sie aufgefüllt?
 Dabei wird interleaved, also jeweils ein Markergen pro Klasse, dann das nächste pro Klasse
 
 ---
@@ -124,7 +123,6 @@ eit/Iteration | Train Score | Test Score | Macro F1-Score | Random Dropout | OOD
   <img src="/out_of_distribution_robustness_comparison.png" alt="Out-of-distribution Robustness Comparison" class="w-[85%] max-w-full h-auto" />
 </div>
 
-TODO: evtl noch die optimalen Hyperparameter erwähnen
 
 ---
 

@@ -44,14 +44,17 @@
 2.3 Machine Learning Architectures
 2.4 Ensemble Learning Strategies
 2.5 Deep Learning & Hybrid Approaches
+2.6 Robustness Tests
 3. Results
+3.1 Comparison of Machine Learning Architectures
+3.2 Comparison of Ensemble and Deep Learning Approaches
+3.3 Comparison with CellTypist
 4. Software Implementation
 5. Discussion and Conclusion
 5.1 Interpretation of Findings
 5.2 Limitations
 5.3 Conclusion & Future Work
 
-TODO: Nochmal drüberschauen und anpassen
 
 ## Weiteres Vorgehen
 
@@ -66,4 +69,6 @@ TODO: Nochmal drüberschauen und anpassen
 - Ist das Paper richtig, es ist nicht zweispaltig?
 - Ist die Obergrenze der Seitenzahlen 4?
 - Passt die Gliederung?
+- Wird das Paper gepublished?
 - Beim Package sollte das Preprocessing in eine eigene Klasse kommen, die dann vor der Annotation und dem Modelltraining ausgeführt wird?
+- Passen die Ergebnisse soweit? Oder muss ich etwas ändern?

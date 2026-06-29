@@ -8,7 +8,7 @@
 ## CellTypist Baseline
 
 - CellTypist ist kein DL Tool sondern eine LogisticRegression
-- TODO: Ergebnisse zeigen
+- CellTypist wurde neu trainiert, geht aber nur auf einer älteren scikit-learn Version
 
 ## Neue Ansätze
 
@@ -18,7 +18,7 @@
 
 ## Ergebnisse
 
-- Tabellen und Grafiken einfügen
+- TODO: Tabellen und Grafiken einfügen
 
 ## Python package
 
@@ -30,6 +30,7 @@
     - evaluate für die Robustheitstests
     - predict zur Vorhersage
 - Als Input sind Dataframes und Anndata Objekte möglich
+- Ergebnisse sind nur so gut, weil im Package intern Train und Test Split nicht nach Donor sondern Random gesplittet werden
 
 ## Gliederungsentwurf
 
@@ -54,7 +55,9 @@ TODO: Nochmal drüberschauen und anpassen
 
 ## Weiteres Vorgehen
 
-- Autoencoder und Custom Ensemble mit LinearSVC statt LogisticRegression
+- Autoencoder mit LinearSVC und evtl RandomForest statt LogisticRegression testen
+- StackingClassifier
+- Paper anfangen
 
 
 ## Fragen

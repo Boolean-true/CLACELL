@@ -49,14 +49,6 @@ mdc: true
 </table>
 
 </div>
-TODO: Püfen ob das stimmt
-
-<br><br>
-
-### CellTypist Baseline
-
-- CellTypist ist kein DL Tool sondern eine LogisticRegression
-- CellTypist wurde neu trainiert, geht aber nur auf einer älteren scikit-learn Version
 
 ---
 
@@ -70,16 +62,23 @@ Dabei wird interleaved, also jeweils ein Markergen pro Klasse, dann das nächste
 
 ---
 
+## CellTypist Baseline
+
+- CellTypist ist kein DL Tool sondern eine LogisticRegression
+- CellTypist wurde neu trainiert, geht aber nur auf einer älteren scikit-learn Version
+
+---
+
 ## Neue Ansätze
 
 - Denoising Autoencoder
-  - Encoder bringt Features in latenten Raum TODO: wieviel
+  - Encoder bringt Features in latenten Raum 128
   - Decoder rekonstruiert Features
-  - TODO: Wo ist mein Early Stopping?
+  - Early Stopping mit patience=5
 - Conditional Autoencoder
   - Um Batch Effekte zu vermeiden (Split nach Donor), wird dem Modell in einem One-Hot Vektor mitgeteilt, von welchem Donor das Sample stammt -> Autoencoder lernt im latenten Raum nicht mit von wem das Sample stammt
   - Bei Inferenz wird ein Nullvektor mitgegeben
-  - TODO: Wo ist mein Early Stopping?
+  - Early Stopping mit patience=5
 - Custom Ensemble (0%; 0,75%;15%;25% Feature Importance Drop)
   - Werte so gewählt, dass es keine Überschneidung mit Robustheitstests gibt
   - Bisher wurden nur lineare Modelle getestet und es wurde die Feature Importance des besten Random Forest genommen
@@ -88,7 +87,34 @@ Dabei wird interleaved, also jeweils ein Markergen pro Klasse, dann das nächste
 
 ## Results I
 
-TODO
+| Modell | Iterationen | Laufzeit | Zeit/Iteration | Train Score | Test Score | Macro F1-Score | Random Dropout | OOD Test Score | OOD Macro F1 | OOD Random Dropout |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RandomForest | 19 | 40m | 2m | 0.9759 | 0.8868 | 0.81 | 0.8582 | 0.9068 | 0.80 | 0.8954 |
+| LogisticRegression | 19 | 3h25m | 11m | 0.9656 | 0.9213 | 0.92 | 0.9123 | 0.8765 | 0.80 | 0.8707 |
+| LinearSVC | 15 | 8h17m | 33m | 0.9634 | 0.9244 | 0.92 | 0.9244 | 0.8752 | 0.79 | 0.8727 |·
+| ExtraTrees | 19 | 44m | 2m | 0.9736 | 0.8877 | 0.82 | 0.8728 | 0.8898 | 0.75 | 0.8811 |
+| LightGBM | 19 | 8h37m | 27m | 0.9590 | 0.8501 | 0.81 | 0.8427 | 0.8886 | 0.82 | 0.8812 |
+| XGBoost | 19 | 1h47m | 6m | 0.9926 | 0.9030 
+| Voting | 18 | 9h | 30m | 0.9750 | 0.8920 | 0.82 | 0.8743 | 0.8915 | 0.78 | 0.8820 |
+| Autoencoder | 150 + 50 | 2h56m | unknown | 0.9609 | 0.9004 | 0.83 | 0.8848 | 0.8496 | 0.75 | 0.8413 |
+| Conditional Autoencoder | 40 + 50 | 1h3m | unknown | 0.9588 | 00.9052 | 0.87 | 0.8951 | 0.8533 | 0.81 | 0.8188 |
+| Custom Ensemble LR | 1 | 9m | 9m | unknown | 0.9126 | 0.91 | 0.9044 | 0.8698 | 0.79 | 0.8696 |
+| Custom Ensemble LinSVC | 1 | 30s | 30s | unknown | 0.9359 | 0.92 | 0.9330 | 0.8688 | 0.77 | 0.8642 |
+| CellTypist | 50 | 1h35m | 2m | 0.918 | 0.8033 | 0.72 | 0.7782 | 0.7067 | 0.51 | 0.6388 |
+
+---
+
+## Results II
+
+![In-distribution Robustness Comparison](/in_distribution_robustness_comparison.png)
+
+---
+
+## Results III
+
+![Out-of-distribution Robustness Comparison](/out_of_distribution_robustness_comparison.png)
+
+TODO: evtl noch die optimalen Hyperparameter erwähnen
 
 ---
 
@@ -154,4 +180,5 @@ TODO
 - Passt die Gliederung?
 - Wird das Paper gepublished?
 - Beim Package sollte das Preprocessing in eine eigene Klasse kommen, die dann vor der Annotation und dem Modelltraining ausgeführt wird?
+- Hast du Präferenzen für welche Metriken wichtiger sind?
 - Passen die Ergebnisse soweit? Oder muss ich etwas ändern?

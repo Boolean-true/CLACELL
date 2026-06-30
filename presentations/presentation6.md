@@ -78,7 +78,7 @@
 
 - bei result im paper technisch (Laufzeit, RAM), in und out of distribution als Unterkapitel. auch auf die einzelnen Klassen eingehen, wie wahrscheinlich es ist, dass diese Klasse richtig klassifiziert wird (siehe Classification Report). Evtl noch Precision auf support (anzahl samples pro klasse) plotten
 - Deep Learning & Hybrid Approaches -> Denoising & Hybrid Approaches (Denoising Autoencoder ist kein Deep Learning weil ich eine LogisticRegression zum Klassifizieren verwende)
-- evaluate im package in eine datei schreiben
+X- evaluate im package in eine datei schreiben
 - Modelle über mehrere Runs vergleichen (mitteln)
 - Weitere Vergleichsmodelle, gerne LLM
 X- CellClassifier soll der Klassifikator heißen
@@ -99,6 +99,9 @@ X- MarkerAnnotator soll keine default marker gene haben
 - Fixes am package vornehmen
 - Anleitung für package schreiben
 - Script zum Mitteln der Ergebnisse erstellen
+    - Robustness Test gibt die Ergebnisse zusätzlich als Dataframe oder Dictionary zurück
+    - Trainingsskript erweitern, dass mehrere Runs gemacht werden und dann gemittelt wird. Evtl so modular machen, dass es ein erweitertes Script gibt was für einen Run ein anderes Script aufruft
+    - Im Script evtl auch gleich Runtime und RAM Verbrauch mit erfassen und mitteln
 - Alle Modelle mit dem Script Mitteln (auch CellTypist)
 - Nebenher Literaturrecherche zu weiteren Vergleichsmodellen
 - Irgendwann mit dem Paper anfangen

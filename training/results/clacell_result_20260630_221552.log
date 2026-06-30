@@ -1,0 +1,54 @@
+2026-06-30 22:15:52,964 - INFO - --- In distribution testset ---
+2026-06-30 22:15:53,049 - INFO - Baseline accuracy score 0.9213
+2026-06-30 22:15:53,108 - INFO - Classification Report:
+                     precision    recall  f1-score   support
+
+             B cell       1.00      0.99      1.00       120
+     CD14+ monocyte       1.00      1.00      1.00      2575
+        CD4+ T cell       0.87      1.00      0.93      3910
+   Cytotoxic T cell       0.98      0.62      0.76      1824
+     Dendritic cell       1.00      0.60      0.75         5
+      Megakaryocyte       1.00      1.00      1.00         7
+Natural killer cell       0.88      0.96      0.92       791
+        Plasma cell       1.00      0.98      0.99        49
+
+           accuracy                           0.92      9281
+          macro avg       0.97      0.89      0.92      9281
+       weighted avg       0.93      0.92      0.92      9281
+
+2026-06-30 22:15:54,858 - INFO - Random dropout accuracy score 0.9028
+2026-06-30 22:15:55,277 - INFO - Total samples: 9281
+2026-06-30 22:15:55,277 - INFO - Number of inconsistent predictions: 0
+2026-06-30 22:15:55,455 - INFO - Feature importance dropout (0.1% features dropped) accuracy score 0.9192
+2026-06-30 22:15:55,631 - INFO - Feature importance dropout (0.5% features dropped) accuracy score 0.8443
+2026-06-30 22:15:55,803 - INFO - Feature importance dropout (1.0% features dropped) accuracy score 0.7861
+2026-06-30 22:15:55,975 - INFO - Feature importance dropout (2.0% features dropped) accuracy score 0.7327
+2026-06-30 22:15:55,977 - INFO - --- Out of data distribution ---
+2026-06-30 22:17:51,470 - INFO - Genes expected in training set: 10000
+2026-06-30 22:17:51,471 - INFO - Genes actually matched in test set: 8693
+2026-06-30 22:17:51,486 - INFO - Training data Max-Value: 8.63405704498291
+2026-06-30 22:17:51,565 - INFO - Test data Max-Value: 8.726716041564941
+2026-06-30 22:17:51,957 - INFO - Baseline accuracy score 0.8765
+2026-06-30 22:17:52,087 - INFO - Classification Report:
+                     precision    recall  f1-score   support
+
+             B cell       1.00      1.00      1.00      3959
+     CD14+ monocyte       0.91      1.00      0.95      3135
+        CD4+ T cell       0.95      0.99      0.97     13664
+   Cytotoxic T cell       0.62      0.84      0.71      4839
+     Dendritic cell       0.99      0.62      0.76       529
+      Megakaryocyte       1.00      0.59      0.74        86
+Natural killer cell       0.94      0.13      0.22      2751
+        Plasma cell       1.00      1.00      1.00        23
+
+           accuracy                           0.88     28986
+          macro avg       0.93      0.77      0.80     28986
+       weighted avg       0.90      0.88      0.85     28986
+
+2026-06-30 22:18:03,410 - INFO - Random dropout accuracy score 0.8717
+2026-06-30 22:18:05,299 - INFO - Total samples: 28986
+2026-06-30 22:18:05,299 - INFO - Number of inconsistent predictions: 0
+2026-06-30 22:18:06,398 - INFO - Feature importance dropout (0.1% features dropped) accuracy score 0.8764
+2026-06-30 22:18:07,497 - INFO - Feature importance dropout (0.5% features dropped) accuracy score 0.8497
+2026-06-30 22:18:08,604 - INFO - Feature importance dropout (1.0% features dropped) accuracy score 0.8175
+2026-06-30 22:18:09,710 - INFO - Feature importance dropout (2.0% features dropped) accuracy score 0.7337

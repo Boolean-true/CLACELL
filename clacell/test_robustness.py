@@ -4,27 +4,71 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 import scipy.sparse as sp
 import scanpy as sc
+import logging
+from pathlib import Path
+from datetime import datetime
+import sys
+
+
+class StdoutFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno < logging.WARNING
+
+
+def _setup_logger(log_to_console=True, log_to_file=True):
+    # Create results directory if it doesn't exist
+    Path("results").mkdir(exist_ok=True)
+
+    # Define the log file name with a timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    logfile = f"results/clacell_result_{timestamp}.log"
+
+    handlers = []
+    if log_to_console:
+        # Handler for stdout (INFO and below)
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.addFilter(StdoutFilter())
+        handlers.append(stdout_handler)
+
+        # Handler for stderr (WARNING and above)
+        stderr_handler = logging.StreamHandler(sys.stderr)
+        stderr_handler.setLevel(logging.WARNING)
+        handlers.append(stderr_handler)
+    if log_to_file:
+        handlers.append(logging.FileHandler(logfile, mode="w"))
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=handlers,
+        force=True,
+    )
 
 
 def _predict_labels(model, X):
     return model.predict(X)
+
 
 def _prepare_sparse_input(X, gene_names=None):
     if not sp.issparse(X):
         return X
 
     if gene_names is None:
-        print("Error: sparse input requires gene_names. Skipping robustness test.")
+        logging.error(
+            "Error: sparse input requires gene_names. Skipping robustness test."
+        )
         return None
 
     gene_names = list(gene_names)
     if len(gene_names) != X.shape[1]:
-        print(
+        logging.error(
             f"Error: gene_names length ({len(gene_names)}) does not match the number of features in X ({X.shape[1]}). Skipping robustness test."
         )
         return None
 
     return pd.DataFrame(X.toarray(), columns=gene_names)
+
 
 def _drop_features(X, pct: float, rng: np.random.Generator):
     if pct <= 0:
@@ -42,8 +86,11 @@ def _drop_features(X, pct: float, rng: np.random.Generator):
 def compute_baseline_score(model, X, y):
     y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
-    print(f"Baseline accuracy score {accuracy:.4f}\n")
-    print(classification_report(y, y_pred, zero_division=0))
+    logging.info(f"Baseline accuracy score {accuracy:.4f}")
+    logging.info(
+        f"Classification Report:\n{classification_report(y, y_pred, zero_division=0)}"
+    )
+
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
@@ -55,7 +102,8 @@ def compute_robustness_random_dropout(model, X, y):
         y_pred = _predict_labels(model, dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
-    print(f"Random dropout accuracy score {np.mean(scores):.4f}")
+    logging.info(f"Random dropout accuracy score {np.mean(scores):.4f}")
+
 
 # Computes the robustness of the model by executing it multiple times and check if the predictions are consistent across executions.
 # The average score is reported.
@@ -64,7 +112,7 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
     for _ in range(n_executions):
         y_pred = _predict_labels(model, X)
         results.append(y_pred)
-    
+
     # Check if the predictions are consistent across executions
     num_samples = len(y)
     num_different_predictions = 0
@@ -74,8 +122,9 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
                 if results[j][i] != results[k][i]:
                     num_different_predictions += 1
 
-    print(f"Total samples: {num_samples}")
-    print(f"Number of inconsistent predictions: {num_different_predictions}")
+    logging.info(f"Total samples: {num_samples}")
+    logging.info(f"Number of inconsistent predictions: {num_different_predictions}")
+
 
 # Computes the robustness of the model by dropping the features with the highest importance scores and evaluating the score again.
 # This is done for different percentages of dropped features and the scores are reported.
@@ -87,7 +136,9 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
         n_drop = max(1, int(n_features * pct))
 
         # Extract top features from feature_importances
-        if hasattr(feature_importances, "iloc") and hasattr(feature_importances, "columns"):
+        if hasattr(feature_importances, "iloc") and hasattr(
+            feature_importances, "columns"
+        ):
             feature_col = None
             for column in feature_importances.columns:
                 if str(column).lower() == "feature":
@@ -97,9 +148,13 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
             if feature_col is None:
                 if len(feature_importances.columns) >= 1:
                     feature_col = feature_importances.columns[0]
-                    print(f"Warning: could not find a column named 'feature'; using '{feature_col}' as feature column.")
+                    logging.warning(
+                        f"Warning: could not find a column named 'feature'; using '{feature_col}' as feature column."
+                    )
                 else:
-                    print("feature_importances dataframe has no columns; skipping this pct")
+                    logging.error(
+                        "feature_importances dataframe has no columns; skipping this pct"
+                    )
                     continue
 
             top_features = feature_importances[feature_col].iloc[:n_drop].tolist()
@@ -108,7 +163,9 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
             try:
                 top_features = list(feature_importances)[:n_drop]
             except Exception:
-                print("feature_importances has unexpected format; skipping this pct")
+                logging.error(
+                    "feature_importances has unexpected format; skipping this pct"
+                )
                 continue
 
         # Prepare a copy of X with selected features zeroed
@@ -124,10 +181,14 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
                     if 0 <= idx < n_features:
                         drop_idx.append(idx)
                     else:
-                        print(f"Warning: feature index {idx} out of range; skipping.")
+                        logging.warning(
+                            f"Warning: feature index {idx} out of range; skipping."
+                        )
                 except Exception:
+                    logging.warning(
+                        f"Warning: feature '{feat}' not found in X.columns; skipping."
+                    )
                     continue
-                    #print(f"Warning: feature '{feat}' not found in X.columns; skipping.")
 
         if drop_idx:
             X_dropped.iloc[:, drop_idx] = 0
@@ -135,7 +196,9 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
         y_pred = _predict_labels(model, X_dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
-        print(f"Feature importance dropout ({pct*100:.1f}% features dropped) accuracy score {accuracy:.4f}")
+        logging.info(
+            f"Feature importance dropout ({pct*100:.1f}% features dropped) accuracy score {accuracy:.4f}"
+        )
 
     return scores
 
@@ -152,30 +215,45 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None):
         compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
 
 
-# Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path. 
+# Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path.
 # The score and robustness are computed on both datasets and reported.
 # If X is sparse then gene_names must be provided to convert it into a dataframe. If it is not provided the test will be skipped.
-def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None, gene_names=None):
-    print("--- In distribution testset ---")
+def test_robustness(
+    model,
+    X,
+    y,
+    labels="scumi-annotation",
+    ood_dataset_path=None,
+    feature_importances=None,
+    gene_names=None,
+    log_to_console=True,
+    log_to_file=True,
+):
+    # Setup Logger
+    _setup_logger(log_to_console, log_to_file)
+
+    logging.info("--- In distribution testset ---")
     if sp.issparse(X):
         X = _prepare_sparse_input(X, gene_names=gene_names)
         if X is None:
-            print("Skipping robustness tests due to sparse input without gene names.")
+            # Sparse input could not be prepared -> skip robustness tests
             return
 
-    compute_model_score_and_robustness(model, X, y, feature_importances=feature_importances)
+    compute_model_score_and_robustness(
+        model, X, y, feature_importances=feature_importances
+    )
 
     train_classes = set(y.unique())
 
-    print("--- Out of data distribution ---")
+    logging.info("--- Out of data distribution ---")
     if ood_dataset_path is None:
-        print("No out-of-distribution dataset path provided. Skipping out-of-distribution tests.")
+        logging.error(
+            "No out-of-distribution dataset path provided. Skipping out-of-distribution tests."
+        )
         return
     # Assume the dataset at the given path contains raw counts
     complete_adata = ad.io.read_h5ad(ood_dataset_path)
-    adata = complete_adata[
-        complete_adata.obs[labels].isin(train_classes)
-    ].copy()
+    adata = complete_adata[complete_adata.obs[labels].isin(train_classes)].copy()
 
     # Preprocess the dataset in the same way as the training data
 
@@ -186,7 +264,9 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
     # hemoglobin genes
     adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
 
-    sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
+    sc.pp.calculate_qc_metrics(
+        adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True
+    )
 
     # Remove mitochondrial, ribosomal and hemoglobin
     adata = adata[:, ~adata.var["mt"]].copy()
@@ -195,7 +275,7 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
 
     # Doublet Detection
     sc.pp.scrublet(adata, batch_key="Donor")
-    adata = adata[adata.obs['predicted_doublet'] == False].copy()
+    adata = adata[adata.obs["predicted_doublet"] == False].copy()
 
     # Normalization
 
@@ -207,7 +287,6 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
     # Logarithmize the data
     sc.pp.log1p(adata)
 
-
     X_oodd = adata.X
     y_oodd = adata.obs[labels]
 
@@ -215,8 +294,8 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
     ## Save mapping from gene name to index in training set for quick lookup
     train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
 
-    M_test = adata.shape[1]   # Number of genes in the loaded dataset
-    M_train = len(X.columns)    # Number of genes in the training set
+    M_test = adata.shape[1]  # Number of genes in the loaded dataset
+    M_train = len(X.columns)  # Number of genes in the training set
 
     ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
     P = sp.lil_matrix((M_test, M_train))
@@ -227,7 +306,7 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
             train_idx = train_gene_to_idx[gene]
             P[test_idx, train_idx] = 1
 
-    P = P.tocsr() # More efficient for matrix multiplication
+    P = P.tocsr()  # More efficient for matrix multiplication
 
     ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
     X_test = X_oodd @ P
@@ -239,10 +318,9 @@ def test_robustness(model, X, y, labels='scumi-annotation', ood_dataset_path=Non
 
     # Print gene comparison and max value for debugging
     matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
-    print(f"Genes expected in training set: {len(X.columns)}")
-    print(f"Genes actually matched in test set: {len(matched_genes)}")
-    print("Training data Max-Value:", np.max(X.values))
-    print("Test data Max-Value:", np.max(X_test.values))
-
+    logging.info(f"Genes expected in training set: {len(X.columns)}")
+    logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
+    logging.info(f"Training data Max-Value: {np.max(X.values)}")
+    logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
 
     compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances)

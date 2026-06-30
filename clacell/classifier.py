@@ -1,7 +1,6 @@
 import pandas as pd
 import scipy.stats as stats
 from scipy.sparse import csr_matrix
-import scanpy as sc
 import anndata as ad
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -10,55 +9,14 @@ from sklearn.model_selection import RandomizedSearchCV
 from .test_robustness import test_robustness
 
 
-class BloodCellClassifier:
+class CellClassifier:
     def __init__(self):
         """
-        Initializes the blood cell classififer.
+        Initializes the cell classififer.
         """
         self.model = None
         self.best_params_ = None
         self.is_trained = False
-
-    def _preprocess_adata(self, adata):
-        """
-        Preprocesses the AnnData object for training and testing.
-        """
-        # mitochondrial genes, "MT-" for human, "Mt-" for mouse
-        adata.var["mt"] = adata.var_names.str.startswith("MT-")
-        # ribosomal genes
-        adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
-        # hemoglobin genes
-        adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
-
-        sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
-
-        # Remove mitochondrial, ribosomal and hemoglobin
-        adata = adata[:, ~adata.var["mt"]].copy()
-        adata = adata[:, ~adata.var["ribo"]].copy()
-        adata = adata[:, ~adata.var["hb"]].copy()
-
-        # Doublet Detection
-        sc.pp.scrublet(adata, batch_key="Donor")
-        adata = adata[adata.obs['predicted_doublet'] == False].copy()
-
-
-        # Normalization
-
-        # Saving count data
-        adata.layers["counts"] = adata.X.copy()
-
-        # Normalizing to median total counts
-        sc.pp.normalize_total(adata, target_sum=1e4)
-        # Logarithmize the data
-        sc.pp.log1p(adata)
-
-        # Filtering Highly variable genes
-        sc.pp.highly_variable_genes(adata, n_top_genes=10000)
-
-        # Apply filter
-        adata = adata[:, adata.var['highly_variable']].copy()
-
-        return adata
 
     def grid_search(self, X_train, y_train=None, X_test=None, y_test=None, labels='scumi-annotation', val_size=0.25, n_jobs=1):
         """
@@ -66,12 +24,10 @@ class BloodCellClassifier:
         Automatically followed by a final training with the best parameters.
         """
         # Prepare the data for training and testing
-        #if hasattr(X_train, 'X') and hasattr(X_train, 'obs'):
         if isinstance(X_train, ad.AnnData):
-            # X_train is an AnnData object -> preprocess it
-            adata = self._preprocess_adata(X_train)
-            X = adata.to_df()
-            y = adata.obs[labels]
+            # X_train is an AnnData object
+            X = X_train.to_df()
+            y = X_train.obs[labels]
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_size)
         else:
             # X_train is a DataFrame -> check if y_train and test split are provided
@@ -132,10 +88,9 @@ class BloodCellClassifier:
         """
         # Prepare the data for training and testing
         if isinstance(X_train, ad.AnnData):
-            # X_train is an AnnData object -> preprocess it
-            adata = self._preprocess_adata(X_train)
-            X_train = adata.to_df()
-            y_train = adata.obs[labels]
+            # X_train is an AnnData object
+            X_train = X_train.to_df()
+            y_train = X_train.obs[labels]
         else:
             # X_train is a DataFrame -> check if y_train is provided
             if y_train is None:
@@ -154,10 +109,9 @@ class BloodCellClassifier:
         """
         # Prepare the data for training and testing
         if isinstance(X_test, ad.AnnData):
-            # X_test is an AnnData object -> preprocess it
-            adata = self._preprocess_adata(X_test)
-            X_test = adata.to_df()
-            y_test = adata.obs[labels]
+            # X_test is an AnnData object
+            X_test = X_test.to_df()
+            y_test = X_test.obs[labels]
         else:
             # X_test is a DataFrame -> check if y_test is provided
             if y_test is None:
@@ -175,9 +129,8 @@ class BloodCellClassifier:
         If the model is not trained yet, it raises an error.
         """
         if isinstance(X, ad.AnnData):
-            # X is an AnnData object -> preprocess it
-            adata = self._preprocess_adata(X)
-            X = adata.to_df()
+            # X is an AnnData object
+            X = X.to_df()
 
         if not self.is_trained:
             raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")

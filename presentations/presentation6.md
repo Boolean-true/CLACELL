@@ -74,20 +74,31 @@
 - Passen die Ergebnisse soweit? Oder muss ich etwas ändern?
 
 
+## Mitschrieb
 
 - bei result im paper technisch (Laufzeit, RAM), in und out of distribution als Unterkapitel. auch auf die einzelnen Klassen eingehen, wie wahrscheinlich es ist, dass diese Klasse richtig klassifiziert wird (siehe Classification Report). Evtl noch Precision auf support (anzahl samples pro klasse) plotten
 - Deep Learning & Hybrid Approaches -> Denoising & Hybrid Approaches (Denoising Autoencoder ist kein Deep Learning weil ich eine LogisticRegression zum Klassifizieren verwende)
 - evaluate im package in eine datei schreiben
 - Modelle über mehrere Runs vergleichen (mitteln)
 - Weitere Vergleichsmodelle, gerne LLM
-- CellClassifier soll der Klassifikator heißen
+X- CellClassifier soll der Klassifikator heißen
 - ich kann Preprocessing als Klasse anbieten, aber auf jeden Fall eine Anleitung machen und Hinweise aufs Preprocessing (Split und Genfilterung)
 - bei adata objekten (kann ich sagen) muss mit angegeben werden auf welchem Feature gesplittet wird (kann ich mir selber überlegen und definieren)
 - Grafiken anpassen, alle Schriften müssen lesbar sein
-- MarkerAnnotator soll keine default marker gene haben
+X- MarkerAnnotator soll keine default marker gene haben
 - evtl testen das Denoising vor eine andere Methode zu schreiben (also vor einen anderen Algorithmus, z.B. CellTypist) (OPTIONAL)
 - evtl einen vollständigen Deep Learning Ansatz nehmen mit einem Deep Learning Klassifikator nach dem Denoising
 - Bei den Grafiken auch Precision, Recall und F1 vergleichen
 - Aufbereiten, dass es als Paper gepublished werden kann
 
 - Geht der Klassifikator beim Denoising Autoencoder auf den latenten Raum oder auf 10.000 (rekonstruierte) Gene?
+
+
+### Vorgehensplan
+
+- Fixes am package vornehmen
+- Anleitung für package schreiben
+- Script zum Mitteln der Ergebnisse erstellen
+- Alle Modelle mit dem Script Mitteln (auch CellTypist)
+- Nebenher Literaturrecherche zu weiteren Vergleichsmodellen
+- Irgendwann mit dem Paper anfangen

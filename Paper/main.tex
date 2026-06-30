@@ -13,7 +13,7 @@ Project report\\ % For project reports in the module Project Biomedical Network 
 %Student paper\\ % For student papers in the module Network Medicine
 Module title: Project Biomedical Network Science\\% For project reports and student papers
 Semester: SS2026\\% For project reports and student papers
-Matriculation number: [your matriculation number]\\
+Matriculation number: 23766907\\
 Biomedical Network Science Lab, Department Artificial Intelligence in Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
 \date{Submission date: [date]}
@@ -36,9 +36,54 @@ Write your abstract here. An abstract is a brief one-paragraph summary that moti
 
 \section{Introduction}\label{sec:introduction}
 
-This template provides an example of a standard structure that is used for many scientific articles. Depending on the content you present in your thesis, report, or student paper, it can make sense to use this structure or to deviate from it. The only exceptions are the sections \Cref{sec:code,sec:data}. These sections are mandatory and must be filled according to the provided descriptions. Moreover, you must fill-in the AI usage declaration in \Cref{sec:ai-declaration} and date and sign the declaration of academic integrity in \Cref{sec:declaration}.
+\subsection{Background}\label{sec:introduction:background}
 
-In the introduction, you provide the motivation of your work, pose your research question, and describe the (medical and technical) background as well as the related work (if these parts are rather extensive they can also be put in dedicated ``Background'' and/or ``Related work'' sections). Make sure that the contribution of \emph{your} work becomes clear in the introduction: What does it add to the existing body of literature/knowledge? Why is it new and/or interesting? Conclude the introduction by delineating the structure of your thesis, i.\,e., by introducing the structure of the remaining sections. The introduction should be internally unstructured (no subsections inside the introduction). 
+TODO: Describe the role of scRNA-seq in immunology and the challenge of cell type annotation.
+
+\subsection{State of the Art & Limitations}\label{sec:introduction:soa}
+
+TODO: Briefly discuss marker-based approaches like scumi (tedious, manual) and existing automated tools like CellTypist. Maybe mention the instability of standard Deep Learning approaches for this task.
+
+\subsection{My Contributions}\label{sec:introduction:contributions}
+
+TODO:
+- Python re-implementation of the scumi R package
+- Comprehensive benchmark of traditional ML, Denoising Autoencoders, and Custom Ensemble methods (with Feature Subsampling)
+- Publication of a ready-to-use Python package (with current version of python and scikit learn)
+
+% TODO: Adjust the Introduction section according to this section from the template:
+%In the introduction, you provide the motivation of your work, pose your research question, and describe the (medical and technical) background as well as the related work (if these parts are rather extensive they can also be put in dedicated ``Background'' and/or ``Related work'' sections). Make sure that the contribution of \emph{your} work becomes clear in the introduction: What does it add to the existing body of literature/knowledge? Why is it new and/or interesting? Conclude the introduction by delineating the structure of your thesis, i.\,e., by introducing the structure of the remaining sections. The introduction should be internally unstructured (no subsections inside the introduction). 
+
+
+\section{Materials and Methods}\label{sec:materials-and-methods}
+
+\subsection{Datasets & Baseline}\label{sec:materials-and-methods:datasets}
+
+TODO:
+- Describe CellTypist + HumanCellAtlas datasets used for training and testing
+- Describe the baseline methods used for comparison (CellTypist + ?)
+
+\subsection{Marker-Based Annotation}\label{sec:materials-and-methods:marker-based-annotation}
+
+TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
+
+\subsection{Machine Learning Architectures}\label{sec:materials-and-methods:machine-learning}
+
+TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
+
+\subsection{Ensemble Learning Strategies}\label{sec:materials-and-methods:ensemble-learning}
+
+TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
+
+\subsection{Denoising & Hybrid Approaches}\label{sec:materials-and-methods:denoising-hybrid}
+
+TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
+
+\subsection{Robustness Tests}\label{sec:materials-and-methods:robustness-tests}
+
+TODO: Describe the robustness tests performed on the trained models. Mention that the robustness tests are performed on out-of-distribution datasets and that the performance is compared to the in-distribution performance. Go into detail because this will be a key part of the Results section!
+
+% --- END OF MY OUTLINE ---
 
 \section{Results}\label{sec:results}
 

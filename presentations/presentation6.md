@@ -105,3 +105,8 @@ X- MarkerAnnotator soll keine default marker gene haben
 - Alle Modelle mit dem Script Mitteln (auch CellTypist)
 - Nebenher Literaturrecherche zu weiteren Vergleichsmodellen
 - Irgendwann mit dem Paper anfangen
+
+
+## HPC Scripte
+
+scGPT: Submitted batch job 1725881

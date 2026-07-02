@@ -232,24 +232,25 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
     num_samples, num_different_predictions = compute_robustness_multiple_executions(model, X, y, 5)
     if feature_importances is not None:
         feature_importance_dropout_scores = compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
-    
+
+    # Combine results into a single DataFrame for easier comparison
     results = {}
-    results[(dist_name, "Baseline", "Accuracy", "score")] = baseline_accuracy
+    results[(dist_name, "Baseline", "Overall", "Accuracy")] = baseline_accuracy
     for class_name, metrics in baseline_report.items():
         if isinstance(metrics, dict):
             for metric_name, val in metrics.items():
-                results[(dist_name, "Class-Report", class_name, metric_name)] = val
+                results[(dist_name, "Classification Report", class_name, metric_name)] = val
         else:
-            # Für die "accuracy" Zeile im Report (da sie kein inneres Dict hat)
-            results[(dist_name, "Class-Report", "Total_Accuracy", class_name)] = metrics
+            # For the row "accuracy" in the report (it is a float not a dict)
+            results[(dist_name, "Classification Report", "Total_Accuracy", class_name)] = metrics
     results[(dist_name, "Dropout", "Random", "score")] = random_dropout_score
-    results[(dist_name, "Consistency", "Num Samples", "count")] = num_samples
-    results[(dist_name, "Consistency", "Inconsistent Predictions", "count")] = num_different_predictions
+    results[(dist_name, "Consistency", "Num Samples", "Count")] = num_samples
+    results[(dist_name, "Consistency", "Inconsistent Predictions", "Count")] = num_different_predictions
     if feature_importances is not None:
         for threshold, score in zip(["0.1%", "0.5%", "1.0%", "2.0%"], feature_importance_dropout_scores):
-            results[(dist_name, "Dropout", f"FI_{threshold}", "score")] = score
+            results[(dist_name, "Dropout", f"FI_{threshold}", "Accuracy")] = score
     
-    return results
+    return pd.DataFrame.from_dict([results])
 
 
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path.
@@ -362,8 +363,9 @@ def test_robustness(
 
     ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name="Out-of-Distribution")
 
-    # Combine results into a single DataFrame for easier comparison
-    combined_results = pd.DataFrame.from_dict(
-        {**id_results, **ood_results}, orient="index", columns=["value"]
+    combined_results = pd.concat([id_results, ood_results], axis=1)
+    combined_results.columns = pd.MultiIndex.from_tuples(
+        combined_results.columns,
+        names=["Distribution", "Category", "Sub-Category", "Metric"]
     )
     return combined_results

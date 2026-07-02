@@ -110,3 +110,16 @@ X- MarkerAnnotator soll keine default marker gene haben
 ## HPC Scripte
 
 scGPT: Submitted batch job 1725881
+Submitted batch job 1725973
+Submitted batch job 1725976
+Submitted batch job 1725977
+Submitted batch job 1725978
+Submitted batch job 1725980
+Submitted batch job 1725997
+Submitted batch job 1726003
+Submitted batch job 1726017
+Submitted batch job 1726915
+Submitted batch job 1726920
+Submitted batch job 1726979
+Submitted batch job 1726993
+Submitted batch job 1727109

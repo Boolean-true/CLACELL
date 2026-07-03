@@ -99,7 +99,7 @@ X- MarkerAnnotator soll keine default marker gene haben
 - Fixes am package vornehmen
 - Anleitung für package schreiben
 - Script zum Mitteln der Ergebnisse erstellen
-    - Robustness Test gibt die Ergebnisse zusätzlich als Dataframe oder Dictionary zurück
+    X- Robustness Test gibt die Ergebnisse zusätzlich als Dataframe oder Dictionary zurück
     - Trainingsskript erweitern, dass mehrere Runs gemacht werden und dann gemittelt wird. Evtl so modular machen, dass es ein erweitertes Script gibt was für einen Run ein anderes Script aufruft
     - Im Script evtl auch gleich Runtime und RAM Verbrauch mit erfassen und mitteln
 - Alle Modelle mit dem Script Mitteln (auch CellTypist)
@@ -109,6 +109,7 @@ X- MarkerAnnotator soll keine default marker gene haben
 
 ## HPC Scripte
 
+### scGPT Training
 scGPT: Submitted batch job 1725881
 Submitted batch job 1725973
 Submitted batch job 1725976
@@ -123,3 +124,11 @@ Submitted batch job 1726920
 Submitted batch job 1726979
 Submitted batch job 1726993
 Submitted batch job 1727109
+Batching and fixed prediction labels: Submitted batch job 1729065
+Submitted batch job 1729203
+Submitted batch job 1729397
+Submitted batch job 1730514
+
+### Evaluation over multiple runs
+
+RandomForest: Submitted batch job 12018521

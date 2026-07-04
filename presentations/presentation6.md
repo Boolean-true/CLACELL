@@ -128,7 +128,29 @@ Batching and fixed prediction labels: Submitted batch job 1729065
 Submitted batch job 1729203
 Submitted batch job 1729397
 Submitted batch job 1730514
+Submitted batch job 1731028
+stratify train valid split: Submitted batch job 1731095
+Sampling and filter feature_importance dropout: Submitted batch job 1731247
+Submitted batch job 1731361
 
 ### Evaluation over multiple runs
 
 RandomForest: Submitted batch job 12018521
+Submitted batch job 12018737
+Submitted batch job 12018794
+Submitted batch job 12018877
+Submitted batch job 12018945
+Submitted batch job 12018956
+
+LogisticRegression: Submitted batch job 12018983
+
+LinearSVC: Submitted batch job 12018984
+Submitted batch job 12019024
+
+ExtraTrees: Submitted batch job 12018985
+Submitted batch job 12019022
+
+LightGBM: Submitted batch job 12018986
+Submitted batch job 12019023
+
+Autoencoder: To test if autoencoder_lr.py or autoencoder_lr_v1.py should be used, submitted job for not _v1: Submitted batch job 12018988

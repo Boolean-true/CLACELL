@@ -102,7 +102,7 @@ class CellClassifier:
         self.model.fit(X_train, y_train)
         self.is_trained = True
 
-    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None):
+    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None, log_to_console=True, log_to_file=True):
         """
         Evaluates the model on the test set and returns the score.
         If the model is not trained yet, it raises an error.
@@ -121,7 +121,7 @@ class CellClassifier:
             raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
         
         print("Evaluate model on test data...")
-        test_robustness(self.model, X_test, y_test, labels, ood_dataset_path, feature_importances)
+        return test_robustness(self.model, X_test, y_test, labels, ood_dataset_path, feature_importances, log_to_console=log_to_console, log_to_file=log_to_file)
 
     def predict(self, X):
         """

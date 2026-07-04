@@ -91,6 +91,8 @@ def compute_baseline_score(model, X, y):
         f"Classification Report:\n{classification_report(y, y_pred, zero_division=0)}"
     )
 
+    return accuracy, classification_report(y, y_pred, zero_division=0, output_dict=True)
+
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
@@ -103,6 +105,8 @@ def compute_robustness_random_dropout(model, X, y):
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
     logging.info(f"Random dropout accuracy score {np.mean(scores):.4f}")
+
+    return np.mean(scores)
 
 
 # Computes the robustness of the model by executing it multiple times and check if the predictions are consistent across executions.
@@ -124,6 +128,8 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
 
     logging.info(f"Total samples: {num_samples}")
     logging.info(f"Number of inconsistent predictions: {num_different_predictions}")
+
+    return num_samples, num_different_predictions
 
 
 # Computes the robustness of the model by dropping the features with the highest importance scores and evaluating the score again.
@@ -204,15 +210,34 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
 
 
 # Computes the score and robustness of the given model on the given dataset (X, y) and feature importance
-def compute_model_score_and_robustness(model, X, y, feature_importances=None):
+def compute_model_score_and_robustness(model, X, y, feature_importances=None, dist_name="In-Distribution"):
     # Baseline
-    compute_baseline_score(model, X, y)
+    baseline_accuracy, baseline_report = compute_baseline_score(model, X, y)
 
     # Robustness
-    compute_robustness_random_dropout(model, X, y)
-    compute_robustness_multiple_executions(model, X, y, 5)
+    random_dropout_score = compute_robustness_random_dropout(model, X, y)
+    num_samples, num_different_predictions = compute_robustness_multiple_executions(model, X, y, 5)
     if feature_importances is not None:
-        compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
+        feature_importance_dropout_scores = compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
+
+    # Combine results into a single DataFrame for easier comparison
+    results = {}
+    results[(dist_name, "Baseline", "Overall", "Accuracy")] = baseline_accuracy
+    for class_name, metrics in baseline_report.items():
+        if isinstance(metrics, dict):
+            for metric_name, val in metrics.items():
+                results[(dist_name, "Classification Report", class_name, metric_name)] = val
+        else:
+            # For the row "accuracy" in the report (it is a float not a dict)
+            results[(dist_name, "Classification Report", "Total_Accuracy", class_name)] = metrics
+    results[(dist_name, "Dropout", "Random", "score")] = random_dropout_score
+    results[(dist_name, "Consistency", "Num Samples", "Count")] = num_samples
+    results[(dist_name, "Consistency", "Inconsistent Predictions", "Count")] = num_different_predictions
+    if feature_importances is not None:
+        for threshold, score in zip(["0.1%", "0.5%", "1.0%", "2.0%"], feature_importance_dropout_scores):
+            results[(dist_name, "Dropout", f"FI_{threshold}", "Accuracy")] = score
+    
+    return pd.DataFrame.from_dict([results])
 
 
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path.
@@ -239,8 +264,8 @@ def test_robustness(
             # Sparse input could not be prepared -> skip robustness tests
             return
 
-    compute_model_score_and_robustness(
-        model, X, y, feature_importances=feature_importances
+    id_results = compute_model_score_and_robustness(
+        model, X, y, feature_importances=feature_importances, dist_name="In-Distribution"
     )
 
     train_classes = set(y.unique())
@@ -323,4 +348,11 @@ def test_robustness(
     logging.info(f"Training data Max-Value: {np.max(X.values)}")
     logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
 
-    compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances)
+    ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name="Out-of-Distribution")
+
+    combined_results = pd.concat([id_results, ood_results], axis=1)
+    combined_results.columns = pd.MultiIndex.from_tuples(
+        combined_results.columns,
+        names=["Distribution", "Category", "Sub-Category", "Metric"]
+    )
+    return combined_results

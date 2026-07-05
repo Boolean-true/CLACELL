@@ -47,3 +47,92 @@
   primaryClass = "stat.ML",
   url          = "https://arxiv.org/abs/1802.03426",
 }
+
+% My references
+@misc{boiarsky_deep_2023,
+	title = {A Deep Dive into Single-Cell {RNA} Sequencing Foundation Models},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2023.10.19.563100},
+	doi = {10.1101/2023.10.19.563100},
+	abstract = {Abstract
+          
+            Large-scale foundation models, which are pre-trained on massive, unlabeled datasets and subsequently fine-tuned on specific tasks, have recently achieved unparalleled success on a wide array of applications, including in healthcare and biology. In this paper, we explore two foundation models recently developed for single-cell {RNA} sequencing data, {scBERT} and {scGPT}. Focusing on the fine-tuning task of cell type annotation, we explore the relative performance of pre-trained models compared to a simple baseline, L1-regularized logistic regression, including in the few-shot setting. We perform ablation studies to understand whether pretraining improves model performance and to better understand the difficulty of the pre-training task in {scBERT}. Finally, using {scBERT} as an example, we demonstrate the potential sensitivity of fine-tuning to hyperparameter settings and parameter initializations. Taken together, our results highlight the importance of rigorously testing foundation models against well established baselines, establishing challenging fine-tuning tasks on which to benchmark foundation models, and performing deep introspection into the embeddings learned by the model in order to more effectively harness these models to transform single-cell data analysis. Code is available at
+            https://github.com/clinicalml/sc-foundation-eval
+            .},
+	publisher = {Genomics},
+	author = {Boiarsky, Rebecca and Singh, Nalini and Buendia, Alejandro and Getz, Gad and Sontag, David},
+	urldate = {2026-07-04},
+	date = {2023-10-23},
+	langid = {english},
+	file = {Accepted Version:/home/boolean/Zotero/storage/BYHGATAC/Boiarsky et al. - 2023 - A Deep Dive into Single-Cell RNA Sequencing Foundation Models.pdf:application/pdf},
+}
+
+% CellTypist
+@article{dominguez_conde_cross-tissue_2022,
+	title = {Cross-tissue immune cell analysis reveals tissue-specific features in humans},
+	volume = {376},
+	issn = {0036-8075, 1095-9203},
+	url = {https://www.science.org/doi/10.1126/science.abl5197},
+	doi = {10.1126/science.abl5197},
+	abstract = {Despite their crucial role in health and disease, our knowledge of immune cells within human tissues remains limited. We surveyed the immune compartment of 16 tissues from 12 adult donors by single-cell {RNA} sequencing and {VDJ} sequencing generating a dataset of {\textasciitilde}360,000 cells. To systematically resolve immune cell heterogeneity across tissues, we developed {CellTypist}, a machine learning tool for rapid and precise cell type annotation. Using this approach, combined with detailed curation, we determined the tissue distribution of finely phenotyped immune cell types, revealing hitherto unappreciated tissue-specific features and clonal architecture of T and B cells. Our multitissue approach lays the foundation for identifying highly resolved immune cell types by leveraging a common reference dataset, tissue-integrated expression analysis, and antigen receptor sequencing.
+          , 
+            Immune cell diversity in the human body
+            
+              The human immune system is composed of many different cell types spread across the entire body, but little is currently known about the fine-grained variations in these cell types across organs. Using single-cell genomics, Domínguez Conde
+              et al
+              . examined the gene expression profile of more than 300,000 individual immune cells extracted from 16 different tissues in 12 deceased adult organ donors (see the Perspective by Liu and Zhang). Cell identity was assigned using {CellTypist}, an automated cell classification tool designed by the authors. In-depth data analysis revealed insights into how the immune system adapts to function effectively in different organ contexts. —{LZ} and {DJ}
+            
+          , 
+            An immune cell atlas of human innate and adaptive immune cells across lymphoid, mucosal, and exocrine sites reveals tissue-specific compositions and features.
+          , 
+            
+              {INTRODUCTION}
+              Immune cells that seed peripheral tissues play a vital role in health and disease, yet most studies of human immunity focus on blood-derived cells. Immune cells adapt to local microenvironments, acquiring distinct features and functional specialization. Dissecting these molecular adaptations through the systematic assessment of cells across the human body promises to transform our understanding of the immune system at the organismal level.
+            
+            
+              {RATIONALE}
+              To comprehensively assess immune cell types, we collected donor-matched tissues from 12 deceased organ donors. We isolated immune cells and performed single-cell {RNA} sequencing and paired {VDJ} sequencing for T cell and B cell receptors, resulting in high-quality data for {\textasciitilde}330,000 immune cells. To resolve cell identities, we developed {CellTypist}, a logistic regression–based framework using stochastic gradient descent learning. This cross-tissue annotation enabled interrogation of shared and tissue-specific expression modules and cell states within myeloid and lymphoid cell lineages.
+            
+            
+              {RESULTS}
+              
+                We developed {CellTypist} by curating and harmonizing public datasets to assemble a comprehensive immune cell type reference database (
+                https://www.celltypist.org
+                ). {CellTypist} was then applied to our data, generated across multiple tissues and individuals (
+                https://www.tissueimmunecellatlas.org/
+                ). Altogether, we detected 101 immune populations and performed extensive cross-tissue comparisons for each subset. Although macrophages displayed prominent tissue-restricted features, some convergent features were also detected. For example, macrophages expressing erythrophagocytosis-related genes were widely found in spleen, liver, bone marrow, and lymph nodes. Heterogeneity within defined subpopulations was also observed, such as migratory dendritic cell adaptations. Within adaptive immune lineages, we identified tissue-specific distributions of memory populations. Plasma cells showed a restricted tissue distribution, whereas memory B cells were more widely distributed. Similarly, tissue-resident memory T (T
+                {RM}
+                ) cells were more restricted in distribution compared with central and effector memory T cells. Notably, T
+                {RM}
+                cells harbored significant diversity, including αβ and γδ lineages, ascertained by {VDJ} sequencing. Assessment of clonal dynamics revealed the highest clonal expansions in T
+                {RM}
+                cells and the most frequent clonal sharing between resident and effector memory populations.
+              
+            
+            
+              {CONCLUSION}
+              Here we present an immune cell atlas of myeloid and lymphoid lineages across adult human tissues. We developed {CellTypist} for automated immune cell annotation and performed an in-depth dissection of cell populations, identifying 101 cell types or states from more than one million cells, including previously underappreciated cell states. We also uncovered convergent phenotypes across tissues within given lineages and described tissue adaptation signatures for a number of cell types, including macrophages and resident memory T cells. Together, we have extended our understanding of how human immunity functions as an integrated, cross-tissue network, and we provide the scientific community with several key new resources.
+              
+                
+                  Cross-tissue atlas of human immune cells.
+                  Donor-matched tissues from 12 deceased organ donors were profiled using single-cell {RNA} sequencing [including single-cell {VDJ} sequencing ({scVDJ}-seq)]. Cell type annotation was achieved with {CellTypist}, an automated cell type annotation pipeline, followed by manual curation. In-depth analysis of transcriptional features revealed convergent and divergent gene expression programs for each cell lineage across lymphoid and nonlymphoid tissues. {scVDJ}-seq enabled repertoire analysis across cell subsets and tissues. {scRNA}-seq, single-cell {RNA} sequencing; {TCR}, T cell receptor; {BCR}, B cell receptor.},
+	pages = {eabl5197},
+	number = {6594},
+	journaltitle = {Science},
+	shortjournal = {Science},
+	author = {Domínguez Conde, C. and Xu, C. and Jarvis, L. B. and Rainbow, D. B. and Wells, S. B. and Gomes, T. and Howlett, S. K. and Suchanek, O. and Polanski, K. and King, H. W. and Mamanova, L. and Huang, N. and Szabo, P. A. and Richardson, L. and Bolt, L. and Fasouli, E. S. and Mahbubani, K. T. and Prete, M. and Tuck, L. and Richoz, N. and Tuong, Z. K. and Campos, L. and Mousa, H. S. and Needham, E. J. and Pritchard, S. and Li, T. and Elmentaite, R. and Park, J. and Rahmani, E. and Chen, D. and Menon, D. K. and Bayraktar, O. A. and James, L. K. and Meyer, K. B. and Yosef, N. and Clatworthy, M. R. and Sims, P. A. and Farber, D. L. and Saeb-Parsy, K. and Jones, J. L. and Teichmann, S. A.},
+	urldate = {2026-07-05},
+	date = {2022-05-13},
+	langid = {english},
+	file = {Full Text PDF:/home/boolean/Zotero/storage/PERE7X7E/Domínguez Conde et al. - 2022 - Cross-tissue immune cell analysis reveals tissue-specific features in humans.pdf:application/pdf},
+}
+
+% HumanCellAtlas Dataset
+@misc{Regev2025Hematopoietic,
+  author       = {Regev, Aviv and Rozenblatt-Rosen, Orit and Li, Bo and Kowalczyk, Monika S. and Slyper, Michal and Jellert, Gaublomme and Tabaka, Marcin and Ashenberg, Orr and Waldman, Julia and Dionne, Danielle and Abigail, Knecht and Hui, Ma and Yang, Yiming},
+  title        = {A single cell immune cell atlas of human hematopoietic system},
+  year         = {2025},
+  howpublished = {Human Cell Atlas Data Portal},
+  note         = {INSDC Project Accessions: ERP122984, BioStudies Accession: S-SUBS12},
+  url          = {https://explore.data.humancellatlas.org/projects/cc95ff89-2e68-4a08-a234-480eca21ce79},
+  urldate      = {2026-07-05}
+}

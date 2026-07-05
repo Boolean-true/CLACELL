@@ -36,54 +36,32 @@ Write your abstract here. An abstract is a brief one-paragraph summary that moti
 
 \section{Introduction}\label{sec:introduction}
 
-\subsection{Background}\label{sec:introduction:background}
+%\subsection{Background}\label{sec:introduction:background}
 
 TODO: Describe the role of scRNA-seq in immunology and the challenge of cell type annotation.
 
-\subsection{State of the Art & Limitations}\label{sec:introduction:soa}
+%\subsection{State of the Art \& Limitations}\label{sec:introduction:soa}
 
 TODO: Briefly discuss marker-based approaches like scumi (tedious, manual) and existing automated tools like CellTypist. Maybe mention the instability of standard Deep Learning approaches for this task.
 
-\subsection{My Contributions}\label{sec:introduction:contributions}
+There exist many approaches to solve the cell type annotation problem, including marker-based annotation, traditional machine learning, and deep learning. TODO: Etwas zu marker based schreiben
+%However, these approaches have limitations in terms of accuracy, robustness, and interpretability. Marker-based annotation is often tedious and requires expert knowledge, while traditional machine learning methods may not capture complex relationships in the data. Deep learning approaches can be unstable and require large amounts of labeled data for training.
+While deep learning approaches might seem to be the best option for this task, \textcite{boiarsky_deep_2023} show that deep learning approaches are not necessarily superior to traditional machine learning methods for cell type annotation. In fact, they show that simple machine learning methods can compete with deep learning methods.
+TODO: noch auf Robustness, Interpretierbarkeit und evtl Datenlimitierung eingehen
+
+%\subsection{My Contributions}\label{sec:introduction:contributions}
 
 TODO:
 - Python re-implementation of the scumi R package
 - Comprehensive benchmark of traditional ML, Denoising Autoencoders, and Custom Ensemble methods (with Feature Subsampling)
 - Publication of a ready-to-use Python package (with current version of python and scikit learn)
 
+This paper presents a re-implementation of the scumi R package in Python, which allows for marker-based annotation of immune cells natively in Python. Additionally, we provide a comprehensive benchmark of traditional machine learning methods, denoising autoencoders, and custom ensemble methods with feature subsampling. Our work aims to improve the accuracy, robustness, and interpretability of cell type annotation methods. Finally, we release a ready-to-use Python package that implements our methods and can be easily integrated into existing workflows. %TODO: Nochmal drüberlesen und anpassen
+
+
 % TODO: Adjust the Introduction section according to this section from the template:
 %In the introduction, you provide the motivation of your work, pose your research question, and describe the (medical and technical) background as well as the related work (if these parts are rather extensive they can also be put in dedicated ``Background'' and/or ``Related work'' sections). Make sure that the contribution of \emph{your} work becomes clear in the introduction: What does it add to the existing body of literature/knowledge? Why is it new and/or interesting? Conclude the introduction by delineating the structure of your thesis, i.\,e., by introducing the structure of the remaining sections. The introduction should be internally unstructured (no subsections inside the introduction). 
 
-
-\section{Materials and Methods}\label{sec:materials-and-methods}
-
-\subsection{Datasets & Baseline}\label{sec:materials-and-methods:datasets}
-
-TODO:
-- Describe CellTypist + HumanCellAtlas datasets used for training and testing
-- Describe the baseline methods used for comparison (CellTypist + ?)
-
-\subsection{Marker-Based Annotation}\label{sec:materials-and-methods:marker-based-annotation}
-
-TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
-
-\subsection{Machine Learning Architectures}\label{sec:materials-and-methods:machine-learning}
-
-TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
-
-\subsection{Ensemble Learning Strategies}\label{sec:materials-and-methods:ensemble-learning}
-
-TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
-
-\subsection{Denoising & Hybrid Approaches}\label{sec:materials-and-methods:denoising-hybrid}
-
-TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
-
-\subsection{Robustness Tests}\label{sec:materials-and-methods:robustness-tests}
-
-TODO: Describe the robustness tests performed on the trained models. Mention that the robustness tests are performed on out-of-distribution datasets and that the performance is compared to the in-distribution performance. Go into detail because this will be a key part of the Results section!
-
-% --- END OF MY OUTLINE ---
 
 \section{Results}\label{sec:results}
 
@@ -134,54 +112,60 @@ References should be included using \verb|\textcite{ID}| and \verb|\cite{ID}| as
 
 Nicely formatting tables with \LaTeX{} is a bit tricky, but it is possible. \Cref{tab:supp-table} shows an example that uses an \verb|X| column from the \verb|tabularx| environment for cells with automatic line break that adapt to the available horizontal space, as well as the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule| commands from the \verb|booktabs| package. As for figures, use appropriate placement options to ensure that tables appear close to the corresponding text.
 
+
 \section{Discussion}\label{sec:discussion}
 
 The discussion typically starts with a summary of your work's most important results. Then, you discuss limitations of your work and potential follow-up. Finally, you end on a positive note and tell the reader at a very high abstraction level how your work advanced the field: What did we learn through your work? What do we know now that was not known before? Which type of analyses can now be run now that were not possible before? 
 
 Typically, discussions are internally unstructured. But you may deviate from this rule of thumb, e.\,g., by including separate subsections on limitations and outlook.
 
+
 \section{Methods}\label{sec:methods}
 
-\subsection{Structure of the Methods section}
+%Good Methods sections are designed in such a way that the subsection headings allow the reader to quickly navigate it without reading the entire section from top to bottom. You may think of it as a dictionary where readers look up details of the work that are of particular interest to them. Each individual subsection should be detailed enough to allow replication of your work, so be precise in your descriptions. Overall, the subsections of your Methods section should cover all methodological details that are relevant for your work: details on your ML model or algorithm, descriptions of datasets and data preprocessing, details on evaluation protocols and metrics, description of competitor approaches, etc.
 
-Good Methods sections are designed in such a way that the subsection headings allow the reader to quickly navigate it without reading the entire section from top to bottom. You may think of it as a dictionary where readers look up details of the work that are of particular interest to them. Each individual subsection should be detailed enough to allow replication of your work, so be precise in your descriptions. Overall, the subsections of your Methods section should cover all methodological details that are relevant for your work: details on your ML model or algorithm, descriptions of datasets and data preprocessing, details on evaluation protocols and metrics, description of competitor approaches, etc.
+\subsection{Datasets \& Baseline}\label{sec:materials-and-methods:datasets}
 
-\subsection{Equations}
+TODO:
+- Describe CellTypist + HumanCellAtlas datasets used for training and testing
+    - Number of Samples, Number of Features
+- Describe the baseline methods used for comparison (CellTypist + ?)
 
-When using mathematical formalism, make sure that you always define all symbols, including indices. For instance, if for some reason you want to introduce the quantity $s$ as the sum of all Fibonacci numbers $F_i$ with odd indices smaller or equal to $100$, you should not simply write 
-\begin{equation}
-    s=\sum_{i}F_i \label{eq:bad}
-\end{equation}
-and hope that the range of the index $i$ is clear from the context. Instead, introduce an index set $\mathcal{O}_{100}=\{i\in\mathbb{N}\mid i\leq100\land\text{$i$ is odd}\}$ and define $s$ as in the following \Cref{eq:good}:
-\begin{equation}
-    s=\sum_{i\in\mathcal{O}_{100}}F_i \label{eq:good}
-\end{equation}
+\subsection{Marker-Based Annotation}\label{sec:materials-and-methods:marker-based-annotation}
 
-Moreover, it is preferable to always use numbered instead of unnumbered equation environments (i.\,e., \verb|\begin{equation}...\end{equation}| and \verb|\begin{align}...\end{align}| instead of \verb|\begin{equation*}...\end{equation*}| and \verb|\begin{align*}...\end{align*}|). Like this, you can reference the equations in the text and it is easier for readers to refer to them.
+TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
 
-\subsection{Theorems, definitions, proofs, and similar environments}
+\subsection{Machine Learning Architectures}\label{sec:materials-and-methods:machine-learning}
 
-This template provides \verb|definition|, \verb|observation|, \verb|remark|, \verb|proposition|, \verb|lemma|, \verb|theorem|, and \verb|proof| environments you can use as needed. Examples are provided in \Cref{def:dummy-def} and \Cref{thm:dummy-theorem}. 
+TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
 
-\begin{definition}[Optional name of defined concept]\label{def:dummy-def}
-    Statement of the definition.
-\end{definition}
+\subsection{Ensemble Learning Strategies}\label{sec:materials-and-methods:ensemble-learning}
 
-\begin{theorem}[Optional name of theorem]\label{thm:dummy-theorem}
-    Statement of the theorem.
-\end{theorem}
+TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
 
-\begin{proof}
-    Proof here.
-\end{proof}
+\subsection{Denoising \& Hybrid Approaches}\label{sec:materials-and-methods:denoising-hybrid}
+
+TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
+
+\subsection{Robustness Tests}\label{sec:materials-and-methods:robustness-tests}
+
+TODO: Describe the robustness tests performed on the trained models. Mention that the robustness tests are performed on out-of-distribution datasets and that the performance is compared to the in-distribution performance. Go into detail because this will be a key part of the Results section!
+
 
 \section{Code availability}\label{sec:code}
 
 If you wrote any source code as part of your work, provide a link to a well-documented GitHub repository here. Moreover, release a stable version of your source code and provide its DOI here. You can use Zenodo for this, see \url{https://help.zenodo.org/docs/github/}. Write ``Not applicable'' if and only if you did not write any source code as part of your work.
 
+
 \section{Data availability}\label{sec:data}
 
-Describe from where you obtained the public data underlying your work. Your descriptions should be detailed enough to allow others to access the exact same data and to reproduce your results, using the code you linked in \Cref{sec:code}. If you generated data yourself (e.g., through simulation), either deposit the data in a public repository such as Zenodo and provide the DOI here or explain how others can rerun the simulation to generate the data themselves. If you used private or sensitive data that is not public and cannot be made publicly available, explain why this is the case. Write ``Not applicable'' if and only if you did not use any data for your work.
+The Dataset used for training and in distribution testing is the Cross-tissue Immune Cell Atlas that is provided by the Teichmann Group at the Wellcome Sanger Institute hosted by Genome Research Limited (licensed under CC BY-NC-ND 4.0). It is publicly accessible at \url{https://www.tissueimmunecellatlas.org/}. %TODO: Noch genauer beschreiben welchen Datensatz ich verwendet habe?
+\cite{dominguez_conde_cross-tissue_2022} %TODO: Oder Zitat in den Text verschieben nach den Namen?
+
+For the out-of-distribution testing, we used the dataset ``A single cell immune cell atlas of human hematopoietic system'' (Project Label: ``HematopoieticImmuneCellAtlas'') that is provided by the Human Cell Atlas Data Portal (licensed under CC-BY 4.0). It can be accessed at \url{https://explore.data.humancellatlas.org/projects/cc95ff89-2e68-4a08-a234-480eca21ce79}.
+\cite{Regev2025Hematopoietic} %TODO: Oder Zitat in den Text verschieben nach den Namen?
+
+%Describe from where you obtained the public data underlying your work. Your descriptions should be detailed enough to allow others to access the exact same data and to reproduce your results, using the code you linked in \Cref{sec:code}. If you generated data yourself (e.g., through simulation), either deposit the data in a public repository such as Zenodo and provide the DOI here or explain how others can rerun the simulation to generate the data themselves. If you used private or sensitive data that is not public and cannot be made publicly available, explain why this is the case. Write ``Not applicable'' if and only if you did not use any data for your work.
 
 \printbibliography
 

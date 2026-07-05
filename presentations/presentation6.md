@@ -106,6 +106,25 @@ X- MarkerAnnotator soll keine default marker gene haben
 - Nebenher Literaturrecherche zu weiteren Vergleichsmodellen
 - Irgendwann mit dem Paper anfangen
 
+Weitere TODOs
+- Evtl CellTypist mit BayesSearch testen?
+
+#### Ziele Sonntag
+
+- Fixes am package vornehmen
+    X- Bei predict fehlende gene mit 0 auffüllen und andere Gene entfernen -> selbe Methode bei ood Datensatz verwenden
+    X- robustness test statt path für ood datensatz direkt ein dataframe oder anndata objekt nehmen (und Preprocessing aus Test rausschmeißen)
+    - evtl nur Dataframes als Input?
+X- package publishen
+X- scGPT Trainingsscript fixen
+X- scGPT Trainingsscript mit Hyperparameteroptimierung? -> nur mit Random Seed trainieren
+X- scGPT, CellTypist und Autoencoder Script zum Mitteln starten
+X- Paper
+    X- Gliederung nochmal anhand der Beispielgliederung überarbeiten
+    X- Citations fixen
+    X- Mindestens 3 Subsections schreiben (oder eine Section)
+- evtl scBERT testen
+
 
 ## HPC Scripte
 
@@ -143,14 +162,41 @@ Submitted batch job 12018945
 Submitted batch job 12018956
 
 LogisticRegression: Submitted batch job 12018983
+Run 7+: Submitted batch job 12024294
 
 LinearSVC: Submitted batch job 12018984
 Submitted batch job 12019024
+Run 4+: Submitted batch job 12024295
 
 ExtraTrees: Submitted batch job 12018985
 Submitted batch job 12019022
 
 LightGBM: Submitted batch job 12018986
 Submitted batch job 12019023
+Run 3+: Submitted batch job 12024296
 
 Autoencoder: To test if autoencoder_lr.py or autoencoder_lr_v1.py should be used, submitted job for not _v1: Submitted batch job 12018988
+Submitted batch job 12023436
+Submitted batch job 12023806
+Submitted batch job 12023859
+Autoencoder mit RandomSearch: Submitted batch job 12023814
+Submitted batch job 12024277
+
+Conditional Autoencoder mit RandomSearch: Submitted batch job 12023816
+Submitted batch job 12024278
+
+scGPT: Submitted batch job 1731504
+Submitted batch job 1731535
+Submitted batch job 1731840
+
+CellTypist: Submitted batch job 12020499
+Submitted batch job 12023804
+Submitted batch job 12024276
+
+
+
+## Fragen
+
+- Passt neue Gliederung?
+- Soll ich wirklich ein Kapitel Software Implementation machen zu dem package?
+- Passt das Zitat beim HumanCellAtlas oder soll ich es weglassen?

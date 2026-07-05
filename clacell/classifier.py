@@ -17,6 +17,7 @@ class CellClassifier:
         self.model = None
         self.best_params_ = None
         self.is_trained = False
+        self.genes_in_training_set = None
 
     def grid_search(self, X_train, y_train=None, X_test=None, y_test=None, labels='scumi-annotation', val_size=0.25, n_jobs=1):
         """
@@ -71,6 +72,7 @@ class CellClassifier:
         best_model.fit(X_train, y_train)
         self.model = best_model
         self.is_trained = True
+        self.genes_in_training_set = X_train.columns.tolist()
 
         # Compute Robustness score on test set with best parameters
         self.evaluate(X_test, y_test, labels=labels)
@@ -89,8 +91,8 @@ class CellClassifier:
         # Prepare the data for training and testing
         if isinstance(X_train, ad.AnnData):
             # X_train is an AnnData object
-            X_train = X_train.to_df()
             y_train = X_train.obs[labels]
+            X_train = X_train.to_df()
         else:
             # X_train is a DataFrame -> check if y_train is provided
             if y_train is None:
@@ -101,8 +103,9 @@ class CellClassifier:
         self.model = LogisticRegression(**hyperparameters)
         self.model.fit(X_train, y_train)
         self.is_trained = True
+        self.genes_in_training_set = X_train.columns.tolist()
 
-    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', ood_dataset_path=None, feature_importances=None, log_to_console=True, log_to_file=True):
+    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', X_ood=None, y_ood=None, feature_importances=None, log_to_console=True, log_to_file=True):
         """
         Evaluates the model on the test set and returns the score.
         If the model is not trained yet, it raises an error.
@@ -121,7 +124,7 @@ class CellClassifier:
             raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
         
         print("Evaluate model on test data...")
-        return test_robustness(self.model, X_test, y_test, labels, ood_dataset_path, feature_importances, log_to_console=log_to_console, log_to_file=log_to_file)
+        return test_robustness(self.model, X_test, y_test, labels, X_ood, y_ood, feature_importances, log_to_console=log_to_console, log_to_file=log_to_file)
 
     def predict(self, X):
         """
@@ -134,6 +137,9 @@ class CellClassifier:
 
         if not self.is_trained:
             raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
+        
+        # Filter genes that are not in the training set and reorder the remaining genes to match the training set
+        X = X.reindex(columns=self.genes_in_training_set, fill_value=0)
         
         print("Infer new data...")
         return self.model.predict(X)

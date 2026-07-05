@@ -248,7 +248,8 @@ def test_robustness(
     X,
     y,
     labels="scumi-annotation",
-    ood_dataset_path=None,
+    ood_X=None,
+    ood_y=None,
     feature_importances=None,
     gene_names=None,
     log_to_console=True,
@@ -271,84 +272,40 @@ def test_robustness(
     train_classes = set(y.unique())
 
     logging.info("--- Out of data distribution ---")
-    if ood_dataset_path is None:
+    if ood_X is None:
         logging.error(
-            "No out-of-distribution dataset path provided. Skipping out-of-distribution tests."
+            "No out-of-distribution dataset provided. Skipping out-of-distribution tests."
         )
         return
-    # Assume the dataset at the given path contains raw counts
-    complete_adata = ad.io.read_h5ad(ood_dataset_path)
-    adata = complete_adata[complete_adata.obs[labels].isin(train_classes)].copy()
+    elif isinstance(ood_X, ad.AnnData):
+        # Assume the dataset at the given path contains raw counts
+        adata = ood_X[ood_X.obs[labels].isin(train_classes)].copy()
+        X_ood = adata.to_df()
+        y_ood = adata.obs[labels]
+    else:
+        if ood_y is None:
+            logging.error(
+                "If ood_X is not an AnnData object, ood_y must be provided."
+            )
+            return
+        # Filter dataframe ood_X and ood_y to only include classes present in the training set
+        ood_mask = ood_y.isin(train_classes)
 
-    # Preprocess the dataset in the same way as the training data
-
-    # mitochondrial genes, "MT-" for human, "Mt-" for mouse
-    adata.var["mt"] = adata.var_names.str.startswith("MT-")
-    # ribosomal genes
-    adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
-    # hemoglobin genes
-    adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
-
-    sc.pp.calculate_qc_metrics(
-        adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True
-    )
-
-    # Remove mitochondrial, ribosomal and hemoglobin
-    adata = adata[:, ~adata.var["mt"]].copy()
-    adata = adata[:, ~adata.var["ribo"]].copy()
-    adata = adata[:, ~adata.var["hb"]].copy()
-
-    # Doublet Detection
-    sc.pp.scrublet(adata, batch_key="Donor")
-    adata = adata[adata.obs["predicted_doublet"] == False].copy()
-
-    # Normalization
-
-    # Saving count data
-    adata.layers["counts"] = adata.X.copy()
-
-    # Normalizing to median total counts
-    sc.pp.normalize_total(adata, target_sum=1e4)
-    # Logarithmize the data
-    sc.pp.log1p(adata)
-
-    X_oodd = adata.X
-    y_oodd = adata.obs[labels]
+        # 2. Beide Datensätze synchron filtern
+        X_ood = ood_X[ood_mask].copy()
+        y_ood = ood_y[ood_mask].copy()
 
     # Filter genes that are not in the training set and reorder the remaining genes to match the training set
-    ## Save mapping from gene name to index in training set for quick lookup
-    train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
-
-    M_test = adata.shape[1]  # Number of genes in the loaded dataset
-    M_train = len(X.columns)  # Number of genes in the training set
-
-    ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
-    P = sp.lil_matrix((M_test, M_train))
-
-    ## Fill the mapping matrix
-    for test_idx, gene in enumerate(adata.var_names):
-        if gene in train_gene_to_idx:
-            train_idx = train_gene_to_idx[gene]
-            P[test_idx, train_idx] = 1
-
-    P = P.tocsr()  # More efficient for matrix multiplication
-
-    ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
-    X_test = X_oodd @ P
-
-    # Convert to dense DataFrame with training feature names so sklearn feature checks remain consistent.
-    if sp.issparse(X_test):
-        X_test = X_test.toarray()
-    X_test = pd.DataFrame(X_test, index=adata.obs_names, columns=X.columns)
+    X_ood = X_ood.reindex(columns=X.columns, fill_value=0)
 
     # Print gene comparison and max value for debugging
-    matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
+    matched_genes = adata.var_names.intersection(X.columns).tolist()
     logging.info(f"Genes expected in training set: {len(X.columns)}")
     logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
     logging.info(f"Training data Max-Value: {np.max(X.values)}")
-    logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
+    logging.info(f"Test data Max-Value: {np.max(X_ood.values)}")
 
-    ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name="Out-of-Distribution")
+    ood_results = compute_model_score_and_robustness(model, X_ood, y_ood, feature_importances, dist_name="Out-of-Distribution")
 
     combined_results = pd.concat([id_results, ood_results], axis=1)
     combined_results.columns = pd.MultiIndex.from_tuples(

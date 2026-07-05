@@ -16,20 +16,30 @@ adata = annotator.annotate(adata)
 # Now adata.obs['scumi-annotation'] contains the annotations
 ```
 
-### BloodCellClassifier
+### Preprocessing
+
+You should preprocess your data before you give it to the CellClassifier. A sample Preprocessing can be applied with the provided method preprocess_data.
+
+```python
+from clacell import preprocess_data
+
+adata_preprocessed = preprocess_data(adata)
+```
+
+### CellClassifier
 
 The cell type classifier has four different methods:
 1. **grid_search**: Makes a search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
 2. **train**: Trains the model with the given hyperparameters.
-3. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called.
+3. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called. The logs can be printed in the console as well as in a log file. The results will be returned in a dataframe with a multi index for easier access.
 4. **predict**: Predicts new samples. The model needs to be trained before this method is called.
 
-All methods can be called with Dataframes or with an Anndata object. If an Anndata object is provided, it will be automatically preprocessed.
+All methods can be called with Dataframes or with an Anndata object. Either way the data has to be processed. We recommend to use Dataframes so you can choose the train test split yourself for more realistic results. If an Anndata object is provided, the train test split will be random and won't consider batches.
 
 ```python
-from clacell import BloodCellClassifier
+from clacell import CellClassifier
 
-classifier = BloodCellClassifier()
+classifier = CellClassifier()
 
 # 1. GridSearch
 print("\n1. grid_search")
@@ -41,7 +51,7 @@ classifier.train(X_train, y_train, C=0.001)
 
 # 3. Evaluate
 print("\n3. evaluate")
-classifier.evaluate(X_test, y_test)
+classifier.evaluate(X_test, y_test, log_to_console=True, log_to_file=True)
 
 # 4. Predict
 print("\n4. predict")

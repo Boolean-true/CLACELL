@@ -19,7 +19,16 @@ class CellClassifier:
         self.is_trained = False
         self.genes_in_training_set = None
 
-    def grid_search(self, X_train, y_train=None, X_test=None, y_test=None, labels='scumi-annotation', val_size=0.25, n_jobs=1):
+    def grid_search(
+        self,
+        X_train,
+        y_train=None,
+        X_test=None,
+        y_test=None,
+        labels="scumi-annotation",
+        val_size=0.25,
+        n_jobs=1,
+    ):
         """
         Executes a hyperparameter tuning on the training set and returns the score on the test set.
         Automatically followed by a final training with the best parameters.
@@ -29,28 +38,34 @@ class CellClassifier:
             # X_train is an AnnData object
             X = X_train.to_df()
             y = X_train.obs[labels]
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_size)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=val_size
+            )
         else:
             # X_train is a DataFrame -> check if y_train and test split are provided
             if y_train is None:
-                raise ValueError("y_train must be provided if X_train is not an AnnData object.")
+                raise ValueError(
+                    "y_train must be provided if X_train is not an AnnData object."
+                )
 
             if X_test is None or y_test is None:
                 # Split the training data into training and validation sets
-                X_train, X_test, y_train, y_test = train_test_split(X_train, y_train, test_size=val_size)
-        
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X_train, y_train, test_size=val_size
+                )
+
         # For faster RandomSearch, convert the DataFrame to a sparse matrix
         X_sparse = csr_matrix(X_train.values)
-        
+
         base_logreg = LogisticRegression()
 
         param_distributions = {
-            'solver': ['saga'],
-            'max_iter': [1000],
-            'C': stats.loguniform(1e-3, 2.0),
-            'l1_ratio': [0.0, 0.25, 0.5, 0.75, 1.0],
-            'class_weight': ['balanced', None],
-            'tol': stats.loguniform(1e-3, 1e-1)
+            "solver": ["saga"],
+            "max_iter": [1000],
+            "C": stats.loguniform(1e-3, 2.0),
+            "l1_ratio": [0.0, 0.25, 0.5, 0.75, 1.0],
+            "class_weight": ["balanced", None],
+            "tol": stats.loguniform(1e-3, 1e-1),
         }
 
         tuned_classifier = RandomizedSearchCV(
@@ -58,9 +73,9 @@ class CellClassifier:
             param_distributions=param_distributions,
             n_iter=5,
             cv=3,
-            scoring='accuracy',
+            scoring="accuracy",
             n_jobs=n_jobs,
-            verbose=10
+            verbose=10,
         )
         tuned_classifier.fit(X_sparse, y_train)
 
@@ -76,14 +91,18 @@ class CellClassifier:
 
         # Compute Robustness score on test set with best parameters
         self.evaluate(X_test, y_test, labels=labels)
-        
+
         # Automatically call train with best parameters on complete dataset after grid search
-        print("\nStart final training with best parameters on complete training data...")
+        print(
+            "\nStart final training with best parameters on complete training data..."
+        )
         X = pd.concat([X_train, X_test], axis=0, ignore_index=True)
         y = pd.concat([y_train, y_test], axis=0, ignore_index=True)
         self.train(X, y, labels=labels, **self.best_params_)
 
-    def train(self, X_train, y_train=None, labels='scumi-annotation', **hyperparameters):
+    def train(
+        self, X_train, y_train=None, labels="scumi-annotation", **hyperparameters
+    ):
         """
         Trains the model one the complete dataset with the given hyperparameters.
         Can be either called automatically after grid search or manually with custom hyperparameters.
@@ -96,7 +115,9 @@ class CellClassifier:
         else:
             # X_train is a DataFrame -> check if y_train is provided
             if y_train is None:
-                raise ValueError("y_train must be provided if X_train is not an AnnData object.")
+                raise ValueError(
+                    "y_train must be provided if X_train is not an AnnData object."
+                )
 
         print(f"Train models with parameters: {hyperparameters}")
 
@@ -105,7 +126,17 @@ class CellClassifier:
         self.is_trained = True
         self.genes_in_training_set = X_train.columns.tolist()
 
-    def evaluate(self, X_test, y_test=None, labels='scumi-annotation', X_ood=None, y_ood=None, feature_importances=None, log_to_console=True, log_to_file=True):
+    def evaluate(
+        self,
+        X_test,
+        y_test=None,
+        labels="scumi-annotation",
+        X_ood=None,
+        y_ood=None,
+        feature_importances=None,
+        log_to_console=True,
+        log_to_file=True,
+    ):
         """
         Evaluates the model on the test set and returns the score.
         If the model is not trained yet, it raises an error.
@@ -118,13 +149,27 @@ class CellClassifier:
         else:
             # X_test is a DataFrame -> check if y_test is provided
             if y_test is None:
-                raise ValueError("y_test must be provided if X_test is not an AnnData object.")
-        
+                raise ValueError(
+                    "y_test must be provided if X_test is not an AnnData object."
+                )
+
         if not self.is_trained:
-            raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
-        
+            raise RuntimeError(
+                "The model wasn't trained yet. Call 'train' or 'grid_search' first."
+            )
+
         print("Evaluate model on test data...")
-        return test_robustness(self.model, X_test, y_test, labels, X_ood, y_ood, feature_importances, log_to_console=log_to_console, log_to_file=log_to_file)
+        return test_robustness(
+            self.model,
+            X_test,
+            y_test,
+            labels,
+            X_ood,
+            y_ood,
+            feature_importances,
+            log_to_console=log_to_console,
+            log_to_file=log_to_file,
+        )
 
     def predict(self, X):
         """
@@ -136,10 +181,12 @@ class CellClassifier:
             X = X.to_df()
 
         if not self.is_trained:
-            raise RuntimeError("The model wasn't trained yet. Call 'train' or 'grid_search' first.")
-        
+            raise RuntimeError(
+                "The model wasn't trained yet. Call 'train' or 'grid_search' first."
+            )
+
         # Filter genes that are not in the training set and reorder the remaining genes to match the training set
         X = X.reindex(columns=self.genes_in_training_set, fill_value=0)
-        
+
         print("Infer new data...")
         return self.model.predict(X)

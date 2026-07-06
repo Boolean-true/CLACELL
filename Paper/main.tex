@@ -44,10 +44,10 @@ TODO: Describe the role of scRNA-seq in immunology and the challenge of cell typ
 
 TODO: Briefly discuss marker-based approaches like scumi (tedious, manual) and existing automated tools like CellTypist. Maybe mention the instability of standard Deep Learning approaches for this task.
 
-There exist many approaches to solve the cell type annotation problem, including marker-based annotation, traditional machine learning, and deep learning. TODO: Etwas zu marker based schreiben
+There exist many approaches to solve the cell type annotation problem, including marker-based annotation, traditional machine learning, and deep learning. %TODO: Etwas zu marker based schreiben
 %However, these approaches have limitations in terms of accuracy, robustness, and interpretability. Marker-based annotation is often tedious and requires expert knowledge, while traditional machine learning methods may not capture complex relationships in the data. Deep learning approaches can be unstable and require large amounts of labeled data for training.
 While deep learning approaches might seem to be the best option for this task, \textcite{boiarsky_deep_2023} show that deep learning approaches are not necessarily superior to traditional machine learning methods for cell type annotation. In fact, they show that simple machine learning methods can compete with deep learning methods.
-TODO: noch auf Robustness, Interpretierbarkeit und evtl Datenlimitierung eingehen
+%TODO: noch auf Robustness, Interpretierbarkeit und evtl Datenlimitierung eingehen
 
 %\subsection{My Contributions}\label{sec:introduction:contributions}
 
@@ -133,15 +133,32 @@ TODO:
 
 \subsection{Marker-Based Annotation}\label{sec:methods:marker-based-annotation}
 
-TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
+%TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
+
+For the annotation of the in- and out-of-distribution dataset, we used the marker based annotation startegy scumi. %TODO: scumi irgendwie hervorheben mit textit oder so?
+As it was only available as a R package, we re-implemented it in Python. For the labeling of the datasets we used the marker genes provided by scumi.
+%TODO: Überarbeiten, klingt komisch
+
+%TODO: Absatz mit Beschreibung zur Reimplementierung
+
+%TODO: Evtl Absatz mit runtime und RAM consumption der Reimplementation (alternativ in Results section)
 
 \subsection{Machine Learning Architectures}\label{sec:methods:machine-learning}
 
 TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
 
+We used different machine learning architectures to classify the immune cells based on their gene expression profiles. %TODO: brauche ich so einen einleitenden Absatz?
+For linear models, we used Logistic Regression and Linear Support Vector Classifier (LinearSVC). 
+For tree-based models, we used Random Forest, Extra Trees and LightGBM.
+%TODO: Mehr zu den einzelnen Algorithmen sagen
+
 \subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 
 TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
+
+The best Machine Learning models were combined into ensemble learning strategies to improve the overall performance and robustness of the classification. We used standard voting and stacking classifiers, as well as a custom feature-subsampling voting ensemble. In the custom ensemble, we combined the same machine learning model mutliple times, each time trained on a different subset of features. The subsets of features include the full set of features and three subsets of features where the top features according to a feature importance ranking were removed. This allows the ensemble to be more robust to missing features and to better generalize to new data.
+For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. %TODO: Dann muss ich noch Random Forest damit machen, oder umschreiben
+By using the feature importance of a different machine learning approach, we avoid the bias of the feature importance ranking towards the model that is used for the ensemble. Furthermore the learnings from two different approaches are combined to improve the overall performance. %TODO: Evtl. noch besser erklären
 
 \subsection{Denoising \& Hybrid Approaches}\label{sec:methods:denoising-hybrid}
 

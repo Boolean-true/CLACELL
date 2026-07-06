@@ -188,6 +188,8 @@ Submitted batch job 12024278
 scGPT: Submitted batch job 1731504
 Submitted batch job 1731535
 Submitted batch job 1731840
+Submitted batch job 1732057
+scGPT with Finetuning Code from docs: Submitted batch job 1732079
 
 CellTypist: Submitted batch job 12020499
 Submitted batch job 12023804

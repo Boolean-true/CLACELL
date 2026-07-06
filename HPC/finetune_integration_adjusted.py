@@ -41,14 +41,15 @@ from test_robustness import test_robustness
 
 import pandas as pd
 import pickle
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+import random
 
 sc.set_figure_params(figsize=(4, 4))
 os.environ["KMP_WARNINGS"] = "off"
 os.environ["WANDB_MODE"] = "offline"
 
 hyperparameter_defaults = dict(
-    seed=42,
+    seed=random.randint(0, 999999),
     dataset_name="CellTypistDataset",
     h5ad_path="/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad",
     batch_col="Donor",
@@ -83,6 +84,7 @@ run = wandb.init(
 config = wandb.config
 print(config)
 
+print(f"Seed: {config.seed}")
 set_seed(config.seed)
 
 # %%
@@ -118,7 +120,9 @@ adata = sc.read_h5ad(config.h5ad_path)
 ori_batch_col = config.batch_col
 
 
-# my preprocessing
+# ==============================================================================
+# My Preprocessing
+# ==============================================================================
 
 # mitochondrial genes, "MT-" for human, "Mt-" for mouse
 adata.var["mt"] = adata.var_names.str.startswith("MT-")
@@ -149,54 +153,11 @@ sc.pp.normalize_total(adata, target_sum=1e4)
 # Logarithmize the data
 sc.pp.log1p(adata)
 
-# Filtering Highly variable genes
-sc.pp.highly_variable_genes(adata, n_top_genes=10000)
-
-# Apply filter
-adata = adata[:, adata.var['highly_variable']].copy()
-
-
-# Save fields in the position scGPT expects
-#adata.obs["celltype"] = adata.obs["scumi-annotation"]
-
-adata.var["highly_variable_rank"] = adata.var["highly_variable"]
-
-# Convert string labels in int labels
-unique_labels = adata.obs["scumi-annotation"].unique()
-label2id = {label: i for i, label in enumerate(unique_labels)}
-id2label = {i: label for label, i in label2id.items()}
-
-adata.obs["celltype"] = adata.obs["scumi-annotation"].map(label2id)
-
-
-# Create the train test split
-donor_train = ['637C', 'A35', 'A36', 'D503']
-donor_test = ['621B', 'D496']
-
-# Split train and test data based on donor
-adata_test = adata[
-    adata.obs["Donor"].isin(donor_test)
-].copy()
-
-adata = adata[
-    adata.obs["Donor"].isin(donor_train)
-].copy()
-
-
-# %%
-# make the batch category column
-adata.obs["str_batch"] = adata.obs[ori_batch_col].astype(str)
-batch_id_labels = adata.obs["str_batch"].astype("category").cat.codes.values
-adata.obs["batch_id"] = batch_id_labels
-
 adata.var["gene_name"] = adata.var.index.tolist()
 
 if config.load_model is not None:
     model_dir = Path(config.load_model)
-    model_config_file = model_dir / "args.json"
-    model_file = model_dir / "best_model.pt"
     vocab_file = model_dir / "vocab.json"
-
     vocab = GeneVocab.from_file(vocab_file)
     for s in special_tokens:
         if s not in vocab:
@@ -210,9 +171,53 @@ if config.load_model is not None:
         f"match {np.sum(gene_ids_in_vocab >= 0)}/{len(gene_ids_in_vocab)} genes "
         f"in vocabulary of size {len(vocab)}."
     )
-    adata = adata[:, adata.var["id_in_vocab"] >= 0]
+    adata = adata[:, adata.var["id_in_vocab"] >= 0].copy()
 
-    # model
+# Filtering Highly variable genes to n_hvg
+sc.pp.highly_variable_genes(adata, n_top_genes=n_hvg, flavor="seurat")
+
+# Apply filter
+adata = adata[:, adata.var['highly_variable']].copy()
+
+# Convert string labels in int labels
+unique_labels = adata.obs["scumi-annotation"].unique()
+label2id = {label: i for i, label in enumerate(unique_labels)}
+id2label = {i: label for label, i in label2id.items()}
+
+adata.obs["celltype"] = adata.obs["scumi-annotation"].map(label2id)
+
+# Global scGPT-Binning
+preprocessor = Preprocessor(
+    use_key="X",
+    filter_gene_by_counts=False,
+    filter_cell_by_counts=False,
+    normalize_total=None,
+    log1p=False,
+    subset_hvg=None,
+    binning=config.n_bins,
+    result_binned_key="X_binned",
+)
+preprocessor(adata, batch_key=None)
+
+# Create the train test split
+donor_train = ['637C', 'A35', 'A36', 'D503']
+donor_test = ['621B', 'D496']
+
+# Split train and test data based on donor
+adata_test = adata[adata.obs["Donor"].isin(donor_test)].copy()
+adata = adata[adata.obs["Donor"].isin(donor_train)].copy()
+
+
+# %%
+# make the batch category column
+adata.obs["str_batch"] = adata.obs[ori_batch_col].astype(str)
+batch_id_labels = adata.obs["str_batch"].astype("category").cat.codes.values
+adata.obs["batch_id"] = batch_id_labels
+
+
+if config.load_model is not None:
+    model_config_file = model_dir / "args.json"
+    model_file = model_dir / "best_model.pt"
     with open(model_config_file, "r") as f:
         model_configs = json.load(f)
     logger.info(
@@ -233,27 +238,6 @@ else:
 
 # %%
 # Here was the preprocessing originally, I moved it up before the batch creation to avoid errors with the split on donor
-
-
-
-# further subset to n_hvg highly variable genes (preprocess_data selects 10000)
-hvg_rank = adata.var["highly_variable_rank"].values
-hvg_rank = np.nan_to_num(hvg_rank, nan=adata.n_vars)
-sort_idx = np.argsort(hvg_rank)
-adata = adata[:, sort_idx[:n_hvg]].copy()
-
-# binning for scGPT
-preprocessor = Preprocessor(
-    use_key="X",
-    filter_gene_by_counts=False,
-    filter_cell_by_counts=False,
-    normalize_total=None,
-    log1p=False,
-    subset_hvg=None,
-    binning=config.n_bins,
-    result_binned_key="X_binned",
-)
-preprocessor(adata, batch_key=None)
 
 
 # %%
@@ -289,8 +273,49 @@ batch_ids = np.array(batch_ids)
     train_batch_labels,
     valid_batch_labels,
 ) = train_test_split(
-    all_counts, celltypes_labels, batch_ids, test_size=0.1, shuffle=True
+    all_counts, celltypes_labels, batch_ids, test_size=0.1, shuffle=True, stratify=celltypes_labels
 )
+
+
+# I added Resampling for better score on smaller classes
+target_threshold = 1000
+
+print(f"--- Upsamle train data to {target_threshold} samples per class ---")
+unique_train_cls, train_counts = np.unique(train_celltype_labels, return_counts=True)
+upsampled_data = []
+upsampled_celltypes = []
+upsampled_batches = []
+
+for cls in unique_train_cls:
+    cls_indices = np.where(train_celltype_labels == cls)[0]
+    current_count = len(cls_indices)
+
+    if current_count < target_threshold:
+        # Class is too small -> take all samples and then pick random samples to fill up
+        needed = target_threshold - current_count
+        extra_indices = np.random.choice(cls_indices, size=needed, replace=True)
+        chosen_indices = np.concatenate([cls_indices, extra_indices])
+    else:
+        # Class is big enough -> leave it as it is
+        chosen_indices = cls_indices
+
+    upsampled_data.append(train_data[chosen_indices])
+    upsampled_celltypes.append(train_celltype_labels[chosen_indices])
+    upsampled_batches.append(train_batch_labels[chosen_indices])
+
+# Merge data
+train_data = np.concatenate(upsampled_data, axis=0)
+train_celltype_labels = np.concatenate(upsampled_celltypes, axis=0)
+train_batch_labels = np.concatenate(upsampled_batches, axis=0)
+
+# Shuffle data
+shuffle_idx = np.random.permutation(len(train_celltype_labels))
+train_data = train_data[shuffle_idx]
+train_celltype_labels = train_celltype_labels[shuffle_idx]
+train_batch_labels = train_batch_labels[shuffle_idx]
+
+
+
 
 # %%
 if config.load_model is None:
@@ -806,6 +831,7 @@ best_val_loss = float("inf")
 best_avg_bio = 0.0
 best_model = None
 define_wandb_metrcis()
+epoch_times = []
 
 for epoch in range(1, config.epochs + 1):
     epoch_start_time = time.time()
@@ -835,6 +861,7 @@ for epoch in range(1, config.epochs + 1):
         loader=valid_loader,
     )
     elapsed = time.time() - epoch_start_time
+    epoch_times.append(elapsed)
     logger.info("-" * 89)
     logger.info(
         f"| end of epoch {epoch:3d} | time: {elapsed:5.2f}s | "
@@ -886,10 +913,25 @@ for epoch in range(1, config.epochs + 1):
 # save the best model
 if best_model is None:
     best_model = model
-torch.save(best_model.state_dict(), save_dir / "best_model.pt")
+#torch.save(best_model.state_dict(), save_dir / "best_model.pt")
 
 # %% [markdown]
 # ## Cell Type Prediction and Robustness
+
+# --- Prepare test data ---
+#X_test_robustness = pd.DataFrame(
+#    adata_test.X.toarray() if issparse(adata_test.X) else np.array(adata_test.X),
+#    index=adata_test.obs_names,
+#    columns=adata_test.var["gene_name"].tolist(),
+#)
+X_test_robustness = adata_test.to_df()
+y_test_robustness = adata_test.obs["scumi-annotation"]
+
+logger.info(
+    f"Test data: {X_test_robustness.shape[0]} cells, "
+    f"{X_test_robustness.shape[1]} genes, "
+    f"{len(y_test_robustness.unique())} classes"
+)
 
 # %%
 # --- Wrapper class that uses scGPT's built-in cls_decoder ---
@@ -897,6 +939,7 @@ class ScGPTPredictor:
     def __init__(
         self, model, vocab, gene_ids, genes, n_bins, n_hvg, device,
         pad_token="<pad>", pad_value=-2, max_seq_len=None, id2label=id2label,
+        baseline_df=X_test_robustness, adata_test=adata_test,
     ):
         self.model = model
         self.vocab = vocab
@@ -909,36 +952,48 @@ class ScGPTPredictor:
         self.pad_value = pad_value
         self.max_seq_len = max_seq_len or (n_hvg + 1)
         self.id2label = id2label
+        self.baseline_df = baseline_df
+        self.adata_test = adata_test
 
     def predict(self, X):
         # X: pd.DataFrame with gene names as columns, cells as rows
         # Values: normalized log1p expression
 
-        # Align genes to training order, zero-pad missing
         n_cells = X.shape[0]
         n_genes = len(self.genes)
-        X_aligned = np.zeros((n_cells, n_genes))
+        
+        # If X is the in distribution Testset, use the existing global binning
+        if self.baseline_df is not None and X is self.baseline_df:
+            all_counts = self.adata_test.layers["X_binned"]
+        # Fallback for Out of Distribution datasets: Create binning
+        else:
+            # Align genes to training order, zero-pad missing
+            X_aligned = np.zeros((n_cells, n_genes))
 
-        train_gene_to_idx = {g: i for i, g in enumerate(self.genes)}
-        for g in X.columns:
-            if g in train_gene_to_idx:
-                X_aligned[:, train_gene_to_idx[g]] = X[g].values
+            train_gene_to_idx = {g: i for i, g in enumerate(self.genes)}
+            for g in X.columns:
+                if g in train_gene_to_idx:
+                    X_aligned[:, train_gene_to_idx[g]] = X[g].values
+                else:
+                    # Tmp test print
+                    print(f"Gene {g} not found!")
+            
 
-        # Bin the data
-        adata_tmp = sc.AnnData(X_aligned)
-        preprocessor = Preprocessor(
-            use_key="X",
-            filter_gene_by_counts=False,
-            filter_cell_by_counts=False,
-            normalize_total=None,
-            log1p=False,
-            subset_hvg=None,
-            binning=self.n_bins,
-            result_binned_key="X_binned",
-        )
-        preprocessor(adata_tmp, batch_key=None)
+            # Bin the data
+            adata_tmp = sc.AnnData(X_aligned)
+            preprocessor = Preprocessor(
+                use_key="X",
+                filter_gene_by_counts=False,
+                filter_cell_by_counts=False,
+                normalize_total=None,
+                log1p=False,
+                subset_hvg=None,
+                binning=self.n_bins,
+                result_binned_key="X_binned",
+            )
+            preprocessor(adata_tmp, batch_key=None)
+            all_counts = adata_tmp.layers["X_binned"]
 
-        all_counts = adata_tmp.layers["X_binned"]
         if issparse(all_counts):
             all_counts = all_counts.toarray()
 
@@ -958,7 +1013,7 @@ class ScGPTPredictor:
         all_gene_ids_pt = tokenized["genes"]
         all_values_pt = tokenized["values"].float()
 
-        batch_size = 128
+        batch_size = config.batch_size
         predictions = []
 
         self.model.eval()
@@ -1003,20 +1058,6 @@ class ScGPTPredictor:
         return predictions
 
 
-# --- Prepare test data ---
-#X_test_robustness = pd.DataFrame(
-#    adata_test.X.toarray() if issparse(adata_test.X) else np.array(adata_test.X),
-#    index=adata_test.obs_names,
-#    columns=adata_test.var["gene_name"].tolist(),
-#)
-X_test_robustness = adata_test.to_df()
-y_test_robustness = adata_test.obs["scumi-annotation"]
-
-logger.info(
-    f"Test data: {X_test_robustness.shape[0]} cells, "
-    f"{X_test_robustness.shape[1]} genes, "
-    f"{len(y_test_robustness.unique())} classes"
-)
 
 # --- Create predictor (no external classifier – scGPT cls_decoder) ---
 scgpt_predictor = ScGPTPredictor(
@@ -1029,6 +1070,8 @@ scgpt_predictor = ScGPTPredictor(
     device=device,
     max_seq_len=max_seq_len,
     id2label=id2label,
+    baseline_df=X_test_robustness,
+    adata_test=adata_test,
 )
 
 # Tmp prints
@@ -1038,7 +1081,20 @@ print(f"id2label: {id2label}")
 
 print("--- Comparison of gene ordering in train and test ---")
 print(f"train: {genes[:20]}")
-print(f"test: {list(X_test_robustness.columns[:20])}")
+print(f"adata test: {adata_test.var['gene_name'].tolist()[:20]}")
+print(f"df test: {list(X_test_robustness.columns[:20])}")
+
+print("--- Samples per class in train and valid split ---")
+print("Train split:")
+classes, counts = np.unique(train_celltype_labels, return_counts=True)
+for c, n in zip(classes, counts):
+    print(f"{id2label[c]} ({c}): {n}")
+
+print("\nValidation split:")
+classes, counts = np.unique(valid_celltype_labels, return_counts=True)
+for c, n in zip(classes, counts):
+    print(f"{id2label[c]} ({c}): {n}")
+
 
 # --- Evaluate on test data ---
 y_pred = scgpt_predictor.predict(X_test_robustness)
@@ -1049,10 +1105,58 @@ print(f"Test Accuracy: {acc:.4f}")
 print(f"Macro F1: {f1_macro:.4f}")
 logger.info(f"Test Accuracy: {acc:.4f}, Macro F1: {f1_macro:.4f}")
 
+print("\n--- Confusion Matrix ---")
+#Order of the classes
+labels = list(label2id.keys())
+cm = confusion_matrix(
+    y_test_robustness,
+    y_pred,
+    labels=labels,
+)
+cm_df = pd.DataFrame(
+    cm,
+    index=labels,
+    columns=labels,
+)
+cm_df.to_csv("confusion_matrix.csv")
+print(cm_df)
+
+print("\n--- Normalized Confusion Matrix ---")
+cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+cm_norm_df = pd.DataFrame(
+    cm_norm,
+    index=labels,
+    columns=labels,
+)
+cm_norm_df.to_csv("confusion_matrix_normalized.csv")
+print(cm_norm_df.round(3))
+
 # --- Robustness Evaluation ---
 print("\n--- Robustness Evaluation ---")
 with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
     feature_importance = pickle.load(f)
+
+# For fair comparison filter only genes from feoature_importance that are in test dataset
+test_genes = set(X_test_robustness.columns)
+
+if isinstance(feature_importance, dict):
+    # Wenn es ein Dictionary ist (z.B. {'GEN1': 0.5, 'GEN2': 0.1})
+    feature_importance = {gene: score for gene, score in feature_importance.items() if gene in test_genes}
+    print(f"Feature Importance (Dict) filtered. Remaining Genes: {len(feature_importance)}")
+
+elif isinstance(feature_importance, pd.Series):
+    # Wenn es eine Pandas Series ist (Index = Genname)
+    feature_importance = feature_importance[feature_importance.index.isin(test_genes)]
+    print(f"Feature Importance (Series) filtered. Remaining Genes: {len(feature_importance)}")
+
+elif isinstance(feature_importance, pd.DataFrame):
+    # Wenn es ein Dataframe ist (entweder Genname im Index oder in einer Spalte 'gene')
+    if 'gene' in feature_importance.columns:
+        feature_importance = feature_importance[feature_importance['gene'].isin(test_genes)]
+    else:
+        feature_importance = feature_importance[feature_importance.index.isin(test_genes)]
+    print(f"Feature Importance (DataFrame) filtered. Remaining genes: {len(feature_importance)}")
+
 
 test_robustness(
     scgpt_predictor,
@@ -1064,9 +1168,9 @@ test_robustness(
 )
 
 # %%
-artifact = wandb.Artifact(f"best_model", type="model")
-artifact.add_file(str(save_dir / "best_model.pt"))
-run.log_artifact(artifact)
+#artifact = wandb.Artifact(f"best_model", type="model")
+#artifact.add_file(str(save_dir / "best_model.pt"))
+#run.log_artifact(artifact)
 
 run.finish()
 wandb.finish()

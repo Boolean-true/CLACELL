@@ -124,32 +124,48 @@ Typically, discussions are internally unstructured. But you may deviate from thi
 
 %Good Methods sections are designed in such a way that the subsection headings allow the reader to quickly navigate it without reading the entire section from top to bottom. You may think of it as a dictionary where readers look up details of the work that are of particular interest to them. Each individual subsection should be detailed enough to allow replication of your work, so be precise in your descriptions. Overall, the subsections of your Methods section should cover all methodological details that are relevant for your work: details on your ML model or algorithm, descriptions of datasets and data preprocessing, details on evaluation protocols and metrics, description of competitor approaches, etc.
 
-\subsection{Datasets \& Baseline}\label{sec:materials-and-methods:datasets}
+\subsection{Datasets \& Baseline}\label{sec:methods:datasets}
 
 TODO:
 - Describe CellTypist + HumanCellAtlas datasets used for training and testing
     - Number of Samples, Number of Features
 - Describe the baseline methods used for comparison (CellTypist + ?)
 
-\subsection{Marker-Based Annotation}\label{sec:materials-and-methods:marker-based-annotation}
+\subsection{Marker-Based Annotation}\label{sec:methods:marker-based-annotation}
 
 TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
 
-\subsection{Machine Learning Architectures}\label{sec:materials-and-methods:machine-learning}
+\subsection{Machine Learning Architectures}\label{sec:methods:machine-learning}
 
 TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
 
-\subsection{Ensemble Learning Strategies}\label{sec:materials-and-methods:ensemble-learning}
+\subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 
 TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
 
-\subsection{Denoising \& Hybrid Approaches}\label{sec:materials-and-methods:denoising-hybrid}
+\subsection{Denoising \& Hybrid Approaches}\label{sec:methods:denoising-hybrid}
 
 TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
 
-\subsection{Robustness Tests}\label{sec:materials-and-methods:robustness-tests}
+\subsection{Robustness Tests}\label{sec:methods:robustness-tests}
 
-TODO: Describe the robustness tests performed on the trained models. Mention that the robustness tests are performed on out-of-distribution datasets and that the performance is compared to the in-distribution performance. Go into detail because this will be a key part of the Results section!
+The robustness tests that are performed to evaluate the models contain two parts with the same tests: first the models are evaluated on the in-distribution test set, which is a subset of the training dataset that was not used for training. %TODO: Passt das mit dem :?
+To avoid data leakage, the split is performed on the donors, so that the donors in the training set are not present in the test set. The donors for the test set were chosen so that the the samples in the test set is close to 30% of the whole dataset. %TODO: hier erwähnen oder woanders?; Hier auch schonmal erwähnen, dass wenig Testdaten für zwei Klassen?
+After the in-distribution tests, the models are evaluated on an out-of-distribution test set, which contains data from a different source than the training dataset. 
+%The performance of the models on the out-of-distribution test set is compared to their performance on the in-distribution test set to assess their robustness.
+By comparing the performance of the models between an in-distribution and an out-of-distribution test set, we can better assess their robustness on new data. %TODO: Mehr zu dem ID OOD Vergleich schreiben?
+
+The first robustness test for each distribution is the baseline score on the whole dataset. The first metric for that is accuracy, which gives a first impression of the performance of the models. However, since the dataset is imbalanced, the accuracy alone is not sufficient to assess the performance of the models. Therefore, we also compute the classification report, which contains the precision, recall, F1-score and support for each class as well as the macro and weighted averages. This allows us to assess the performance of the models on each class individually. % TODO: sowas erwähnen? The classification report is computed using the \texttt{classification\_report} function from the \texttt{sklearn.metrics} module.
+
+After assessing the baseline performance of the models, we perform a robustness test by adding noise to the input data. The noise is added to the input data by randomly selecting 10 \% of the features and replacing their values with 0. This allows us to assess how well the models can handle noisy data and how their performance degrades with missing features.
+
+Another robustness feature the models are tested on is the number of inconsistent predictions when predicting the same data multiple times. We perform this test by predicting the same data 5 times and counting the number of inconsistent predictions over all runs. This allows us to assess how stable the models are and how much their predictions vary with different runs. %TODO: Doppelt sich da nicht was im letzten Satz?; evtl besser begründen
+
+The last robustness test is the most challenging one, as it removes the most important features from the input data and computes the accuracy of the model. The most important features are determined by the marker genes that were obtained by scumi. However, since there aren't enough marker genes, the rest of the important features are determined by a differential gene expression on the training dataset. %TODO: Besser erklären
+The feature importance dropout test is performed four times with different percentages of the most important features removed: 0.1 \%, 0.5 \%, 1 \% and 2 \%. Again the values of the removed features are set to 0. This allows us to assess how well the models can handle missing important features and how their performance degrades with increasing feature dropout. It also shows how much each model relies on the most important features for its predictions.
+
+%TODO: Mehr zu den Tests schreiben? Mehr Details?
+%TODO: Über die ganze subsection nochmal drüberlesen
 
 
 \section{Code availability}\label{sec:code}

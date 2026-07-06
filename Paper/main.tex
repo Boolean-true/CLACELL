@@ -154,9 +154,15 @@ For tree-based models, we used Random Forest, Extra Trees and LightGBM.
 
 \subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 
-TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
+%TODO: Standard Voting and Stacking Classifiers as well as my custom Feature-Subsampling Voting Ensemble (explain how features were subsampled and why this increases robustness).
 
-The best Machine Learning models were combined into ensemble learning strategies to improve the overall performance and robustness of the classification. We used standard voting and stacking classifiers, as well as a custom feature-subsampling voting ensemble. In the custom ensemble, we combined the same machine learning model mutliple times, each time trained on a different subset of features. The subsets of features include the full set of features and three subsets of features where the top features according to a feature importance ranking were removed. This allows the ensemble to be more robust to missing features and to better generalize to new data.
+The best Machine Learning models were combined into ensemble learning strategies to improve the overall performance and robustness of the classification. We used standard voting and stacking classifiers, as well as a custom feature-subsampling voting ensemble.
+
+For the voting classifier,the base estimators as well as the voting type (soft or hard) were optimized using a grid search. The models were tested with little hyperparameter tuning as well as with the optimal hyperparameters from the tuning of the single models. This gives a comparison of the performance of the ensemble methods with hardly tuned and optimal tuned hyperparameters. %TODO: Überarbeiten! Evtl statt dem letzten Satz eine Begründung warum ich einmal mit wenig und dann mit viel hyperparameter tuning getestet habe
+
+%TODO: Etwas zu stacking schreiben
+
+In the custom ensemble, we combined the same machine learning model mutliple times, each time trained on a different subset of features. The subsets of features include the full set of features and three subsets of features where the top features according to a feature importance ranking were removed. This allows the ensemble to be more robust to missing features and to better generalize to new data. The include the removal of the top 0.75 \%, 1.5 \% and 2.5 \% of the features according to the feature importance ranking.
 For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. %TODO: Dann muss ich noch Random Forest damit machen, oder umschreiben
 By using the feature importance of a different machine learning approach, we avoid the bias of the feature importance ranking towards the model that is used for the ensemble. Furthermore the learnings from two different approaches are combined to improve the overall performance. %TODO: Evtl. noch besser erklären
 
@@ -167,7 +173,7 @@ TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic
 \subsection{Robustness Tests}\label{sec:methods:robustness-tests}
 
 The robustness tests that are performed to evaluate the models contain two parts with the same tests: first the models are evaluated on the in-distribution test set, which is a subset of the training dataset that was not used for training. %TODO: Passt das mit dem :?
-To avoid data leakage, the split is performed on the donors, so that the donors in the training set are not present in the test set. The donors for the test set were chosen so that the the samples in the test set is close to 30% of the whole dataset. %TODO: hier erwähnen oder woanders?; Hier auch schonmal erwähnen, dass wenig Testdaten für zwei Klassen?
+To avoid data leakage, the split is performed on the donors, so that the donors in the training set are not present in the test set. The donors for the test set were chosen so that the the samples in the test set is close to 30 \% of the whole dataset. %TODO: hier erwähnen oder woanders?; Hier auch schonmal erwähnen, dass wenig Testdaten für zwei Klassen?; nochmal die Begründung für diesen Train test split im Notebook nachschauen
 After the in-distribution tests, the models are evaluated on an out-of-distribution test set, which contains data from a different source than the training dataset. 
 %The performance of the models on the out-of-distribution test set is compared to their performance on the in-distribution test set to assess their robustness.
 By comparing the performance of the models between an in-distribution and an out-of-distribution test set, we can better assess their robustness on new data. %TODO: Mehr zu dem ID OOD Vergleich schreiben?

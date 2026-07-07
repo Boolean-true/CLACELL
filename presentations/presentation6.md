@@ -167,6 +167,7 @@ Run 7+: Submitted batch job 12024294
 LinearSVC: Submitted batch job 12018984
 Submitted batch job 12019024
 Run 4+: Submitted batch job 12024295
+Run 6+: Submitted batch job 12026322
 
 ExtraTrees: Submitted batch job 12018985
 Submitted batch job 12019022
@@ -174,6 +175,7 @@ Submitted batch job 12019022
 LightGBM: Submitted batch job 12018986
 Submitted batch job 12019023
 Run 3+: Submitted batch job 12024296
+Run 5+: Submitted batch job 12026323
 
 Autoencoder: To test if autoencoder_lr.py or autoencoder_lr_v1.py should be used, submitted job for not _v1: Submitted batch job 12018988
 Submitted batch job 12023436
@@ -181,6 +183,7 @@ Submitted batch job 12023806
 Submitted batch job 12023859
 Autoencoder mit RandomSearch: Submitted batch job 12023814
 Submitted batch job 12024277
+Run 8+: Submitted batch job 12026324
 
 Conditional Autoencoder mit RandomSearch: Submitted batch job 12023816
 Submitted batch job 12024278
@@ -189,11 +192,15 @@ scGPT: Submitted batch job 1731504
 Submitted batch job 1731535
 Submitted batch job 1731840
 Submitted batch job 1732057
+Submitted batch job 1732634
 scGPT with Finetuning Code from docs: Submitted batch job 1732079
+Submitted batch job 1732642
+Submitted batch job 1732852
 
 CellTypist: Submitted batch job 12020499
 Submitted batch job 12023804
 Submitted batch job 12024276
+Run 7+: Submitted batch job 12026326
 
 
 

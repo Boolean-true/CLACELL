@@ -124,12 +124,29 @@ Typically, discussions are internally unstructured. But you may deviate from thi
 
 %Good Methods sections are designed in such a way that the subsection headings allow the reader to quickly navigate it without reading the entire section from top to bottom. You may think of it as a dictionary where readers look up details of the work that are of particular interest to them. Each individual subsection should be detailed enough to allow replication of your work, so be precise in your descriptions. Overall, the subsections of your Methods section should cover all methodological details that are relevant for your work: details on your ML model or algorithm, descriptions of datasets and data preprocessing, details on evaluation protocols and metrics, description of competitor approaches, etc.
 
-\subsection{Datasets \& Baseline}\label{sec:methods:datasets}
+\subsection{Data Preprocessing}\label{sec:methods:data-preprocessing}
 
-TODO:
-- Describe CellTypist + HumanCellAtlas datasets used for training and testing
-    - Number of Samples, Number of Features
-- Describe the baseline methods used for comparison (CellTypist + ?)
+TODO: Explain the whole preprocessing pipeline, maybe with figures (for n_genes)
+TODO: Maybe describe the datasets (Number of Samples, Number of Features)
+
+\subsection{Reference Models}\label{sec:methods:reference-models}
+
+We compare our results to two state of the art models, CellTypist and scGPT. Both use different approaches so the comparison is meaningful. %TODO: Besser beschreiben
+
+CellTypist is based on a logistic regression and offers stochastic gradient descent. It was originally trained on the whole Cross-tissue Immune Cell Atlas dataset with more than just blood cells. We retrained it on the filtered training dataset to make it comparable to our models. For the training we build a wrapper around the CellTypist model so that it uses the Scikit-learn API and can then be tuned the same way as our models. We used the \texttt{RandomizedSearchCV} from Scikit-learn with 30 Iterations and a Cross Validation of 5 to optimize the hyperparameters. %TODO: Weiter schreiben?; Quellen
+
+%scGPT is a transformer-based model for single-cell RNA sequencing data analysis. %ODER
+scGPT uses a Deep Learning approach and was trained on a large dataset of single-cell RNA sequencing data. 
+%It is designed to learn a representation of the data that captures the underlying biological processes and can be used for various downstream tasks, including cell type annotation. %TODO: So eine Beschreibung geben? Dan mit Quelle
+We fine tuned the pre-trained scGPT model for our comparison, as it was not feasible to retrain it on our dataset due to its size and complexity. %TODO: Passt das nach dem Komma?
+We used the model that was pre-trained on blood data as we only have blood data in our datasets. %TODO: Besser in den Absatz einbauen
+To finetune scGPT we adjusted the finetuning script provided by the authors on github. Again we build a wrapper to use the Scikit-learn API for our robustness tests. %TODO: Quelle; hier oder unter kein hyperparametertuning?
+We didn't perform any hyperparameter tuning for the fine tuning, as it was not feasible to do so due to the size and complexity of the model. %TODO: Besser in den Absatz einbauen; besser formulieren; Dopplug zu oben
+As scGPT did not perform well at the beginning of our experiments, we made some adjustments to the finetuning script to improve its performance. A major issue was that classes with few samples were not learned well. On top of that a ranom train valid split was made on the train data, so there was a chance that some classes are not represented in the train split. To counter that, we added a stratified cross validation to the split. This also ensured that the proportion of classes in the train and validation split is the same as in the whole dataset. 
+The stratified cross validation improved the performance of scGPT, but it still did not perform well on classes with few samples. Therefore we additionaly added sampling to the training data to ensure that each class is sufficiently represented in the training data. This was done by upsampling classes with less than 1000 samples. %TODO: Mehr dazu erklären? Vor allem zum letzten Satz?
+These changes lead to a significant improvement in the performance of scGPT. %TODO: Irgendwie noch schreiben, dass ich jetzt scGPT mit diesen Changes verwendet habe
+%TODO: Waren das schon alle Anpassungen?
+%TODO: Überarbeiten!
 
 \subsection{Marker-Based Annotation}\label{sec:methods:marker-based-annotation}
 
@@ -150,7 +167,7 @@ TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random F
 We used different machine learning architectures to classify the immune cells based on their gene expression profiles. %TODO: brauche ich so einen einleitenden Absatz?
 For linear models, we used Logistic Regression and Linear Support Vector Classifier (LinearSVC). 
 For tree-based models, we used Random Forest, Extra Trees and LightGBM.
-%TODO: Mehr zu den einzelnen Algorithmen sagen
+%TODO: Mehr zu den einzelnen Algorithmen sagen (RandomSearch, BayesSearch, Anzahl Iteration, CV etc)
 
 \subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 

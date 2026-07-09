@@ -77,7 +77,7 @@
 ## Mitschrieb
 
 - bei result im paper technisch (Laufzeit, RAM), in und out of distribution als Unterkapitel. auch auf die einzelnen Klassen eingehen, wie wahrscheinlich es ist, dass diese Klasse richtig klassifiziert wird (siehe Classification Report). Evtl noch Precision auf support (anzahl samples pro klasse) plotten
-- Deep Learning & Hybrid Approaches -> Denoising & Hybrid Approaches (Denoising Autoencoder ist kein Deep Learning weil ich eine LogisticRegression zum Klassifizieren verwende)
+X- Deep Learning & Hybrid Approaches -> Denoising & Hybrid Approaches (Denoising Autoencoder ist kein Deep Learning weil ich eine LogisticRegression zum Klassifizieren verwende)
 X- evaluate im package in eine datei schreiben
 - Modelle über mehrere Runs vergleichen (mitteln)
 - Weitere Vergleichsmodelle, gerne LLM
@@ -126,9 +126,20 @@ X- Paper
 - evtl scBERT testen
 
 
+## Results Diagrams
+
+- Tabelle mit allen Modellen und Accuracy, F1, Random Dropout
+- Tabelle mit technischen Aspekten (evtl in der ersten Tabelle mit drin)
+- Feature Importance Dropout Diagramm
+- Scatter Plot mit Support auf F1
+- evtl Precision Recall Curve für ausgewählte Features
+- evtl AUC-ROC
+
+
 ## HPC Scripte
 
 ### scGPT Training
+
 scGPT: Submitted batch job 1725881
 Submitted batch job 1725973
 Submitted batch job 1725976
@@ -152,6 +163,12 @@ stratify train valid split: Submitted batch job 1731095
 Sampling and filter feature_importance dropout: Submitted batch job 1731247
 Submitted batch job 1731361
 
+### Geneformer Training
+
+Submitted batch job 1733472
+Submitted batch job 1733614
+Submitted batch job 1733926
+
 ### Evaluation over multiple runs
 
 RandomForest: Submitted batch job 12018521
@@ -168,6 +185,7 @@ LinearSVC: Submitted batch job 12018984
 Submitted batch job 12019024
 Run 4+: Submitted batch job 12024295
 Run 6+: Submitted batch job 12026322
+Run 9: Submitted batch job 12034894
 
 ExtraTrees: Submitted batch job 12018985
 Submitted batch job 12019022
@@ -176,6 +194,7 @@ LightGBM: Submitted batch job 12018986
 Submitted batch job 12019023
 Run 3+: Submitted batch job 12024296
 Run 5+: Submitted batch job 12026323
+Run 7+: Submitted batch job 12034895
 
 Autoencoder: To test if autoencoder_lr.py or autoencoder_lr_v1.py should be used, submitted job for not _v1: Submitted batch job 12018988
 Submitted batch job 12023436
@@ -196,6 +215,8 @@ Submitted batch job 1732634
 scGPT with Finetuning Code from docs: Submitted batch job 1732079
 Submitted batch job 1732642
 Submitted batch job 1732852
+Submitted batch job 1733143
+Submitted batch job 1733327
 
 CellTypist: Submitted batch job 12020499
 Submitted batch job 12023804
@@ -209,3 +230,6 @@ Run 7+: Submitted batch job 12026326
 - Passt neue Gliederung?
 - Soll ich wirklich ein Kapitel Software Implementation machen zu dem package?
 - Passt das Zitat beim HumanCellAtlas oder soll ich es weglassen?
+- Kann ich auch einfach nur die besten Modelle in den Grafiken anzeigen? Sonst wird es sehr voll
+- Test mit Anzahl an unterschiedlichen predictions bei Mehrfachem Ausführen löschen?
+- Results so aufbauen, dass ich erst meine Methoden vergleiche und das Beste auswähle und dann nur das Beste mit den Vergleichsmodellen vergleiche?

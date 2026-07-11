@@ -56,7 +56,7 @@ TODO:
 - Comprehensive benchmark of traditional ML, Denoising Autoencoders, and Custom Ensemble methods (with Feature Subsampling)
 - Publication of a ready-to-use Python package (with current version of python and scikit learn)
 
-This paper presents a re-implementation of the scumi R package in Python, which allows for marker-based annotation of immune cells natively in Python. Additionally, we provide a comprehensive benchmark of traditional machine learning methods, denoising autoencoders, and custom ensemble methods with feature subsampling. Our work aims to improve the accuracy, robustness, and interpretability of cell type annotation methods. Finally, we release a ready-to-use Python package that implements our methods and can be easily integrated into existing workflows. %TODO: Nochmal drüberlesen und anpassen
+This paper presents a re-implementation of the scumi R package in Python, which allows for marker-based annotation of immune cells natively in Python. Additionally, we provide a comprehensive benchmark of traditional machine learning methods, denoising autoencoders, and custom ensemble methods with feature subsampling. Our work aims to improve the accuracy, robustness, and interpretability of cell type annotation methods. Finally, we release a ready-to-use Python package that implements our methods and can be easily integrated into existing workflows. %TODO: Nochmal drüberlesen und anpassen; Evtl nicht die Reimplementierung hier erwähnen? Ist ja kein Kernfokus der Arbeit
 
 
 % TODO: Adjust the Introduction section according to this section from the template:
@@ -115,10 +115,11 @@ Nicely formatting tables with \LaTeX{} is a bit tricky, but it is possible. \Cre
 
 \section{Discussion}\label{sec:discussion}
 
-The discussion typically starts with a summary of your work's most important results. Then, you discuss limitations of your work and potential follow-up. Finally, you end on a positive note and tell the reader at a very high abstraction level how your work advanced the field: What did we learn through your work? What do we know now that was not known before? Which type of analyses can now be run now that were not possible before? 
+%The discussion typically starts with a summary of your work's most important results. Then, you discuss limitations of your work and potential follow-up. Finally, you end on a positive note and tell the reader at a very high abstraction level how your work advanced the field: What did we learn through your work? What do we know now that was not known before? Which type of analyses can now be run now that were not possible before? 
 
-Typically, discussions are internally unstructured. But you may deviate from this rule of thumb, e.\,g., by including separate subsections on limitations and outlook.
+%Typically, discussions are internally unstructured. But you may deviate from this rule of thumb, e.\,g., by including separate subsections on limitations and outlook.
 
+TODO
 
 \section{Methods}\label{sec:methods}
 
@@ -131,9 +132,9 @@ TODO: Maybe describe the datasets (Number of Samples, Number of Features)
 
 \subsection{Reference Models}\label{sec:methods:reference-models}
 
-We compare our results to two state of the art models, CellTypist and scGPT. Both use different approaches so the comparison is meaningful. %TODO: Besser beschreiben
+We compare our results to two state of the art models, CellTypist and scGPT. Both use different approaches so the comparison is meaningful. %TODO: Besser beschreiben; ist CellTypit State of the Art?
 
-CellTypist is based on a logistic regression and offers stochastic gradient descent. It was originally trained on the whole Cross-tissue Immune Cell Atlas dataset with more than just blood cells. We retrained it on the filtered training dataset to make it comparable to our models. For the training we build a wrapper around the CellTypist model so that it uses the Scikit-learn API and can then be tuned the same way as our models. We used the \texttt{RandomizedSearchCV} from Scikit-learn with 30 Iterations and a Cross Validation of 5 to optimize the hyperparameters. %TODO: Weiter schreiben?; Quellen
+CellTypist is based on a logistic regression and offers stochastic gradient descent. It was originally trained on the whole Cross-tissue Immune Cell Atlas dataset with more than just blood cells. We retrained it on the filtered training dataset to make it comparable to our models. For the training we build a wrapper around the CellTypist model so that it uses the Scikit-learn API and can then be tuned the same way as our models. We used the \texttt{RandomizedSearchCV} from Scikit-learn with 30 Iterations and a Cross Validation of 5 to optimize the hyperparameters. %TODO: Mehr schreiben?; Quellen
 
 %scGPT is a transformer-based model for single-cell RNA sequencing data analysis. %ODER
 scGPT uses a Deep Learning approach and was trained on a large dataset of single-cell RNA sequencing data. 
@@ -152,7 +153,7 @@ These changes lead to a significant improvement in the performance of scGPT. %TO
 
 %TODO: Describe scumi and the re-implementation in Python. Describe how it is used to generate the ground truth labels for training and testing. Maybe mention here the runtime and RAM consumption of the reimplementation (alternatively in the Results section).
 
-For the annotation of the in- and out-of-distribution dataset, we used the marker based annotation startegy scumi. %TODO: scumi irgendwie hervorheben mit textit oder so?
+For the annotation of the in- and out-of-distribution dataset, we used the marker based annotation startegy scumi. %TODO: scumi irgendwie hervorheben mit textit oder so?; Zitat auf Scumi; Evtl. noch beschreiben wie scumi funktioniert
 As it was only available as a R package, we re-implemented it in Python. For the labeling of the datasets we used the marker genes provided by scumi.
 %TODO: Überarbeiten, klingt komisch
 
@@ -162,7 +163,7 @@ As it was only available as a R package, we re-implemented it in Python. For the
 
 \subsection{Machine Learning Architectures}\label{sec:methods:machine-learning}
 
-TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
+%TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
 
 We used different machine learning architectures to classify the immune cells based on their gene expression profiles. %TODO: brauche ich so einen einleitenden Absatz?
 For linear models, we used Logistic Regression and Linear Support Vector Classifier (LinearSVC). 

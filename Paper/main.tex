@@ -67,50 +67,11 @@ This paper presents a re-implementation of the scumi R package in Python, which 
 
 \subsection{Structure of the Results section}\label{sec:results:overview}
 
-The first subsection of the \nameref{sec:results} is often used to provide a high-level overview of the entire work. This is typically supported by a visual overview in \Cref{fig:overview-placeholder}. The overview should enable readers to understand the material presented in the subsequent subsections of the \nameref{sec:results} section. The methodological details are then explained in a dedicated \nameref{sec:methods} section.
+%The first subsection of the \nameref{sec:results} is often used to provide a high-level overview of the entire work. This is typically supported by a visual overview in \Cref{fig:overview-placeholder}. The overview should enable readers to understand the material presented in the subsequent subsections of the \nameref{sec:results} section. The methodological details are then explained in a dedicated \nameref{sec:methods} section.
 
-\begin{figure}[htb]
-    \centering
-    \includegraphics[width=0.5\linewidth]{example-image-a}
-    \caption{Placeholder for a figure that visualizes the entire study.}
-    \label{fig:overview-placeholder}
-\end{figure}
+%The remainder of the \nameref{sec:results} is typically structured into topical subsections. As a rule of thumb, each subsection should present one key finding, supported by one data figure. Of course, you can divert from this rule of thumb if it does not fit for your work.
 
-The remainder of the \nameref{sec:results} is typically structured into topical subsections. As a rule of thumb, each subsection should present one key finding, supported by one data figure. Of course, you can divert from this rule of thumb if it does not fit for your work.
-
-\subsection{Figures}\label{sec:results:figures}
-
-
-An example of a well-made data figure is shown in \Cref{fig:data-figure}. Please ensure that font sizes are large enough, that all colors are resolved with legends, and that all $x$- and $y$-axes are labeled. If possible, use vector graphics to avoid problems due to low resolutions. Add labels to the individual panels shown in your figure, which you can then use in your textual descriptions. E.\,g.: ``For the multi-class datasets LT1 and LT2 (\Cref{fig:data-figure}B, C), differences in performance between the MLP and SOM classifiers are much more pronounced than for the binary datasets LT1b and LT2b (\Cref{fig:data-figure}E, F)''. Place the figures in the vicinity of the corresponding text by choosing the appropriate placement option. For instance, the placement option \verb|htb| used for \Cref{fig:data-figure} tells \LaTeX{} that the figure should be placed ``here'' (\verb|h|, preferred choice), at the top (\verb|t|, second choice), or at the bottom (\verb|b|, third choice).
-
-\begin{figure}[htb]
-    \centering
-    \includegraphics[width=\linewidth]{figures/example_figure.pdf}
-    \caption{Example of a data figure. Figure captions are placed below the figures.}
-    \label{fig:data-figure}
-\end{figure}
-
-\subsection{References}\label{sec:results:references}
-
-References should be included using \verb|\textcite{ID}| and \verb|\cite{ID}| as in the following examples, (\verb|ID| is the handle of a publication defined in the file ``references.bib''). This produces references as in the following examples: \textcite{mcinnes2020umap} presented UMAP, a widely used dimensionality reduction method. scGPT \cite{Cui2024-km} is one of the earliest foundation models for single-cell RNA sequencing data.
-
-\subsection{Tables}\label{sec:results:tables}
-
-\begin{table}[htb]
-    \centering
-    \caption{Caption of \Cref{tab:supp-table}. Table captions are placed above the tables.}
-    \label{tab:supp-table}
-    \begin{tabularx}{\linewidth}{lllX}
-    \toprule
-    Dataset & \# Samples & \# Features & Target variables \\
-    \midrule
-    D1 & 9473 & 187 & Five-year survival rate (binary) and overall survival times (numeric)\\
-    D2 & 94734 & 1837 & Five-year survival rate (binary) and overall survival times (numeric)\\
-    \bottomrule
-    \end{tabularx}
-\end{table}
-
-Nicely formatting tables with \LaTeX{} is a bit tricky, but it is possible. \Cref{tab:supp-table} shows an example that uses an \verb|X| column from the \verb|tabularx| environment for cells with automatic line break that adapt to the available horizontal space, as well as the \verb|\toprule|, \verb|\midrule|, and \verb|\bottomrule| commands from the \verb|booktabs| package. As for figures, use appropriate placement options to ensure that tables appear close to the corresponding text.
+TODO
 
 
 \section{Discussion}\label{sec:discussion}
@@ -127,7 +88,7 @@ TODO
 
 \subsection{Data Preprocessing}\label{sec:methods:data-preprocessing}
 
-TODO: Explain the whole preprocessing pipeline, maybe with figures (for n_genes)
+TODO: Explain the whole preprocessing pipeline, maybe with figures (for n\_genes)
 TODO: Maybe describe the datasets (Number of Samples, Number of Features)
 
 \subsection{Reference Models}\label{sec:methods:reference-models}
@@ -161,14 +122,16 @@ As it was only available as a R package, we re-implemented it in Python. For the
 
 %TODO: Evtl Absatz mit runtime und RAM consumption der Reimplementation (alternativ in Results section)
 
-\subsection{Machine Learning Architectures}\label{sec:methods:machine-learning}
+\subsection{Machine Learning Algorithms}\label{sec:methods:machine-learning}
 
-%TODO: Overview of tested single models (Logistic Regression, LinearSVC, Random Forest, ExtraTrees, LightGBM, XGBoost?).
+To classify the immune cells based on their gene expression profiles, we evaluated several machine learning models, categorized into linear and tree-based algorithms. For the linear approaches, we implemented Logistic Regression and a Linear Support Vector Classifier (LinearSVC). For tree-based models, we used Random Forest, Extra Trees and LightGBM.
 
-We used different machine learning architectures to classify the immune cells based on their gene expression profiles. %TODO: brauche ich so einen einleitenden Absatz?
-For linear models, we used Logistic Regression and Linear Support Vector Classifier (LinearSVC). 
-For tree-based models, we used Random Forest, Extra Trees and LightGBM.
-%TODO: Mehr zu den einzelnen Algorithmen sagen (RandomSearch, BayesSearch, Anzahl Iteration, CV etc)
+The hyperparameter search spaces for each model are detailed in \Cref{tab:ml_hyperparameters}. To ensure compatibility with different loss functions and improve convergence, we used the saga solver with a maximum of 1000 iterations for Logistic Regression for all iterations. LightGBM's objective was fixed to multiclass for our evaluation, as it is a multiclass classification problem. Furthermore, the number of parallel jobs was set to 1 as the hyperparameter tuning algorithm already parallelizes the training of the models.
+
+Hyperparameter tuning was performed using Bayesian Optimization via \texttt{BayesSearchCV} from the scikit-optimize library \cite{scikit-optimize_contributors_skoptbayessearchcv_2020} with 30 iterations and a 5-fold cross-validation. Compared to traditional grid or random search strategies, Bayesian optimization offers enhanced efficiency by using past evaluation results to find better parameter choices, thereby finding optimal configurations faster. \cite{NIPS2012_05311655}
+
+To optimize computational resources, a custom early-stopping mechanism was integrated into the optimization. This mechanism terminates the search if the model's performance failed to improve by more than 0.2 \% over 5 consecutive iterations. To ensure sufficient initial exploration of the hyperparameter space, this stopper was restricted from triggering until the 15th iteration. Consequently, if no significant improvement was observed between iterations 10 and 15, the search was terminated immediately at the 15th iteration, preventing unnecessary computational overhead. %This approach substantially reduced computational overhead without compromising the quality of the final hyperparameter configurations. %TODO: Diesen Satz noch schreiben?
+
 
 \subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 
@@ -184,26 +147,47 @@ In the custom ensemble, we combined the same machine learning model mutliple tim
 For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. %TODO: Dann muss ich noch Random Forest damit machen, oder umschreiben
 By using the feature importance of a different machine learning approach, we avoid the bias of the feature importance ranking towards the model that is used for the ensemble. Furthermore the learnings from two different approaches are combined to improve the overall performance. %TODO: Evtl. noch besser erklären
 
+%TODO: Subchapter überarbeiten!
+
 \subsection{Denoising \& Hybrid Approaches}\label{sec:methods:denoising-hybrid}
 
 TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
 
 \subsection{Robustness Tests}\label{sec:methods:robustness-tests}
 
-The robustness tests that are performed to evaluate the models contain two parts with the same tests: first the models are evaluated on the in-distribution test set, which is a subset of the training dataset that was not used for training. %TODO: Passt das mit dem :?
-To avoid data leakage, the split is performed on the donors, so that the donors in the training set are not present in the test set. The donors for the test set were chosen so that the the samples in the test set is close to 30 \% of the whole dataset. %TODO: hier erwähnen oder woanders?; Hier auch schonmal erwähnen, dass wenig Testdaten für zwei Klassen?; nochmal die Begründung für diesen Train test split im Notebook nachschauen
-After the in-distribution tests, the models are evaluated on an out-of-distribution test set, which contains data from a different source than the training dataset. 
-%The performance of the models on the out-of-distribution test set is compared to their performance on the in-distribution test set to assess their robustness.
-By comparing the performance of the models between an in-distribution and an out-of-distribution test set, we can better assess their robustness on new data. %TODO: Mehr zu dem ID OOD Vergleich schreiben?
+The robustness evaluation of the models contains two parts with the same tests: first, models are evaluated on an in-distribution test set, followed by an assessment on an out-of-distribution test set. Comparing model performance on both in-distribution and out-of-distribution test sets allows us to measure their generalization capabilities and robustness against distribution shifts. %TODO?: Passt das?; Mehr zu dem ID OOD Vergleich schreiben?
 
-The first robustness test for each distribution is the baseline score on the whole dataset. The first metric for that is accuracy, which gives a first impression of the performance of the models. However, since the dataset is imbalanced, the accuracy alone is not sufficient to assess the performance of the models. Therefore, we also compute the classification report, which contains the precision, recall, F1-score and support for each class as well as the macro and weighted averages. This allows us to assess the performance of the models on each class individually. % TODO: sowas erwähnen? The classification report is computed using the \texttt{classification\_report} function from the \texttt{sklearn.metrics} module.
+The in-distribution test set is a hold-out test set from the same base dataset as the training data. To prevent data leakage, the dataset split was performed on the donors, ensuring that no donor is present in both the training and the test set. The donors for the test set were chosen so that the number of samples in the test set is between 20 \% and 35 \% of the total samples. Out of all valid splits fulfilling this criterion, we selected the one closest to the mean of 27.5 \%. Due to the highly variable number of samples per donor in the base dataset, the final split resulted in a test set size of 33.7 \% of the total samples.
 
-After assessing the baseline performance of the models, we perform a robustness test by adding noise to the input data. The noise is added to the input data by randomly selecting 10 \% of the features and replacing their values with 0. This allows us to assess how well the models can handle noisy data and how their performance degrades with missing features.
+While strictly necessary to avoid data leakage, this donor-stratified strategy induced a severe class imbalance, leaving Dendritic cells and Megakaryocytes heavily underrepresented in the final test set. %TODO: Anzahl Samples erwähnen? with 5 and 7 samples respectively
+Given their low representation in the base dataset, a more balanced split was mathematically impossible under the donor-stratification constraint. The results of these classes will be compared to the results on the out-of-distribution test set, which contains a more representative number of samples for these cell types.
+%TODO: Ist das zu viel Text?
+%TODO: hier erwähnen oder woanders?
 
-Another robustness feature the models are tested on is the number of inconsistent predictions when predicting the same data multiple times. We perform this test by predicting the same data 5 times and counting the number of inconsistent predictions over all runs. This allows us to assess how stable the models are and how much their predictions vary with different runs. %TODO: Doppelt sich da nicht was im letzten Satz?; evtl besser begründen
+The out-of-distribution test set contains cells from an independent source. To ensure comparability and a valid evaluation, it was preprocessed in the same way as the training dataset. %TODO: Mehr zum OOD dataset schreiben? Evtl die Unterschiede zum Trainings dataset
+%The OOD test set consists of cells sourced from a completely independent dataset. To ensure comparability and a valid evaluation, the OOD data underwent the identical preprocessing pipeline as the training dataset.
 
-The last robustness test is the most challenging one, as it removes the most important features from the input data and computes the accuracy of the model. The most important features are determined by the marker genes that were obtained by scumi. However, since there aren't enough marker genes, the rest of the important features are determined by a differential gene expression on the training dataset. %TODO: Besser erklären
-The feature importance dropout test is performed four times with different percentages of the most important features removed: 0.1 \%, 0.5 \%, 1 \% and 2 \%. Again the values of the removed features are set to 0. This allows us to assess how well the models can handle missing important features and how their performance degrades with increasing feature dropout. It also shows how much each model relies on the most important features for its predictions.
+
+As an initial baseline, the performance of the models is evaluated on the full test sets for each distribution. While overall accuracy provides a primary indication of model performance, it is insufficient given the class imbalance of the base dataset. Therefore, we additionally compute a comprehensive classification report including precision, recall, F1-score, and support for each individual class, alongside macro and weighted averages. This allows us to assess class-specific model performance.
+
+%After assessing the baseline performance of the models, we perform a robustness test by adding noise to the input data. The noise is added to the input data by randomly selecting 10 \% of the features and replacing their values with 0. This allows us to assess how well the models can handle noisy data and how their performance degrades with missing features.
+
+%Another robustness feature the models are tested on is the number of inconsistent predictions when predicting the same data multiple times. We perform this test by predicting the same data 5 times and counting the number of inconsistent predictions over all runs. This allows us to assess how stable the models are and how much their predictions vary with different runs. %TODO: Doppelt sich da nicht was im letzten Satz?; evtl besser begründen
+
+%The last robustness test is the most challenging one, as it removes the most important features from the input data and computes the accuracy of the model. The most important features are determined by the marker genes that were obtained by scumi. However, since there aren't enough marker genes, the rest of the important features are determined by a differential gene expression on the training dataset. %TODO: Besser erklären
+%The feature importance dropout test is performed four times with different percentages of the most important features removed: 0.1 \%, 0.5 \%, 1 \% and 2 \%. Again the values of the removed features are set to 0. This allows us to assess how well the models can handle missing important features and how their performance degrades with increasing feature dropout. It also shows how much each model relies on the most important features for its predictions.
+
+
+%ODER
+%TODO: Entscheiden und gegebenenfalls den Text oben überarbeiten
+
+Following the baseline evaluation, we introduce three distinct robustness tests to challenge the models:
+
+\begin{enumerate}
+    \item \textbf{Random Dropout:} We simulate noisy data by randomly selecting 10 \% of the input features and setting their values to 0. This test quantifies how the well the model can handle noisy data and how its performance degrades when faced with missing features.
+    \item \textbf{Prediction Stability:} To evaluate prediction consistency under stochastic inference, we execute predictions on the same dataset across five independent runs. The number of inconsistent predictions across these iterations is aggregated to measure the stability and variance of the models.
+    \item \textbf{Feature Importance Dropout:} The final and most challenging test evaluates model resilience against the loss of highly informative biological signals. We progressively remove the most critical features by setting their values to 0 at four distinct thresholds: 0.1 \%, 0.5 \%, 1 \% and 2 \% of the total feature space. The feature importance for the Dropout was determined primarily by the marker genes identified by scumi. Since the number of these marker genes was insufficient to meet the higher percentage thresholds, the remaining top features were supplemented via differential gene expression analysis computed on the training set. This test reveals how heavily each model relies on primary marker genes and how robustly they utilize alternative features when key biological markers are missing. It also assesses how the performance of each model degrades as the proportion of removed important features increases.
+\end{enumerate}
 
 %TODO: Mehr zu den Tests schreiben? Mehr Details?
 %TODO: Über die ganze subsection nochmal drüberlesen
@@ -250,17 +234,42 @@ Supplementary figures that provide additional results but do not fit into the na
 
 \section{Supplementary tables}\label{appendic:tables}
 
-Supplementary tables that provide additional results but do not fit into the narrative of the main text can be put here. All supplementary tables should be referenced from the main text and should be listed here in the order of these references. Delete this section if not needed.
-
-\begin{table}[htb]
+\begin{table}[htbp]
 \centering
-\caption{Example of a table generated with the \texttt{tabular} environment that has a slightly simpler syntax than the \texttt{tabularx} environment but does not support flexible-width columns.}\label{tab:supptab}
-\begin{tabular}{lll}
-    \toprule
-    Column 1 & Column 2 & Column 3\\
-    \midrule
-    X & Y & Z \\
-    \bottomrule
+\caption{Hyperparameter search spaces and fixed configurations for the evaluated machine learning models.}\label{tab:ml_hyperparameters}
+\label{tab:hyperparameters}
+\begin{tabular}{llll}
+\toprule
+\textbf{Model} & \textbf{Hyperparameter} & \textbf{Search Space} & \textbf{Distribution / Type} \\
+\midrule
+\textbf{Logistic Regression} & \texttt{solver} & 'saga' & Fixed \\
+ & \texttt{max\_iter} & 1000 & Fixed \\
+ & \texttt{C} & $[10^{-3}, 2.0]$ & Log-uniform \\
+ & \texttt{l1\_ratio} & $[0.0, 1.0]$ & Uniform \\
+ & \texttt{class\_weight} & $\{\text{'balanced'}, \text{None}\}$ & Categorical \\
+ & \texttt{tol} & $[10^{-4}, 10^{-2}]$ & Log-uniform \\
+\midrule
+\textbf{LightGBM} & \texttt{objective} & 'multiclass' & Fixed \\
+ & \texttt{n\_jobs} & 1 & Fixed \\
+ & \texttt{num\_leaves} & $[20, 150]$ & Integer (Uniform) \\
+ & \texttt{learning\_rate} & $[0.01, 0.2]$ & Log-uniform \\
+ & \texttt{n\_estimators} & $[50, 150]$ & Integer (Uniform) \\
+ & \texttt{feature\_fraction} & $[0.5, 1.0]$ & Uniform \\
+\midrule
+\textbf{LinearSVC} & \texttt{C} & $[10^{-3}, 2.0]$ & Log-uniform \\
+ & \texttt{tol} & $[10^{-4}, 10^{-2}]$ & Log-uniform \\
+ & \texttt{penalty} & $\{\text{'l1'}, \text{'l2'}\}$ & Categorical \\
+ & \texttt{dual} & $\{\text{True}, \text{False}\}^*$ & Categorical \\
+\midrule
+\textbf{Random Forest} & \texttt{n\_estimators} & $[100, 250]$ & Integer (Log-uniform) \\
+ & \texttt{max\_depth} & $[10, 30]$ & Integer (Uniform) \\
+ & \texttt{max\_features} & $\{\text{'sqrt'}, \text{'log2'}\}$ & Categorical \\
+\midrule
+\textbf{Extra Trees} & \texttt{n\_estimators} & $[100, 250]$ & Integer (Log-uniform) \\
+ & \texttt{max\_depth} & $[10, 30]$ & Integer (Uniform) \\
+ & \texttt{max\_features} & $\{\text{'sqrt'}, \text{'log2'}\}$ & Categorical \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize $^*$ \textit{dual} was restricted to \text{False} when \text{penalty='l1'} to ensure mathematical compatibility.}
 \end{tabular}
 \end{table}
 

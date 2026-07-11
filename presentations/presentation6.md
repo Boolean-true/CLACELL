@@ -131,9 +131,10 @@ X- Paper
 - Tabelle mit allen Modellen und Accuracy, F1, Random Dropout
 - Tabelle mit technischen Aspekten (evtl in der ersten Tabelle mit drin)
 - Feature Importance Dropout Diagramm
-- Scatter Plot mit Support auf F1
+- Scatter Plot mit Support auf F1 (Oder Balkendiagramm)
 - evtl Precision Recall Curve für ausgewählte Features
 - evtl AUC-ROC
+- Confusion Matrix für die besten Modelle
 
 
 ## HPC Scripte
@@ -168,6 +169,15 @@ Submitted batch job 1731361
 Submitted batch job 1733472
 Submitted batch job 1733614
 Submitted batch job 1733926
+Submitted batch job 1734537
+Submitted batch job 1735142
+Submitted batch job 1735200
+Submitted batch job 1735546
+Submitted batch job 1735555
+Submitted batch job 1735579
+Submitted batch job 1735585
+Submitted batch job 1735612
+Submitted batch job 1735618
 
 ### Evaluation over multiple runs
 
@@ -195,6 +205,7 @@ Submitted batch job 12019023
 Run 3+: Submitted batch job 12024296
 Run 5+: Submitted batch job 12026323
 Run 7+: Submitted batch job 12034895
+Run 9: Submitted batch job 12041279
 
 Autoencoder: To test if autoencoder_lr.py or autoencoder_lr_v1.py should be used, submitted job for not _v1: Submitted batch job 12018988
 Submitted batch job 12023436
@@ -203,15 +214,32 @@ Submitted batch job 12023859
 Autoencoder mit RandomSearch: Submitted batch job 12023814
 Submitted batch job 12024277
 Run 8+: Submitted batch job 12026324
+Resubmitted mit CV=5: Submitted batch job 12041712
+Run 8+: Submitted batch job 12048036
+
+Autoencoder LinearSVC: Submitted batch job 12041711
+Run 9: Submitted batch job 12048040
+
+Autoencoder RF: Submitted batch job 12041908
+Submitted batch job 12043659
 
 Conditional Autoencoder mit RandomSearch: Submitted batch job 12023816
 Submitted batch job 12024278
+
+Retraining on CV=5: Submitted batch job 12042663
+
+Cond AE LinearSVC: Submitted batch job 12042984
+
+Cond AE RF: Submitted batch job 12042985
+Submitted batch job 12043660
+Submitted batch job 12051383
 
 scGPT: Submitted batch job 1731504
 Submitted batch job 1731535
 Submitted batch job 1731840
 Submitted batch job 1732057
 Submitted batch job 1732634
+Run 2: Submitted batch job 1734312
 scGPT with Finetuning Code from docs: Submitted batch job 1732079
 Submitted batch job 1732642
 Submitted batch job 1732852
@@ -223,6 +251,16 @@ Submitted batch job 12023804
 Submitted batch job 12024276
 Run 7+: Submitted batch job 12026326
 
+Cutom Ensemble: Submitted batch job 12043665
+Submitted batch job 12047494
+Submitted batch job 12048022
+
+Custom Ensemble LR: Submitted batch job 12051304
+Submitted batch job 12052184
+
+Custom Ensemble RF: Submitted batch job 12051358
+Submitted batch job 12052185
+
 
 
 ## Fragen
@@ -233,3 +271,8 @@ Run 7+: Submitted batch job 12026326
 - Kann ich auch einfach nur die besten Modelle in den Grafiken anzeigen? Sonst wird es sehr voll
 - Test mit Anzahl an unterschiedlichen predictions bei Mehrfachem Ausführen löschen?
 - Results so aufbauen, dass ich erst meine Methoden vergleiche und das Beste auswähle und dann nur das Beste mit den Vergleichsmodellen vergleiche?
+- Was ist mein Projekt acronym? CLACELL?
+- Dürfen andere bei meiner Präsi zuschauen, oder nur Prüfer?
+- Präsentationssprache Englisch?
+- Passt ein Zitat auf scikit-learn und scikit-optimize?
+- Wie sehr muss ich darauf achten alles zu belegen? Und muss ich die Quellen alle gut kennen? Ich habe eine Quelle für BayesSearch

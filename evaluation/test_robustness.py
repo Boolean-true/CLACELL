@@ -325,43 +325,20 @@ def test_robustness(
     # Logarithmize the data
     sc.pp.log1p(adata)
 
-    X_oodd = adata.X
-    y_oodd = adata.obs[labels]
+    X_test = adata.to_df()
+    y_ood = adata.obs[labels]
 
     # Filter genes that are not in the training set and reorder the remaining genes to match the training set
-    ## Save mapping from gene name to index in training set for quick lookup
-    train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
-
-    M_test = adata.shape[1]  # Number of genes in the loaded dataset
-    M_train = len(X.columns)  # Number of genes in the training set
-
-    ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
-    P = sp.lil_matrix((M_test, M_train))
-
-    ## Fill the mapping matrix
-    for test_idx, gene in enumerate(adata.var_names):
-        if gene in train_gene_to_idx:
-            train_idx = train_gene_to_idx[gene]
-            P[test_idx, train_idx] = 1
-
-    P = P.tocsr()  # More efficient for matrix multiplication
-
-    ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
-    X_test = X_oodd @ P
-
-    # Convert to dense DataFrame with training feature names so sklearn feature checks remain consistent.
-    if sp.issparse(X_test):
-        X_test = X_test.toarray()
-    X_test = pd.DataFrame(X_test, index=adata.obs_names, columns=X.columns)
+    X_test = X_test.reindex(columns=X.columns, fill_value=0)
 
     # Print gene comparison and max value for debugging
-    matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
+    matched_genes = adata.var_names.intersection(X.columns).tolist()
     logging.info(f"Genes expected in training set: {len(X.columns)}")
     logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
     logging.info(f"Training data Max-Value: {np.max(X.values)}")
     logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
 
-    ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name="Out-of-Distribution")
+    ood_results = compute_model_score_and_robustness(model, X_test, y_ood, feature_importances, dist_name="Out-of-Distribution")
 
     combined_results = pd.concat([id_results, ood_results], axis=1)
     combined_results.columns = pd.MultiIndex.from_tuples(

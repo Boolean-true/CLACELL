@@ -126,6 +126,14 @@ X- Paper
 - evtl scBERT testen
 
 
+### TODO Package
+
+- BayesSearch
+- param_distribution anpassen
+- Kompatibel zu scikit learn machen sodass auch random search damit gemacht werden kann
+- Random Forest hyperparameter tunebar machen
+
+
 ## Results Diagrams
 
 - Tabelle mit allen Modellen und Accuracy, F1, Random Dropout
@@ -178,6 +186,39 @@ Submitted batch job 1735579
 Submitted batch job 1735585
 Submitted batch job 1735612
 Submitted batch job 1735618
+Submitted batch job 1735634
+Submitted batch job 1735638
+Submitted batch job 1735640
+Submitted batch job 1735644
+Submitted batch job 1735754
+Submitted batch job 1735756
+Submitted batch job 1735758
+Submitted batch job 1735761
+Submitted batch job 1735762
+Submitted batch job 1735765
+Submitted batch job 1735771
+Submitted batch job 1735773
+Submitted batch job 1735813
+Submitted batch job 1735837
+Submitted batch job 1735923
+Submitted batch job 1736302
+Submitted batch job 1737187
+
+### SingleR Training
+
+Submitted batch job 12053432
+Submitted batch job 12053517
+Faster Implementation: Submitted batch job 12054272
+
+### scANVI Training
+
+Submitted batch job 12054293
+Submitted batch job 12054294
+Submitted batch job 12054296
+Submitted batch job 12054305
+Submitted batch job 12054306
+Submitted batch job 12054317
+Submitted batch job 12054319
 
 ### Evaluation over multiple runs
 
@@ -222,6 +263,10 @@ Run 9: Submitted batch job 12048040
 
 Autoencoder RF: Submitted batch job 12041908
 Submitted batch job 12043659
+Submitted batch job 12054311
+
+Autoencoder LightGBM: Submitted batch job 12054309
+Submitted batch job 12054315
 
 Conditional Autoencoder mit RandomSearch: Submitted batch job 12023816
 Submitted batch job 12024278
@@ -251,15 +296,24 @@ Submitted batch job 12023804
 Submitted batch job 12024276
 Run 7+: Submitted batch job 12026326
 
-Cutom Ensemble: Submitted batch job 12043665
+Custom Ensemble LinSVC: Submitted batch job 12043665
 Submitted batch job 12047494
 Submitted batch job 12048022
+
+Custom Ensemble LinSVC hard voting: Submitted batch job 12054321
+
+Custom Ensemble LinSVC sampled: Submitted batch job 12054325
+Submitted batch job 12054331
+Submitted batch job 12054334
 
 Custom Ensemble LR: Submitted batch job 12051304
 Submitted batch job 12052184
 
 Custom Ensemble RF: Submitted batch job 12051358
 Submitted batch job 12052185
+
+SingleR: Submitted batch job 12054290
+Submitted batch job 12054291
 
 
 

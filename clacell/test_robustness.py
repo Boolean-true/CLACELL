@@ -299,7 +299,7 @@ def test_robustness(
     X_ood = X_ood.reindex(columns=X.columns, fill_value=0)
 
     # Print gene comparison and max value for debugging
-    matched_genes = adata.var_names.intersection(X.columns).tolist()
+    matched_genes = X_ood.columns.intersection(X.columns).tolist()
     logging.info(f"Genes expected in training set: {len(X.columns)}")
     logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
     logging.info(f"Training data Max-Value: {np.max(X.values)}")

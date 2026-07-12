@@ -1,7 +1,7 @@
 [project]
 name = "clacell"
 license = "MIT"
-version = "0.2.0"
+version = "1.0.0"
 description = "robust cell type classifier for immune cells"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -24,3 +24,6 @@ build-backend = "hatchling.build"
 include = [
     "clacell/**/*.py"
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/Boolean-true/CLACELL"

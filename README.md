@@ -6,7 +6,7 @@ Robust cell type classifier for immune cells
 
 ### MarkerAnnotator
 
-The MarkerAnnotator can be used to annotate an Anndata dataset. It uses a marker based annotation strategy to annotate the dataset. You can either use an own marker dictionary or use the default dictionary.
+The MarkerAnnotator can be used to annotate an Anndata dataset. It uses a marker based annotation strategy to annotate the dataset. It takes only a dictionary with markers as an input.
 
 ```python
 from clacell import MarkerAnnotator

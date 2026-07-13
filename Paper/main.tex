@@ -144,7 +144,7 @@ For the voting classifier,the base estimators as well as the voting type (soft o
 %TODO: Etwas zu stacking schreiben
 
 In the custom ensemble, we combined the same machine learning model mutliple times, each time trained on a different subset of features. The subsets of features include the full set of features and three subsets of features where the top features according to a feature importance ranking were removed. This allows the ensemble to be more robust to missing features and to better generalize to new data. The include the removal of the top 0.75 \%, 1.5 \% and 2.5 \% of the features according to the feature importance ranking.
-For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. %TODO: Dann muss ich noch Random Forest damit machen, oder umschreiben
+For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. 
 By using the feature importance of a different machine learning approach, we avoid the bias of the feature importance ranking towards the model that is used for the ensemble. Furthermore the learnings from two different approaches are combined to improve the overall performance. %TODO: Evtl. noch besser erklären
 
 %TODO: Subchapter überarbeiten!

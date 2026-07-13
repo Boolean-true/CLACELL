@@ -36,7 +36,7 @@ mdc: true
 ## scGPT als Vergleichsmodell
 
 - braucht eine A100 zum Training
-- Ich habe es nur mit einem gegebenen Script finegetuned (Base ist das Modell für Blutzellen) #TODO: nachschauen welches genau
+- Ich habe es nur mit einem gegebenen Script finegetuned (Base ist das pretrained Modell blood (trained on blood and bone marrow cells))
 - Hatte initial eine sehr schlechte Leistung, ich habe angepasst:
   - StratifiedCrossValidation für eine gleiche Verteilung im train und valid split
   - Sampling sodass mindestens 1000 samples pro Klasse verfügbar waren
@@ -67,7 +67,7 @@ mdc: true
 
 </div>
 
-TODO: Bei LinearSVC noch die Zeit für das Einzeltraining draufrechnen
+Bei LinearSVC muss noch die Zeit für das Einzeltraining draufgerechnet werden
 
 ---
 
@@ -163,23 +163,20 @@ TODO: Bei LinearSVC noch die Zeit für das Einzeltraining draufrechnen
 
 ---
 
-
-## Fragen
+## Fragen I
 
 ### Report
 
-- Titel des Reports?
+- Titel des Reports? CLACELL: Robust cell type classifier for immune cells?
 - Soll ich dich nicht auf dem Report als Betreuerin erwähnen?
 - Ist der Report richtig, es ist nicht zweispaltig?
-- Gibt es eine Unter-/Obergrenze?
-- Passt die neue Gliederung?
-- Soll ich wirklich ein Kapitel Software Implementation machen zu dem package?
-- Passt das Zitat beim HumanCellAtlas oder soll ich es weglassen?
+- Gibt es eine Unter-/Obergrenze für die Seitenzahl?
 - Was ist mein Projekt acronym? CLACELL?
-- Dürfen andere bei meiner Präsi zuschauen, oder nur Prüfer?
-- Präsentationssprache Englisch?
 - Passt ein Zitat auf scikit-learn und scikit-optimize?
-- Wie sehr muss ich darauf achten alles zu belegen? Und muss ich die Quellen alle gut kennen? Ich habe eine Quelle für BayesSearch
+
+---
+
+## Fragen II
 
 ### Paper
 
@@ -188,7 +185,7 @@ TODO: Bei LinearSVC noch die Zeit für das Einzeltraining draufrechnen
 
 ### Allgemein
 
-- Hast du Präferenzen für welche Metriken wichtiger sind?
-- Kann ich auch einfach nur die besten Modelle in den Grafiken anzeigen? Sonst wird es sehr voll
-- Test mit Anzahl an unterschiedlichen predictions bei Mehrfachem Ausführen löschen?
-
+- Was wird in der Prüfung abgefragt?
+- Dürfen andere bei meiner Präsi zuschauen, oder nur Prüfer?
+- Präsentationssprache Englisch?
+- Gibt es eine Möglichkeit mein Hauptseminar bei dem Bionetss Lehrstuhl zu machen?

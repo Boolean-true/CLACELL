@@ -71,6 +71,47 @@ This paper presents a re-implementation of the scumi R package in Python, which 
 
 %The remainder of the \nameref{sec:results} is typically structured into topical subsections. As a rule of thumb, each subsection should present one key finding, supported by one data figure. Of course, you can divert from this rule of thumb if it does not fit for your work.
 
+%TODO: visual overview of teh results like mentioned above
+
+We divided the results section into three main parts: first, we compare different machine learning algorithms and present their results. Second, we evaluate Ensemble Learning models and Autoencoders. Finally we compare the best model from the first two parts with the state of the art models CellTypist, scGPT and SinleR. %TODO: Passt das?; Brauche ich diese Subsection?; Besser formulieren
+
+\subsection{Comparison of Machine Learning Algorithms}\label{sec:results:ml}
+
+%TODO: Technical Specs and Random Dropout Score (everything from the table)
+
+%As a comparison of the robustness of the models we included a diagram that shows how much the Accuracy score declines when more and more important features are dropped from the input data. 
+As a comparison of the robustness of the models we plotted the baseline Accuracy score and the score for the feature importance dropout in a line plot. This shows how much the Accuracy score declines with an increasing number of missing important features. %TODO: nennt man das einen line plot?; Besser formulieren
+
+The results of the comparison of this comparison are shown in \Cref{fig:id-ml-robustness-comparison} for the in-distribution test set and in \Cref{fig:ood-ml-robustness-comparison} for the out-of-distribution test set. The results show that %TODO: Ergebnisse beschreiben
+%TODO: Besser formulieren; Evtl. noch mehr zu den Ergebnissen schreiben
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/in\_distribution\_ml\_robustness\_comparison.png}
+    \caption{In Distribution Robustness Comparison of Machine Learning Models}
+    \label{fig:id-ml-robustness-comparison}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/out\_of\_distribution\_ml\_robustness\_comparison.png}
+    \caption{Out-of-Distribution Robustness Comparison of Machine Learning Models}
+    \label{fig:ood-ml-robustness-comparison}
+\end{figure}
+
+%TODO: Grafiken evtl kleiner machen
+
+%TODO: Schlussfolgerung, welches Modell am Besten abschneidet und weiter getestet wird
+
+%TODO: Subsection drüberlesen
+
+
+\subsection{Comparison of Ensemble and Denoising Approaches}\label{sec:results:ensemble-ae}
+
+TODO
+
+\subsection{Comparison with Reference Models}\label{sec:results:reference-models}
+
 TODO
 
 
@@ -88,8 +129,28 @@ TODO
 
 \subsection{Data Preprocessing}\label{sec:methods:data-preprocessing}
 
-TODO: Explain the whole preprocessing pipeline, maybe with figures (for n\_genes)
-TODO: Maybe describe the datasets (Number of Samples, Number of Features)
+%TODO: Maybe describe the datasets (Number of Samples, Number of Features)
+
+The preprocessing described in this section was applied to both the in-distribution and out-of-distribution datasets. The preprocessing pipeline was designed to ensure that the datasets are comparable and that the models can be trained and evaluated effectively.
+
+Before we started with the preprocessing, we made sure to use the raw counts of the datasets. As we later normalize the data, already normalized data would have been a problem. We also filtered the in distribution dataset for blood data, as it contained more data. The out-of-distribution dataset already only contains blood data.
+
+First we filtered mitochondrial, ribosomal and hemoglobin genes from the datasets, as they are not informative for cell type classification. %TODO: Stimmt das, Quelle; qc metrics erwähnen?
+After that we removed doublets as they can introduce noise and bias into the data. %TODO: Stimmt das, Quelle?
+
+Then we nomralized the data to a target sum of $1e4$ and log transformed it. This is a common preprocessing step in single-cell RNA sequencing data analysis, as it helps to stabilize the variance and make the data more normally distributed. %TODO: Stimmt letzter Satz + Quelle
+
+Finally we filtered the datasets for highly variable genes, as they are more informative for cell type classification. 
+In order to determine the number of highly variable genes to use, we created an elbow plot that shows the variance of the genes in the dataset. The elbow plot is shown in \Cref{fig:elbow-plot-gene-count}. It shows that until around 10000 genes the biological variance is still grater than 0. Additionally we trained Random Forest models to determine which threshold to use. Despite the low variance at 10000 genes, the Random Forest models performed best with this threshold. Therefore we decided to use the top 10,000 highly variable genes for our analysis. %TODO: Besser beschreiben?
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/gene\_count\_elbow\_plot.png}
+    \caption{Elbow-Plot for Comparison of Gene Count}
+    \label{fig:elbow-plot-gene-count}
+\end{figure}
+
+%TODO: Ganze Subsection nochmal drüberlesen und überarbeiten, evtl. noch mehr Details zu den einzelnen Schritten
 
 \subsection{Reference Models}\label{sec:methods:reference-models}
 
@@ -164,7 +225,7 @@ Given their low representation in the base dataset, a more balanced split was ma
 %TODO: Ist das zu viel Text?
 %TODO: hier erwähnen oder woanders?
 
-The out-of-distribution test set contains cells from an independent source. To ensure comparability and a valid evaluation, it was preprocessed in the same way as the training dataset. %TODO: Mehr zum OOD dataset schreiben? Evtl die Unterschiede zum Trainings dataset
+The out-of-distribution test set contains cells from an independent source. To ensure comparability and a valid evaluation, it was preprocessed in the same way as the training dataset. %TODO: Mehr zum OOD dataset schreiben? Evtl die Unterschiede zum Trainings dataset; Den zweiten Satz habe ich schon beim Preprocessing erwähnt, trotzdem hier lassen?
 %The OOD test set consists of cells sourced from a completely independent dataset. To ensure comparability and a valid evaluation, the OOD data underwent the identical preprocessing pipeline as the training dataset.
 
 

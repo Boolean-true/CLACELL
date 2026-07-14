@@ -82,7 +82,7 @@ We divided the results section into three main parts: first, we compare differen
 %As a comparison of the robustness of the models we included a diagram that shows how much the Accuracy score declines when more and more important features are dropped from the input data. 
 As a comparison of the robustness of the models we plotted the baseline Accuracy score and the score for the feature importance dropout in a line plot. This shows how much the Accuracy score declines with an increasing number of missing important features. %TODO: nennt man das einen line plot?; Besser formulieren
 
-The results of the comparison of this comparison are shown in \Cref{fig:id-ml-robustness-comparison} for the in-distribution test set and in \Cref{fig:ood-ml-robustness-comparison} for the out-of-distribution test set. The results show that %TODO: Ergebnisse beschreiben
+The results of the comparison of this comparison are shown in \Cref{fig:id-ml-robustness-comparison} for the in-distribution test set and in \Cref{fig:ood-ml-robustness-comparison} for the out-of-distribution test set. The results show that the linear models Logistic Regression and LinearSVC perform better than the tree-based models Random Forest, Extra Trees and LightGBM. When the tree-based models are better than the linear models, they are only slightly better, however the other way around the linear models are significantly better than the tree-based models. LinearSVC is generally the best performing model, while LightGBM performs worst of all models.
 %TODO: Besser formulieren; Evtl. noch mehr zu den Ergebnissen schreiben
 
 \begin{figure}[htb]
@@ -100,6 +100,8 @@ The results of the comparison of this comparison are shown in \Cref{fig:id-ml-ro
 \end{figure}
 
 %TODO: Grafiken evtl kleiner machen
+
+%TODO: Evtl nur out of distribution Grafik im Text anzeigen und in distribution Grafik in den Anhang packen
 
 %TODO: Schlussfolgerung, welches Modell am Besten abschneidet und weiter getestet wird
 
@@ -252,6 +254,114 @@ Following the baseline evaluation, we introduce three distinct robustness tests 
 
 %TODO: Mehr zu den Tests schreiben? Mehr Details?
 %TODO: Über die ganze subsection nochmal drüberlesen
+
+
+\section{CLACELL Package}\label{sec:package}
+
+In this section we provide an overview and a walkthrough of the CLACELL package, which implements our best model, the custom ensemble with the LinearSVC. The package is designed to be user-friendly and easily integrated into existing workflows for immune cell type classification. %TODO: Den letzten Satz schreiben oder weglassen?
+
+The package can be installed via pip from the Python Package Index (PyPI) using the following command:
+\begin{lstlisting}
+pip install clacell
+\end{lstlisting}
+%TODO ODER: The package can be installed via pip or uv.
+
+\subsection{Annotation}\label{sec:package:annotation}
+
+To train the CLACELL model, a labeled dataset is required. The package provides the class \texttt{MarkerAnnotator} for this purpose. It is a wrapper around the re-implementation of the scumi R package we presented in \Cref{sec:methods:marker-based-annotation}, which allows users to annotate their datasets with a given marker gene dictionary. To annotate a dataset, the user calls the method \texttt{annotate} with the dataset as an input. It returns the annotated dataset with the cell type labels in the field \texttt{adata.obs['scumi-annotation']}. The annotated dataset can then be used to train the CLACELL model. The annotation process is illustrated in \Cref{lst:clacell-annotation}.
+
+\begin{lstlisting}[language=Python, caption=Annotation workflow with the CLACELL package, label={lst:clacell-annotation}]
+from clacell import MarkerAnnotator
+
+annotator = MarkerAnnotator(marker_dict=marker_dict)
+adata = annotator.annotate(adata)
+# Now adata.obs['scumi-annotation'] contains the annotations
+\end{lstlisting}
+
+%TODO: Subsection überarbeiten; Sollte ich wirklich solche Codeblöcke einfügen?
+
+
+\subsection{Preprocessing}\label{sec:package:preprocessing}
+
+Before training the CLACELL model, the input dataset needs to be preprocessed. Our package provides a sample preprocessing pipeline introduced in \Cref{sec:methods:data-preprocessing}. 
+%The preprocessing steps include filtering of mitochondrial, ribosomal and hemoglobin genes, removal of doublets, normalization to a target sum of $1e4$, log transformation, and filtering for highly variable genes. %TODO: Nochmal erwähnen?
+However, this preprocessing pipeline is not mandatory, and users can choose to implement their own preprocessing steps if desired. It should include a normalization, log transformation and filtering for highly variable genes, as these steps are crucial for the performance of the CLACELL model.
+
+After preprocessing, the dataset should be split into a training and a test set in order to train and evaluate the model. We recommend a split among the batch or donor level to avoid data leakage. The test set size should be between 20 \% and 35 \% of the total samples.
+
+As the CLACELL model requires the training and test sets to be in a specific format, both sets should be converted into a dataframe and the cell type labels should be stored in a separate series.
+
+The Listing \ref{lst:clacell-preprocessing} shows an example of how to preprocess a dataset and split it into training and test sets using the CLACELL package.
+
+\begin{lstlisting}[language=Python, caption=Preprocessing workflow with the CLACELL package, label={lst:clacell-preprocessing}]
+from clacell import preprocess_data
+
+adata_preprocessed = preprocess_data(adata)
+
+# Split the preprocessed data into training and test sets
+donor_train = ['637C', 'A35', 'A36', 'D503']
+donor_test = ['621B', 'D496']
+adata_train = adata[
+    adata.obs["Donor"].isin(donor_train)
+].copy()
+adata_test = adata[
+    adata.obs["Donor"].isin(donor_test)
+].copy()
+
+# Prepare Data for training
+X_train = adata_train.to_df()
+y_train = adata_train.obs['scumi-annotation']
+
+X_test = adata_test.to_df()
+y_test = adata_test.obs['scumi-annotation']
+\end{lstlisting}
+
+%TODO: Subsection überarbeiten; Sollte ich wirklich solche Codeblöcke einfügen?
+
+
+\subsection{Classification}\label{sec:package:classification}
+
+The Classifier \texttt{CellClassifier} from the CLACELL package implements the custom ensemble with the LinearSVC. It provides four methods:
+
+\begin{itemize}
+    \item \texttt{def grid\_search(X\_train, y\_train, X\_test, y\_test, labels, n\_jobs)}: This method makes a random search with 50 iterations to find the optimal hyperparameters for the LinearSVC. Then it trains the custom ensemble on the training data and evaluates it on the test data. Afterwards, it calls the train method with the optimal hyperparameters and the combined training and test data. It takes as input the features \texttt{X} and corresponding labels \texttt{y} for the training and test sets, the field where the labels are stored and the number of jobs for parallel processing. %TODO: Anpassen, wenn ich die Funktion anpasse!
+    \item \texttt{train(X\_train, y\_train, **hyperparameters)}: This method trains the custom ensemble with the given hyperparameters on the given data. It takes as input the features \texttt{X} and corresponding labels \texttt{y} for the training set, as well as the hyperparameters for the LinearSVC.
+    \item \texttt{evaluate(X\_test, y\_test, labels, X\_ood, y\_ood, feature\_importances, log\_to\_console, log\_to\_file)}: This method evaluates the model's performance on a in distribution and out of distribution test set. It is a wrapper around the tests presented in \Cref{sec:methods:robustness-tests}. It takes as input the features \texttt{X} and the corresponding true labels \texttt{y} for the in and out of distribution test sets, the Feature Importance and two flags if the results should be logged to the console and/or file. It can only be called if the model has been trained. It returns a multi index dataframe with the robustness report.
+    \item \texttt{predict(X)}: This method predicts the cell types for the given input features \texttt{X}. It can only be called if the model has been trained. It returns the predicted labels.
+\end{itemize}
+%TODO: Überarbeiten!; Wirklich alle Parameter so sehr beschreiben?
+
+The Listing \ref{lst:clacell-classification} shows an example of how to train and evaluate the CLACELL model using the CLACELL package.
+
+\begin{lstlisting}[language=Python, caption=Classification workflow with the CLACELL package, label={lst:clacell-classification}]
+from clacell import CellClassifier
+
+classifier = CellClassifier()
+
+# 1. GridSearch
+print("\n1. grid_search")
+classifier.grid_search(X_train, y_train, X_test, y_test, 
+     "scumi-annotation", n_jobs=3)
+
+# 2. Train
+print("\n2. train")
+classifier.train(X_train, y_train, C=0.001)
+
+# 3. Evaluate
+print("\n3. evaluate")
+# X_ood, y_ood and feature_importance are assumed to be 
+# defined previously
+classifier.evaluate(X_test, y_test, "scumi-annotation", 
+     X_ood, y_ood, feature_importance, log_to_console=True,
+     log_to_file=True)
+
+# 4. Predict
+print("\n4. predict")
+predictions = classifier.predict(X_test)
+print(f"Macro F1: {f1_score(y_test, predictions, average="macro")}")
+\end{lstlisting}
+
+%TODO: Subsection überarbeiten; Sollte ich wirklich solche Codeblöcke einfügen?
 
 
 \section{Code availability}\label{sec:code}

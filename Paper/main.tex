@@ -78,28 +78,42 @@ We divided the results section into three main parts: first, we compare differen
 \subsection{Comparison of Machine Learning Algorithms}\label{sec:results:ml}
 
 %TODO: Technical Specs and Random Dropout Score (everything from the table)
+%TODO: Maybe mention the Accuracy of all methods before introducing the box plot as an overview
+
+\Cref{fig:overall-ml-robustness-comparison} shows an overview of the performance of the different machine learning models. 
+%The first box plot shows the runtime and the second box plot show the peak RAM usage. The following four box plots show the Macro F1 score and the Random Dropout Accuracy score for the in and out of distribution test set. %TODO: So eine Erklärung des Diagramms geben?
+The Random Forest and Extra Trees model have the lowest and most consistent runtime, while LightGBM has the highest runtime. LinearSVC varies most in runtime.
+Random Forest and LinearSVC have the highest peak RAM usage, while Logistic Regression and LightGBM reach similar peaks but less often. Extra Trees has the lowest peak RAM usage. LinearSVC and LightGBM show the highest variance in peak RAM usage.
+
+After covering the technical specifications, we now focus on the performance of the models. The Macro F1 score is highest for LinearSVC and Logistic Regression, while Random Forest has the lowest Macro F1 score. LinearSVC and Extra Trees have the lowest variance.
+The Random Dropout Accuracy score is highest for LinearSVC and Logistic Regression, while LightGBM has the lowest Random Dropout Accuracy score. The performance difference between the linear and the tree-based models is smaller for the Random Dropout Accuracy score than for the Macro F1 score.
+The Macro F1 score on the out of distribution test set has a different result than the in distribution test set. LinearSVC and Logistic Regression have a similar Macro F1 score to the Random Forest model. LightGBM is the best performing model and Extra Trees is the worst performing model.
+The Random Dropout Accuracy score on the out of distribution test set as the Random Forest has the best performance followed by Extra Trees. LightGBM has the highest variance and its median is the lowest score of all models.
+
+Overall, the linear models perform better than the tree-based models in terms of both Macro F1 score and Random Dropout Accuracy score. The tree-based models were better in the out of distribution Random Dropout test, however the performance difference between the linear and tree-based models is smaller than in the other tests. Random Forest also yields good results while LightGBM performs worst of all models.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/ml\_table\_metrics\_box\_plot.png}
+    \caption{Overall Comparison of Machine Learning Models}
+    \label{fig:overall-ml-robustness-comparison}
+\end{figure}
+%TODO: Evtl Schrift bei der Grafik größer machen
 
 %As a comparison of the robustness of the models we included a diagram that shows how much the Accuracy score declines when more and more important features are dropped from the input data. 
-As a comparison of the robustness of the models we plotted the baseline Accuracy score and the score for the feature importance dropout in a line plot. This shows how much the Accuracy score declines with an increasing number of missing important features. %TODO: nennt man das einen line plot?; Besser formulieren
+As a better comparison of the robustness of the models we plotted the baseline Accuracy score and the score for the feature importance dropout in a line plot. This shows how much the Accuracy score declines with an increasing number of missing important features. %TODO: nennt man das einen line plot?; Besser formulieren
 
-The results of the comparison of this comparison are shown in \Cref{fig:id-ml-robustness-comparison} for the in-distribution test set and in \Cref{fig:ood-ml-robustness-comparison} for the out-of-distribution test set. The results show that the linear models Logistic Regression and LinearSVC perform better than the tree-based models Random Forest, Extra Trees and LightGBM. When the tree-based models are better than the linear models, they are only slightly better, however the other way around the linear models are significantly better than the tree-based models. LinearSVC is generally the best performing model, while LightGBM performs worst of all models.
+The results of this comparison for the in and out of distribution test sets are shown in \Cref{fig:ml-robustness-comparison}. They show that the linear models Logistic Regression and LinearSVC perform better than the tree-based models Random Forest, Extra Trees and LightGBM. When the tree-based models are better than the linear models, they are only slightly better, however the other way around the linear models are significantly better than the tree-based models. LinearSVC is generally the best performing model, while LightGBM performs worst of all models.
 %TODO: Besser formulieren; Evtl. noch mehr zu den Ergebnissen schreiben
 
 \begin{figure}[htb]
     \centering
-    \includegraphics[width=\linewidth]{figures/in\_distribution\_ml\_robustness\_comparison.png}
-    \caption{In Distribution Robustness Comparison of Machine Learning Models}
-    \label{fig:id-ml-robustness-comparison}
+    \includegraphics[width=\linewidth]{figures/ml\_robustness\_comparison\_side\_by\_side.png}
+    \caption{Robustness Comparison of Machine Learning Models}
+    \label{fig:ml-robustness-comparison}
 \end{figure}
 
-\begin{figure}[htb]
-    \centering
-    \includegraphics[width=\linewidth]{figures/out\_of\_distribution\_ml\_robustness\_comparison.png}
-    \caption{Out-of-Distribution Robustness Comparison of Machine Learning Models}
-    \label{fig:ood-ml-robustness-comparison}
-\end{figure}
-
-%TODO: Grafiken evtl kleiner machen
+%TODO: Schrift in den Grafiken evtl größer machen
 
 %TODO: Evtl nur out of distribution Grafik im Text anzeigen und in distribution Grafik in den Anhang packen
 
@@ -110,7 +124,42 @@ The results of the comparison of this comparison are shown in \Cref{fig:id-ml-ro
 
 \subsection{Comparison of Ensemble and Denoising Approaches}\label{sec:results:ensemble-ae}
 
-TODO
+We used the Logistic Regression, LinearSVC and Random Forest models to create our custom ensemble and for the Denoising and Conditional Autoencoder. To avoid overcrowded diagrams, we only show the best performing model for each approach. We chose the best model for each approach based on mean Accuracy, Macro F1 score, Random Dropout score and Feature Importance Dropout Score on both in-distribution and out-of-distribution test sets. The best performing model for the custom ensemble is the LinearSVC, for the Denoising Autoencoder it is the Random Forest and for the Conditional Autoencoder it is the Random Forest.
+
+The custom ensemble with the Random Forest has a slightly better performance than the one with the LinearSVC on the out-of-distribution test set with a small Dropout. At a Feature Importance Dropout of 1 \% and 2 \% the LinearSVC performs better than the Random Forest. Its performance on the in-distribution test set is far better than the Random Forest. The custom ensemble with the Logistic Regression performs better than the Random Forest on the in-distribution test set, but still slightly worse than the LinearSVC. On the out-of-distribution test set it has a similar performance to the LinearSVC until the Feature Importance Dropout of 0.5 \%, where it performs worse than the LinearSVC.
+
+In the in-distribution test set, the Autoencoder with the LinearSVC has a similar performance tp the Random Forest, but in the out-of-distribution test set it performs worse than the Random Forest. The Autoencoder with the Logistic Regression performs slightly worse than the Random Forest in both test sets.
+
+For the Conditional Autoencoder, the Random Forest provides mostly the best performance in the in-distribution test set. On the out-of-distribution test set,it performs slightly better, just for the Feature Importance Dropout of 1 \% and 2 \%, the combinations with the Logistic Regression and LinearSVC perform better than the Random Forest. The Conditional Autoencoder with the Logistic Regression performs better than the Conditional Autoencoder with the LinearSVC in every considered metric.
+
+%TODO: Alles nochmal besser formulieren
+
+An overview of the performance of the best models for each approach is shown in \Cref{fig:overall-ensemble-ae-robustness-comparison}. The custom ensemble with the LinearSVC has the highest average runtime and lowest peak RAM usage while the Conditional Autoencoder with the Random Forest has the lowest average runtime and highest peak RAM usage. The Denoising Autoencoder with the Random Forest has a slightly higher average runtime than the Conditional Autoencoder with the Random Forest, and a slightly lower peak RAM usage. For the average runtime of the custom ensemble, we added the runtime of the LinearSVC training to the runtime of the custom ensemble as we used the hyperparameters from them. %TODO: Sollte ich die Ergebnisse des Denoising Autoencoder beschreiben oder weglassen? Sind das nur unnütze Füllwörter?
+The custom ensemble with the LinearSVC has the highest Macro F1 score and Random Dropout Accuracy score with the lowest variance on the in-distribution test set. The Denoising Autoencoder with the Random Forest has the lowest Macro F1 score and Random Dropout Accuracy score with the highest variance on the in-distribution test set. The Conditional Autoencoder with the Random Forest has a slightly better performance in these two metrics than the Denoising Autoencoder with the Random Forest, but still worse than the custom ensemble with the LinearSVC.
+In the out-of-distribution test set, the custom ensemble has the lowest Macro F1 score while the Conditional Autoencoder is slightly better than the Denoising Autoencoder. The custom ensemble has the highest Random Dropout Accuracy score, followed by the Denoising Autoencoder. The Conditional Autoencoder has the highest variance.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/ensemble\_ae\_table\_metrics\_box\_plot.png}
+    \caption{Overall Comparison of Ensemble and Autoencoder Models}
+    \label{fig:overall-ensemble-ae-robustness-comparison}
+\end{figure}
+%TODO: Evtl Schrift bei der Grafik größer machen
+
+Again we included another plot to show the robustness with different percentages of Feature Importance Dropout. The results are shown in \Cref{fig:ensemble-ae-robustness-comparison}. They show that for a small Dropout up to 0.1 \% on the in-distribution test set, the custom ensemble with the LinearSVC performs best, while for a higher Dropout the Conditional Autoencoder with the Random Forest performs slightly better. On the out-of-distribution test set, the results differ from the in-distribution test set. The custom ensemble with the LinearSVC performs overall best, while the Denoising Autoencoder offers similar results. Only at a higher Dropout of 1 \% and 2 \%, the custom ensemble is slightly better. The Conditional Autoencoder with the Random Forest that performed better than the Denoising Autoencoder at every Dropout on the in-distribution test set, performs worst on all Dropouts on the out-of-distribution test set.
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/ensemble\_ae\_robustness\_comparison\_side\_by\_side.png}
+    \caption{Robustness Comparison of Ensemble and Autoencoder Models}
+    \label{fig:ensemble-ae-robustness-comparison}
+\end{figure}
+
+%TODO: Schrift in den Grafiken evtl größer machen
+
+Overall the custom ensemble with the LinearSVC performs best and will be used for further comparisons with state of the art models. It is the best model from the Feature Importance Dropout test and yields the best scores in the overall comparison, except for the out-of-distribution Macro F1 score. The smaller peak RAM usage lead to smaller requirements, however it has the longest runtime of all models. The Denoising Autoencoder yields better results on the out-of-distribution test set than the Conditional Autoencoder, but worse results on the in-distribution test set.
+
+%TODO: Subsection drüberlesen
 
 \subsection{Comparison with Reference Models}\label{sec:results:reference-models}
 

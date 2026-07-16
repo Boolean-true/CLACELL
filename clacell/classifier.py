@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
@@ -12,11 +13,16 @@ from sklearn.calibration import CalibratedClassifierCV
 from .test_robustness import test_robustness
 
 
-class CellClassifier:
-    def __init__(self):
+class CellClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, dropout_steps=(0.0, 0.0075, 0.015, 0.025), 
+                 n_iter_search=50, random_state=None):
         """
         Initializes the cell classififer.
         """
+        self.dropout_steps = dropout_steps
+        self.n_iter_search = n_iter_search
+        self.random_state = random_state
+
         self.model = None
         self.best_params_ = None
         self.is_trained = False
@@ -33,7 +39,7 @@ class CellClassifier:
             (model_name, model)
         ])
 
-    def grid_search(
+    def random_search(
         self,
         X_train,
         y_train,
@@ -50,7 +56,7 @@ class CellClassifier:
             raise ValueError("X_train must be a pandas DataFrame.")
 
         # Train a Random Forest Classifier to get feature importances
-        rf = RandomForestClassifier()
+        rf = RandomForestClassifier(random_state=self.random_state)
         rf.fit(X_train, y_train)
         feature_importance = rf.feature_importances_
         feature_importance = np.argsort(feature_importance)[::-1]
@@ -60,20 +66,29 @@ class CellClassifier:
         X_sparse = csr_matrix(X_train.values)
 
         # Train the LinearSVC model on the training set
-        base_model = LinearSVC()
+        base_model = LinearSVC(random_state=self.random_state)
 
-        param_distribution = {
-            "C": stats.loguniform(1e-3, 2.0),
-            "penalty": ['l1', 'l2'],
-            "dual": [True, False],
-            "class_weight": ["balanced", None],
-            "tol": stats.loguniform(1e-4, 1e-2),
-        }
+        param_distribution = [
+            {
+                "C": stats.loguniform(1e-3, 2.0),
+                "penalty": ["l1"],
+                "dual": [False],
+                "class_weight": ["balanced", None],
+                "tol": stats.loguniform(1e-4, 1e-2),
+            },
+            {
+                "C": stats.loguniform(1e-3, 2.0),
+                "penalty": ["l2"],
+                "dual": [True, False],
+                "class_weight": ["balanced", None],
+                "tol": stats.loguniform(1e-4, 1e-2),
+            },
+        ]
 
         random_search = RandomizedSearchCV(
             estimator=base_model,
             param_distributions=param_distribution,
-            n_iter=50,
+            n_iter=self.n_iter_search,
             cv=3,
             scoring="accuracy",
             n_jobs=n_jobs,
@@ -87,32 +102,32 @@ class CellClassifier:
         # Create custom ensemble model
         total_genes = len(sorted_top_genes)
 
-        # Define subsets
-        drop_075_pct = int(total_genes * 0.0075)
-        drop_15_pct = int(total_genes * 0.015)
-        drop_25_pct = int(total_genes * 0.025)
+        model = CalibratedClassifierCV(LinearSVC(random_state=self.random_state, **self.best_params_))
 
-        # Compute Features for each subset
-        features_model_all = sorted_top_genes
-        features_model_minus_075 = sorted_top_genes[drop_075_pct:]
-        features_model_minus_15 = sorted_top_genes[drop_15_pct:]
-        features_model_minus_25 = sorted_top_genes[drop_25_pct:]
+        estimators = []
 
-        model = CalibratedClassifierCV(LinearSVC(**self.best_params_))
-
-        pipe_all = self._make_pipeline(features_model_all, 'linsvc_all', model)
-        pipe_minus_075 = self._make_pipeline(features_model_minus_075, 'linsvc_075', model)
-        pipe_minus_15 = self._make_pipeline(features_model_minus_15, 'linsvc_15', model)
-        pipe_minus_25 = self._make_pipeline(features_model_minus_25, 'linsvc_25', model)
+        # Create subsets dynamically based on the dropout_steps
+        for step in self.dropout_steps:
+            # Define subsets
+            drop_count = int(total_genes * step)
+            
+            # Compute Features for each subset
+            subset_features = sorted_top_genes[drop_count:]
+            
+            if step == 0:
+                est_name = 'all_features'
+                pipe_id = 'linsvc_all'
+            else:
+                step_str = f"{step * 100:.4g}".replace('.', '')
+                est_name = f"minus_{step_str}_pct"
+                pipe_id = f"linsvc_{step_str}"
+            
+            pipe = self._make_pipeline(subset_features, pipe_id, model)
+            estimators.append((est_name, pipe))
 
         # Train Voting Classifier
         ensemble = VotingClassifier(
-            estimators=[
-                ('all_features', pipe_all),
-                ('minus_075_pct', pipe_minus_075),
-                ('minus_15_pct', pipe_minus_15),
-                ('minus_25_pct', pipe_minus_25)
-            ],
+            estimators=estimators,
             voting='soft'
         )
 
@@ -126,7 +141,7 @@ class CellClassifier:
             # Compute Robustness score on test set with best parameters
             self.evaluate(X_test, y_test, labels=labels)
 
-            # Automatically call train with best parameters on complete dataset after grid search
+            # Automatically call train with best parameters on complete dataset after random search
             print(
                 "\nStart final training with best parameters on complete training data..."
             )
@@ -139,13 +154,13 @@ class CellClassifier:
     ):
         """
         Trains the model one the complete dataset with the given hyperparameters.
-        Can be either called automatically after grid search or manually with custom hyperparameters.
+        Can be either called automatically after random search or manually with custom hyperparameters.
         """
         if not isinstance(X_train, pd.DataFrame):
             raise ValueError("X_train must be a pandas DataFrame.")
         
         # Train a Random Forest Classifier to get feature importances
-        rf = RandomForestClassifier()
+        rf = RandomForestClassifier(random_state=self.random_state)
         rf.fit(X_train, y_train)
         feature_importance = rf.feature_importances_
         feature_importance = np.argsort(feature_importance)[::-1]
@@ -156,32 +171,32 @@ class CellClassifier:
         # Create custom ensemble model
         total_genes = len(sorted_top_genes)
 
-        # Define subsets
-        drop_075_pct = int(total_genes * 0.0075)
-        drop_15_pct = int(total_genes * 0.015)
-        drop_25_pct = int(total_genes * 0.025)
+        model = CalibratedClassifierCV(LinearSVC(random_state=self.random_state, **hyperparameters))
 
-        # Compute Features for each subset
-        features_model_all = sorted_top_genes
-        features_model_minus_075 = sorted_top_genes[drop_075_pct:]
-        features_model_minus_15 = sorted_top_genes[drop_15_pct:]
-        features_model_minus_25 = sorted_top_genes[drop_25_pct:]
+        estimators = []
 
-        model = CalibratedClassifierCV(LinearSVC(**hyperparameters))
-
-        pipe_all = self._make_pipeline(features_model_all, 'linsvc_all', model)
-        pipe_minus_075 = self._make_pipeline(features_model_minus_075, 'linsvc_075', model)
-        pipe_minus_15 = self._make_pipeline(features_model_minus_15, 'linsvc_15', model)
-        pipe_minus_25 = self._make_pipeline(features_model_minus_25, 'linsvc_25', model)
+        # Create subsets dynamically based on the dropout_steps
+        for step in self.dropout_steps:
+            # Define subsets
+            drop_count = int(total_genes * step)
+            
+            # Compute Features for each subset
+            subset_features = sorted_top_genes[drop_count:]
+            
+            if step == 0:
+                est_name = 'all_features'
+                pipe_id = 'linsvc_all'
+            else:
+                step_str = f"{step * 100:.4g}".replace('.', '')
+                est_name = f"minus_{step_str}_pct"
+                pipe_id = f"linsvc_{step_str}"
+            
+            pipe = self._make_pipeline(subset_features, pipe_id, model)
+            estimators.append((est_name, pipe))
 
         # Train Voting Classifier
         ensemble = VotingClassifier(
-            estimators=[
-                ('all_features', pipe_all),
-                ('minus_075_pct', pipe_minus_075),
-                ('minus_15_pct', pipe_minus_15),
-                ('minus_25_pct', pipe_minus_25)
-            ],
+            estimators=estimators,
             voting='soft'
         )
 
@@ -208,7 +223,7 @@ class CellClassifier:
         """
         if not self.is_trained:
             raise RuntimeError(
-                "The model wasn't trained yet. Call 'train' or 'grid_search' first."
+                "The model wasn't trained yet. Call 'train' or 'random_search' first."
             )
 
         print("Evaluate model on test data...")
@@ -234,7 +249,7 @@ class CellClassifier:
 
         if not self.is_trained:
             raise RuntimeError(
-                "The model wasn't trained yet. Call 'train' or 'grid_search' first."
+                "The model wasn't trained yet. Call 'train' or 'random_search' first."
             )
 
         # Filter genes that are not in the training set and reorder the remaining genes to match the training set

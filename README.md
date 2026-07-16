@@ -29,7 +29,7 @@ adata_preprocessed = preprocess_data(adata)
 ### CellClassifier
 
 The cell type classifier has four different methods:
-1. **grid_search**: Makes a search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
+1. **random_search**: Makes a search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
 2. **train**: Trains the model with the given hyperparameters.
 3. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called. The logs can be printed in the console as well as in a log file. The results will be returned in a dataframe with a multi index for easier access.
 4. **predict**: Predicts new samples. The model needs to be trained before this method is called.
@@ -41,9 +41,9 @@ from clacell import CellClassifier
 
 classifier = CellClassifier()
 
-# 1. GridSearch
-print("\n1. grid_search")
-classifier.grid_search(X_train, y_train, X_test, y_test, n_jobs=3)
+# 1. RandomSearch
+print("\n1. random_search")
+classifier.random_search(X_train, y_train, X_test, y_test, n_jobs=3)
 
 # 2. Train
 print("\n2. train")

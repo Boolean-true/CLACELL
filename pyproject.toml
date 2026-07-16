@@ -1,7 +1,7 @@
 [project]
 name = "clacell"
 license = "MIT"
-version = "1.0.0"
+version = "2.0.0"
 description = "robust cell type classifier for immune cells"
 readme = "README.md"
 requires-python = ">=3.13"

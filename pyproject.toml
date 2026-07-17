@@ -1,7 +1,7 @@
 [project]
 name = "clacell"
 license = "MIT"
-version = "2.1.0"
+version = "2.1.1"
 description = "robust cell type classifier for immune cells"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -14,6 +14,7 @@ dependencies = [
     "scipy>=1.17.1",
     "scikit-image>=0.26.0",
     "igraph>=1.0.0",
+    "scikit-optimize>=0.10.2",
 ]
 
 [build-system]

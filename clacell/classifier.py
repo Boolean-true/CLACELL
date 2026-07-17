@@ -9,13 +9,16 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
+from skopt import BayesSearchCV
+from skopt.space import Integer, Real, Categorical
 
 from .test_robustness import test_robustness
+from .custom_stopper import CustomStopper
 
 
 class CellClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, dropout_steps=(0.0, 0.0075, 0.015, 0.025), 
-                 n_iter_search=50, random_state=None):
+                 n_iter_search=30, random_state=None):
         """
         Initializes the cell classififer.
         """
@@ -73,14 +76,12 @@ class CellClassifier(BaseEstimator, ClassifierMixin):
                 "C": stats.loguniform(1e-3, 2.0),
                 "penalty": ["l1"],
                 "dual": [False],
-                "class_weight": ["balanced", None],
                 "tol": stats.loguniform(1e-4, 1e-2),
             },
             {
                 "C": stats.loguniform(1e-3, 2.0),
                 "penalty": ["l2"],
                 "dual": [True, False],
-                "class_weight": ["balanced", None],
                 "tol": stats.loguniform(1e-4, 1e-2),
             },
         ]
@@ -89,7 +90,7 @@ class CellClassifier(BaseEstimator, ClassifierMixin):
             estimator=base_model,
             param_distributions=param_distribution,
             n_iter=self.n_iter_search,
-            cv=3,
+            cv=5,
             scoring="accuracy",
             n_jobs=n_jobs,
             verbose=10,
@@ -98,6 +99,120 @@ class CellClassifier(BaseEstimator, ClassifierMixin):
 
         self.best_params_ = random_search.best_params_
         print(f"Best parameters found: {self.best_params_}")
+
+        # Create custom ensemble model
+        total_genes = len(sorted_top_genes)
+
+        model = CalibratedClassifierCV(LinearSVC(random_state=self.random_state, **self.best_params_))
+
+        estimators = []
+
+        # Create subsets dynamically based on the dropout_steps
+        for step in self.dropout_steps:
+            # Define subsets
+            drop_count = int(total_genes * step)
+            
+            # Compute Features for each subset
+            subset_features = sorted_top_genes[drop_count:]
+            
+            if step == 0:
+                est_name = 'all_features'
+                pipe_id = 'linsvc_all'
+            else:
+                step_str = f"{step * 100:.4g}".replace('.', '')
+                est_name = f"minus_{step_str}_pct"
+                pipe_id = f"linsvc_{step_str}"
+            
+            pipe = self._make_pipeline(subset_features, pipe_id, model)
+            estimators.append((est_name, pipe))
+
+        # Train Voting Classifier
+        ensemble = VotingClassifier(
+            estimators=estimators,
+            voting='soft'
+        )
+
+        ensemble.fit(X_train, y_train)
+
+        self.model = ensemble
+        self.is_trained = True
+        self.genes_in_training_set = X_train.columns.tolist()
+
+        if X_test is not None and y_test is not None:
+            # Compute Robustness score on test set with best parameters
+            self.evaluate(X_test, y_test, labels=labels)
+
+            # Automatically call train with best parameters on complete dataset after random search
+            print(
+                "\nStart final training with best parameters on complete training data..."
+            )
+            X = pd.concat([X_train, X_test], axis=0, ignore_index=True)
+            y = pd.concat([y_train, y_test], axis=0, ignore_index=True)
+            self.train(X, y, **self.best_params_)
+
+    def bayes_search(
+        self,
+        X_train,
+        y_train,
+        X_test=None,
+        y_test=None,
+        labels="scumi-annotation",
+        n_jobs=1,
+    ):
+        """
+        Executes a hyperparameter tuning on the training set and returns the score on the test set.
+        Automatically followed by a final training with the best parameters.
+        """
+        if not isinstance(X_train, pd.DataFrame):
+            raise ValueError("X_train must be a pandas DataFrame.")
+
+        # Train a Random Forest Classifier to get feature importances
+        rf = RandomForestClassifier(random_state=self.random_state)
+        rf.fit(X_train, y_train)
+        feature_importance = rf.feature_importances_
+        feature_importance = np.argsort(feature_importance)[::-1]
+        sorted_top_genes = X_train.columns[feature_importance].tolist() 
+
+        # For faster RandomSearch, convert the DataFrame to a sparse matrix
+        X_sparse = csr_matrix(X_train.values)
+
+        # Train the LinearSVC model on the training set
+        base_model = LinearSVC(random_state=self.random_state)
+
+        search_space = [
+            {
+                'C': Real(1e-3, 2.0, prior='log-uniform'),
+                'penalty': Categorical(['l1']),
+                'dual': Categorical([False]),
+                'tol': Real(1e-4, 1e-2, prior='log-uniform')
+            },
+            {
+                'C': Real(1e-3, 2.0, prior='log-uniform'),
+                'penalty': Categorical(['l2']),
+                'dual': Categorical([True, False]),
+                'tol': Real(1e-4, 1e-2, prior='log-uniform')
+            },
+        ]
+
+        my_stopper = CustomStopper(patience=5, min_delta=0.002, min_iter=15)
+
+        opt = BayesSearchCV(
+            estimator=base_model,
+            search_spaces=search_space,
+            n_iter=self.n_iter_search,
+            cv=5,
+            scoring='accuracy',
+            n_jobs=n_jobs,
+            verbose=10
+        )
+
+        print("Start BayesSearch with Early Stopping...")
+        opt.fit(X_sparse, y_train, callback=my_stopper)
+
+        print(f"\nSearch terminated after {len(opt.cv_results_['mean_test_score'])} Iterations.")
+        self.best_params_ = opt.best_params_
+        print(f"Best parameters found: {self.best_params_}")
+        print(f"Test-Split Accuracy:  {opt.score(X_test, y_test):.4f}")
 
         # Create custom ensemble model
         total_genes = len(sorted_top_genes)

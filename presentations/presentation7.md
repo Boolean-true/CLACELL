@@ -21,3 +21,16 @@
 - Anne fragt bei David nach, ob ich das Hauptseminar so machen kann
 - Wenn es als Paper veröffentlicht wird, soll ich es vorher noch auf feineren Daten evaluieren (Anne würde sich dann um Daten kümmern)
 - Bessere Abkürzung als CLACELL suchen (mit robust drinnen)
+
+
+# Jobs auf dem HPC
+
+CLACELL
+Submitted batch job 12092020
+Submitted batch job 12092037
+Submitted batch job 12092039
+
+CLACELL mit bayes_search: Submitted batch job 12098933
+
+
+SingleR ohne bulking: Submitted batch job 12098385

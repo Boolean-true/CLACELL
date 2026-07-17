@@ -126,6 +126,41 @@
 	file = {Full Text PDF:/home/boolean/Zotero/storage/PERE7X7E/Domínguez Conde et al. - 2022 - Cross-tissue immune cell analysis reveals tissue-specific features in humans.pdf:application/pdf},
 }
 
+% scGPT
+@article{cui_scgpt_2024,
+	title = {{scGPT}: toward building a foundation model for single-cell multi-omics using generative {AI}},
+	volume = {21},
+	issn = {1548-7091, 1548-7105},
+	url = {https://www.nature.com/articles/s41592-024-02201-0},
+	doi = {10.1038/s41592-024-02201-0},
+	shorttitle = {{scGPT}},
+	pages = {1470--1480},
+	number = {8},
+	journaltitle = {Nature Methods},
+	shortjournal = {Nat Methods},
+	author = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Duan, Nan and Wang, Bo},
+	urldate = {2026-07-17},
+	date = {2024-08},
+	langid = {english},
+}
+
+% SingleR
+@article{aran_reference-based_2019,
+	title = {Reference-based analysis of lung single-cell sequencing reveals a transitional profibrotic macrophage},
+	volume = {20},
+	issn = {1529-2908, 1529-2916},
+	url = {https://www.nature.com/articles/s41590-018-0276-y},
+	doi = {10.1038/s41590-018-0276-y},
+	pages = {163--172},
+	number = {2},
+	journaltitle = {Nature Immunology},
+	shortjournal = {Nat Immunol},
+	author = {Aran, Dvir and Looney, Agnieszka P. and Liu, Leqian and Wu, Esther and Fong, Valerie and Hsu, Austin and Chak, Suzanna and Naikawadi, Ram P. and Wolters, Paul J. and Abate, Adam R. and Butte, Atul J. and Bhattacharya, Mallar},
+	urldate = {2026-07-17},
+	date = {2019-02},
+	langid = {english},
+}
+
 % HumanCellAtlas Dataset
 @misc{Regev2025Hematopoietic,
   author       = {Regev, Aviv and Rozenblatt-Rosen, Orit and Li, Bo and Kowalczyk, Monika S. and Slyper, Michal and Jellert, Gaublomme and Tabaka, Marcin and Ashenberg, Orr and Waldman, Julia and Dionne, Danielle and Abigail, Knecht and Hui, Ma and Yang, Yiming},
@@ -156,4 +191,78 @@
  url = {https://proceedings.neurips.cc/paper_files/paper/2012/file/05311655a15b75fab86956663e1819cd-Paper.pdf},
  volume = {25},
  year = {2012}
+}
+
+% Scumi
+@article{ding_systematic_2020,
+	title = {Systematic comparison of single-cell and single-nucleus {RNA}-sequencing methods},
+	volume = {38},
+	issn = {1087-0156, 1546-1696},
+	url = {https://www.nature.com/articles/s41587-020-0465-8},
+	doi = {10.1038/s41587-020-0465-8},
+	pages = {737--746},
+	number = {6},
+	journaltitle = {Nature Biotechnology},
+	shortjournal = {Nat Biotechnol},
+	author = {Ding, Jiarui and Adiconis, Xian and Simmons, Sean K. and Kowalczyk, Monika S. and Hession, Cynthia C. and Marjanovic, Nemanja D. and Hughes, Travis K. and Wadsworth, Marc H. and Burks, Tyler and Nguyen, Lan T. and Kwon, John Y. H. and Barak, Boaz and Ge, William and Kedaigle, Amanda J. and Carroll, Shaina and Li, Shuqiang and Hacohen, Nir and Rozenblatt-Rosen, Orit and Shalek, Alex K. and Villani, Alexandra-Chloé and Regev, Aviv and Levin, Joshua Z.},
+	urldate = {2026-07-15},
+	date = {2020-06-01},
+	langid = {english},
+}
+
+% Comparison with SingleR and Introduction to scRNA-seq analysis
+@article{abdelaal_comparison_2019,
+	title = {A comparison of automatic cell identification methods for single-cell {RNA} sequencing data},
+	volume = {20},
+	issn = {1474-760X},
+	url = {https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1795-z},
+	doi = {10.1186/s13059-019-1795-z},
+	abstract = {Abstract
+            
+              Background
+              Single-cell transcriptomics is rapidly advancing our understanding of the cellular composition of complex tissues and organisms. A major limitation in most analysis pipelines is the reliance on manual annotations to determine cell identities, which are time-consuming and irreproducible. The exponential growth in the number of cells and samples has prompted the adaptation and development of supervised classification methods for automatic cell identification.
+            
+            
+              Results
+              Here, we benchmarked 22 classification methods that automatically assign cell identities including single-cell-specific and general-purpose classifiers. The performance of the methods is evaluated using 27 publicly available single-cell {RNA} sequencing datasets of different sizes, technologies, species, and levels of complexity. We use 2 experimental setups to evaluate the performance of each method for within dataset predictions (intra-dataset) and across datasets (inter-dataset) based on accuracy, percentage of unclassified cells, and computation time. We further evaluate the methods’ sensitivity to the input features, number of cells per population, and their performance across different annotation levels and datasets. We find that most classifiers perform well on a variety of datasets with decreased accuracy for complex datasets with overlapping classes or deep annotations. The general-purpose support vector machine classifier has overall the best performance across the different experiments.
+            
+            
+              Conclusions
+              
+                We present a comprehensive evaluation of automatic cell identification methods for single-cell {RNA} sequencing data. All the code used for the evaluation is available on {GitHub} (
+                https://github.com/tabdelaal/{scRNAseq}\_Benchmark
+                ). Additionally, we provide a Snakemake workflow to facilitate the benchmarking and to support the extension of new methods and new datasets.},
+	pages = {194},
+	number = {1},
+	journaltitle = {Genome Biology},
+	shortjournal = {Genome Biol},
+	author = {Abdelaal, Tamim and Michielsen, Lieke and Cats, Davy and Hoogduin, Dylan and Mei, Hailiang and Reinders, Marcel J. T. and Mahfouz, Ahmed},
+	urldate = {2026-07-15},
+	date = {2019-12},
+	langid = {english},
+	file = {Full Text:/home/boolean/Zotero/storage/X27JLBFY/Abdelaal et al. - 2019 - A comparison of automatic cell identification methods for single-cell RNA sequencing data.pdf:application/pdf},
+}
+
+% Preprocessing and Introduction to scRNA-seq analysis
+@article{luecken_current_2019,
+	title = {Current best practices in single-cell {RNA}-seq analysis: a tutorial},
+	volume = {15},
+	issn = {1744-4292},
+	url = {https://link.springer.com/10.15252/msb.20188746},
+	doi = {10.15252/msb.20188746},
+	shorttitle = {Current best practices in single-cell {RNA}-seq analysis},
+	abstract = {Abstract
+            
+              Single-cell {RNA}-seq has enabled gene expression to be studied at an unprecedented resolution. The promise of this technology is attracting a growing user base for single-cell analysis methods. As more analysis tools are becoming available, it is becoming increasingly difficult to navigate this landscape and produce an up-to-date workflow to analyse one's data. Here, we detail the steps of a typical single-cell {RNA}-seq analysis, including pre-processing (quality control, normalization, data correction, feature selection, and dimensionality reduction) and cell- and gene-level downstream analysis. We formulate current best-practice recommendations for these steps based on independent comparison studies. We have integrated these best-practice recommendations into a workflow, which we apply to a public dataset to further illustrate how these steps work in practice. Our documented case study can be found at
+              https://www.github.com/theislab/single-cell-tutorial
+              . This review will serve as a workflow tutorial for new entrants into the field, and help established users update their analysis pipelines.},
+	pages = {MSB188746},
+	number = {6},
+	journaltitle = {Molecular Systems Biology},
+	shortjournal = {Mol Syst Biol},
+	author = {Luecken, Malte D and Theis, Fabian J},
+	urldate = {2026-07-17},
+	date = {2019-06-01},
+	langid = {english},
+	file = {Full Text PDF:/home/boolean/Zotero/storage/ZJBFDM84/Luecken and Theis - 2019 - Current best practices in single‐cell RNA‐seq analysis a tutorial.pdf:application/pdf},
 }

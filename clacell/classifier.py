@@ -212,7 +212,6 @@ class CellClassifier(BaseEstimator, ClassifierMixin):
         print(f"\nSearch terminated after {len(opt.cv_results_['mean_test_score'])} Iterations.")
         self.best_params_ = opt.best_params_
         print(f"Best parameters found: {self.best_params_}")
-        print(f"Test-Split Accuracy:  {opt.score(X_test, y_test):.4f}")
 
         # Create custom ensemble model
         total_genes = len(sorted_top_genes)

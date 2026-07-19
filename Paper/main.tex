@@ -36,8 +36,8 @@ Write your abstract here. An abstract is a brief one-paragraph summary that moti
 
 \section{Introduction}\label{sec:introduction}
 
-% TODO: Adjust the Introduction section according to this section from the template:
 %In the introduction, you provide the motivation of your work, pose your research question, and describe the (medical and technical) background as well as the related work (if these parts are rather extensive they can also be put in dedicated ``Background'' and/or ``Related work'' sections). Make sure that the contribution of \emph{your} work becomes clear in the introduction: What does it add to the existing body of literature/knowledge? Why is it new and/or interesting? Conclude the introduction by delineating the structure of your thesis, i.\,e., by introducing the structure of the remaining sections. The introduction should be internally unstructured (no subsections inside the introduction). 
+%TODO?: Research Question ergänzen?
 
 
 %\subsection{Context and Significance}
@@ -47,7 +47,7 @@ The accurate and reproducible annotation of cell types is a critical prerequisit
 
 
 %\subsection{The Challenge}
-Despite the rapid evolution of scRNA-seq technologies, the classification of cell types remains a significant analytical bottleneck. Historically, cell-type annotation has relied heavily on manual marker-based approaches like scumi \cite{ding_systematic_2020}. This traditional method requires the manual specification of the marker genes. However, manual annotation is highly subjective, labor-intensive, and therefore scale-limited, making it impractical for modern, atlas-level datasets \cite{abdelaal_comparison_2019}.
+Despite the rapid evolution of scRNA-seq technologies, the classification of cell types remains a significant analytical bottleneck. Historically, cell-type annotation has relied heavily on manual marker-based approaches like scumi \cite{ding_systematic_2020}. This traditional method requires the manual specification of marker genes. However, manual annotation is highly subjective, labor-intensive, and therefore scale-limited, making it impractical for modern, atlas-level datasets \cite{abdelaal_comparison_2019}.
 
 To overcome these limitations, numerous classification algorithms were designed that learn from well-annotated reference datasets and transfer these labels to unannotated query datasets. While promising, many of these existing classifiers show substantial drawbacks when deployed on complex tissues like the immune system. Comprehensive benchmarks revealed that these tools frequently suffer from a lack of robustness, yielding poor F1 scores, high variance in classification accuracy, and a high sensitivity to gene dropout \cite{abdelaal_comparison_2019}. %Furthermore, some methods rely on non-deterministic processes, complicating reproducibility. %TODO: Quelle finden um das zu belegen
 
@@ -55,7 +55,7 @@ To overcome these limitations, numerous classification algorithms were designed 
 
 %\subsection{Proposed Solution and Contributions}
 To address these challenges, we introduce CLACELL, an open-source Python package engineered specifically for the robust and deterministic classification of immune cells.
-CLACELL bridges the gap between specialized bioinformatics preprocessing and high-performance machine learning, providing an end-to-end scalable framework for cell-type annotation. %TODO: Letzten Satz überarbeiten; scalable evtl mit reinbringen
+CLACELL bridges the gap between specialized bioinformatics preprocessing and high-performance machine learning, providing an end-to-end scalable framework for cell-type annotation. %TODO: Letzten Satz überarbeiten
 
 We compare CLACELL against existing state-of-the-art classifiers, including the machine learning-based CellTypist \cite{dominguez_conde_cross-tissue_2022}, the deep learning model scGPT \cite{cui_scgpt_2024}, and the statistical framework SingleR \cite{aran_reference-based_2019}, using a comprehensive suite of robustness metrics. These metrics evaluate performance under varying conditions of feature loss, gene dropout rates, and cross-dataset batch effects.
 
@@ -71,10 +71,8 @@ The primary contributions of this paper are as follows:
 %This paper presents the architecture and open-source release of the CLACELL package, designed to integrate seamlessly into Python-based single-cell workflows. Our work aims to improve the accuracy, robustness, and interpretability of cell type annotation methods. Additionally, we provide a comprehensive benchmark of traditional machine learning methods, denoising autoencoders, and custom ensemble methods with feature subsampling for immune cell classification. We also demonstrate CLACELL's robustness against state of the art scRNA-seq classifiers, including feature loss, gene dropout rates, and cross-dataset batch variations. Finally, we provide a native Python reimplementation of the \texttt{scumi} R package's core functionalities \cite{ding_systematic_2020}, eliminating the need for cross-language dependencies for marker based annotation. %TODO: Nochmal drüberlesen und anpassen; Evtl nicht die Reimplementierung hier erwähnen? Ist ja kein Kernfokus der Arbeit
 
 
-The rest of the paper is structured as follows: In \Cref{sec:results}, we present the results of our experiments, including a comparison of different machine learning algorithms, ensemble methods, autoencoder architectures and reference models. In \Cref{sec:discussion}, we discuss the implications of our findings, limitations of our work, and potential directions for future research. In \Cref{sec:methods}, we provide a detailed description of the methods used in our study, including data preprocessing, model training, and evaluation protocols. Finally, in \Cref{sec:package}, we present the CLACELL package. %TODO: anpassen, wenn die Struktur geändert wird; Besser formulieren
+The rest of the paper is structured as follows: In \Cref{sec:results}, we present the results of our experiments, including a comparison of different machine learning algorithms, ensemble methods, autoencoder architectures and reference models. In \Cref{sec:discussion}, we discuss the implications of our findings, limitations of our work, and potential directions for future research. \Cref{sec:hardware} gives an overview of the hardware used in our experiments. In \Cref{sec:methods}, we provide a detailed description of the methods used in our study, including data preprocessing, model training, and evaluation protocols. Finally, in \Cref{sec:package}, we present the CLACELL package. %TODO: anpassen, wenn die Struktur geändert wird; Besser formulieren
 
-
-%TODO: Subsection nochmal komplett drüberlesen
 
 
 \section{Results}\label{sec:results}
@@ -98,7 +96,7 @@ To avoid single bad runs of the models, we ran each model 10 times and calculate
 
 %TODO?: Maybe mention the Accuracy of all methods before introducing the box plot as an overview
 
-\Cref{fig:overall-ml-robustness-comparison} shows an overview of the performance of the different machine learning models. The Random Forest and Extra Trees model have the lowest and most consistent runtime, while LightGBM has the highest runtime. LinearSVC varies most in runtime.
+\Cref{fig:overall-ml-robustness-comparison} shows an overview of the performance of the different machine learning models. The Random Forest and Extra Trees models have the lowest and most consistent runtime, while LightGBM has the highest runtime. LinearSVC varies most in runtime.
 Random Forest and LinearSVC have the highest peak RAM usage, while Logistic Regression and LightGBM reach similar peaks but less often. Extra Trees has the lowest peak RAM usage. LinearSVC and LightGBM show the highest variance in peak RAM usage.
 
 After covering the technical specifications, we now focus on the performance of the models. The Macro F1 score is highest for LinearSVC and Logistic Regression, while Random Forest has the lowest Macro F1 score. LinearSVC and Extra Trees have the lowest variance.
@@ -292,6 +290,35 @@ As future work, we plan to classify datasets into more fine-grained cell types. 
 
 Another potential improvement is to add a rejection class to the classifier. This would allow the classifier to reject samples that it is not confident about, which could increase the overall performance and robustness of our classifier.
 
+
+\section{Hardware Specification}\label{sec:hardware}
+
+The results presented in this paper were computed on the HPC clusters at NHR@FAU. Depending on the specific demands of each task, we used three different node configurations that are summarized in \Cref{tab:hardware_specs}.
+
+\begin{table}[htbp]
+\centering
+\begin{threeparttable}
+\caption{Hardware specifications of the NHR@FAU HPC nodes used for different tasks}
+\label{tab:hardware_specs}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Task} & \textbf{CPU} & \textbf{Cores / Threads} & \textbf{RAM} & \textbf{GPU / VRAM} \\
+\midrule
+Annotation\tnote{a}   & \makecell[l]{2 x AMD\\ EPYC 7502}       & 64 / 128                 & 512 GB       & None               \\
+CPU Training\tnote{b} & \makecell[l]{2 x Intel Xeon\\ Gold 6326} & 2x16 @ 2.9 GHz        & 256 GB       & None               \\
+GPU Training\tnote{c} & \makecell[l]{Unknown} & 32 / 32                 & 117 GB       & \makecell[l]{1 x Nvidia A100\\ SXM4 / 40 GB} \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item[a] \url{https://doc.nhr.fau.de/clusters/tinyfat/}
+\item[b] \url{https://doc.nhr.fau.de/clusters/woody/}
+\item[c] \url{https://doc.nhr.fau.de/clusters/tinygpu/}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+
 \section{Methods}\label{sec:methods}
 
 %Good Methods sections are designed in such a way that the subsection headings allow the reader to quickly navigate it without reading the entire section from top to bottom. You may think of it as a dictionary where readers look up details of the work that are of particular interest to them. Each individual subsection should be detailed enough to allow replication of your work, so be precise in your descriptions. Overall, the subsections of your Methods section should cover all methodological details that are relevant for your work: details on your ML model or algorithm, descriptions of datasets and data preprocessing, details on evaluation protocols and metrics, description of competitor approaches, etc.
@@ -320,6 +347,7 @@ In order to determine the number of highly variable genes to use, we created an 
     \caption{Elbow-Plot for Comparison of Gene Count}
     \label{fig:elbow-plot-gene-count}
 \end{figure}
+%TODO: Figure in den Anhang?!?
 
 %TODO: Ganze Subsection nochmal drüberlesen und überarbeiten, evtl. noch mehr Details zu den einzelnen Schritten
 
@@ -327,22 +355,24 @@ In order to determine the number of highly variable genes to use, we created an 
 
 We compare the performance of our proposed classifier to three state of the art models: CellTypist, scGPT and SingleR. All of them use different approaches, ensuring a comprehensive and meaningful benchmark evaluation.
 
+
 CellTypist \cite{dominguez_conde_cross-tissue_2022} is based on a logistic regression optimized via stochastic gradient descent. It was originally trained on the whole Cross-tissue Immune Cell Atlas dataset with more than just blood cells. We retrained it on the filtered training dataset to make it comparable to our models. For the training we built a wrapper around the CellTypist model so that it uses the Scikit-learn API and can then be tuned the same way as our models. We used the \texttt{RandomizedSearchCV} from Scikit-learn with 30 Iterations and a 5-fold cross-validation to optimize the hyperparameters. %TODO: Mehr schreiben?
+
 
 %scGPT uses a Deep Learning approach. %ODER
 scGPT \cite{cui_scgpt_2024} is a transformer-based model for single-cell RNA sequencing data analysis and was trained on a large dataset of single-cell RNA sequencing data. 
+%ODER: ... data analysis capable of learning low-dimensional cellular embeddings that capture complex, underlying biological processes. It was trained on ...
 %It is designed to learn a representation of the data that captures the underlying biological processes and can be used for various downstream tasks, including cell type annotation. %TODO: So eine Beschreibung geben? Dann mit Quelle
-We finetuned the pre-trained scGPT model for our comparison, as it was not feasible to retrain it on our dataset due to its size and complexity. %TODO: Passt das nach dem Komma?
-We used the model that was pre-trained on blood data as we only have blood data in our datasets. To finetune scGPT we adjusted the finetuning script provided by the authors on Github\footnote{https://github.com/bowang-lab/scGPT/blob/main/examples/finetune\_integration.py}. Again we built a wrapper to use the Scikit-learn API for our robustness tests.
-We didn't perform any hyperparameter tuning for the fine tuning, as it was not feasible to do so due to the size and complexity of the model. %TODO: Besser in den Absatz einbauen; besser formulieren; Dopplug zu oben; Oder einfach weglassen?
-As scGPT did not perform well at the beginning of our experiments, we made some adjustments to the finetuning script to improve its performance. A major issue was that classes with few samples were not learned well. On top of that a ranom train valid split was made on the train data, so there was a chance that some classes are not represented in the train split. To counter that, we added a stratified cross-validation to the split. This also ensured that the proportion of classes in the train and validation split is the same as in the whole dataset. 
-The stratified cross-validation improved the performance of scGPT, but it still did not perform well on classes with few samples. Therefore we additionaly added sampling to the training data to ensure that each class is sufficiently represented in the training data. This was done by upsampling classes with less than 1,000 samples. %TODO: Mehr dazu erklären? Vor allem zum letzten Satz?
-These changes lead to a significant improvement in the performance of scGPT. %TODO: Irgendwie noch schreiben, dass ich jetzt scGPT mit diesen Changes verwendet habe
+Due to the computational complexity of training such a large-scale transformer from scratch, we only fine-tuned the pre-trained scGPT model for our comparison. We used the model that was pre-trained on blood data as we only have blood data in our datasets. To finetune scGPT we adjusted the finetuning script provided by the authors on Github\footnote{https://github.com/bowang-lab/scGPT/blob/main/examples/finetune\_integration.py}. Again we built a wrapper to use the Scikit-learn API for our robustness tests.
+We didn't perform any hyperparameter tuning for the fine tuning and used the recommended hyperparameters from the authors due to computational constraints. %ODER: , as it was not feasible to tune them due to the size and complexity of the model.
+
+Initial trainings of the scGPT model revealed that the standard fine-tuning pipeline struggled with extreme class imbalances, frequently failing to learn rare cell types. Furthermore, the default random train-validation split risked completely excluding minor classes from the training subset. To avoid these limitations and stabilize model training, we added two modifications to the pipeline. First, we implemented a stratified cross-validation split to guarantee consistent class proportions across both the training and validation subsets. Second, we applied minority class oversampling, upsampling all cell types with less than 1,000 samples to ensure that each class is sufficiently represented in the training data. These changes lead to a significant improvement in the performance of scGPT and are therefore used for the comparison with our classifier.
+
 
 SingleR \cite{aran_reference-based_2019} represents a reference-based method for cell type annotation. It computes Spearman rank correlation coefficients between the gene expressions of unlabeled single cells and a reference dataset, assigning the cell type based on the highest aggregated correlation score. %TODO: Oder mehr Details geben, weil eigentlich werden die Werte pro Klasse aggregiert, dann wird ein 80 percentile berechnet usw.
-We again built a wrapper around the SingleR model to use the Scikit-learn API for our robustness tests. To improve the runtime of SingleR, we computed the mean per cell type in the reference dataset and used it for the classification of the new data. %TODO: Besser begründen! Evtl nochmal ein Training mit SingleR ohne Bulking laufen lassen und das als Begründung verwenden, dann aber auch wie bei scGPT in der Discussion erwähnen!
+We again built a wrapper around the SingleR model to use the Scikit-learn API for our robustness tests. 
+As SingleR scales poorly with the number of cells in the reference dataset, we used a bulked version of the reference dataset for the classification. This means that we computed the mean expression of each gene for each cell type in the reference dataset and used it as the reference for the classification. It reduced the runtime of one run from over 10 hours to just 12 minutes. % Maybe mention that without bulking, one run took over 10 hours
 
-%TODO: scGPT und SingleR Überarbeiten!
 
 \subsection{Marker-Based Annotation}\label{sec:methods:marker-based-annotation}
 
@@ -366,20 +396,11 @@ Hyperparameter tuning was performed using Bayesian Optimization via \texttt{Baye
 
 To optimize computational resources, a custom early-stopping mechanism was integrated into the optimization. This mechanism terminates the search if the model's performance failed to improve by more than 0.2 \% over 5 consecutive iterations. To ensure sufficient initial exploration of the hyperparameter space, this stopper was restricted from triggering until the 15th iteration. Consequently, if no significant improvement was observed between iterations 10 and 15, the search was terminated immediately at the 15th iteration, preventing unnecessary computational overhead. %This approach substantially reduced computational overhead without compromising the quality of the final hyperparameter configurations. %TODO: Diesen Satz noch schreiben?
 
-%TODO: Zitat auf scikit learn und Bayes Search?
+%TODO!: Zitat auf scikit learn?
 
 
 \subsection{Ensemble Learning Strategies}\label{sec:methods:ensemble-learning}
 
-% Alter Text für mehrere Ensemble Learning Strategien:
-%The best Machine Learning models were combined into ensemble learning strategies to improve the overall performance and robustness of the classification. We used standard voting and stacking classifiers, as well as a custom feature-subsampling voting ensemble.
-
-%For the voting classifier,the base estimators as well as the voting type (soft or hard) were optimized using a grid search. The models were tested with little hyperparameter tuning as well as with the optimal hyperparameters from the tuning of the single models. This gives a comparison of the performance of the ensemble methods with hardly tuned and optimal tuned hyperparameters. %TODO: Überarbeiten! Evtl statt dem letzten Satz eine Begründung warum ich einmal mit wenig und dann mit viel hyperparameter tuning getestet habe
-
-%TODO: Etwas zu stacking schreiben
-
-%In the custom ensemble, we combined the same machine learning model mutliple times, each time trained on a different subset of features. The subsets of features include the full set of features and three subsets of features where the top features according to a feature importance ranking were removed. This allows the ensemble to be more robust to missing features and to better generalize to new data. The include the removal of the top 0.75 \%, 1.5 \% and 2.5 \% of the features according to the feature importance ranking.
-% Neuer Text für nur noch die custom ensemble learning Strategie:
 %The top-performing ODER
 The best Machine Learning models were combined into a custom feature-subsampling voting ensemble. This ensemble approach was designed to enhance robustness by training multiple instances of the same model on different subsets of features. The feature subsets include the full set of features and three additional subsets where the top features -- determined by a feature importance ranking -- were systematically removed. Specifically, we created subsets by excluding the top 0.75~\%, 1.5~\%, and 2.5~\% of features based on their importance scores.
 For the linear models we used the feature importance of the random forest model, while for the tree-based models we used the feature importance of the logistic regression model. 

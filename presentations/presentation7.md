@@ -31,6 +31,14 @@ Submitted batch job 12092037
 Submitted batch job 12092039
 
 CLACELL mit bayes_search: Submitted batch job 12098933
+Submitted batch job 12100465
+Submitted batch job 12100470
+
+CLACELL mit bayes_search und complete pipeline: Submitted batch job 12100501
+Submitted batch job 12100507
+Submitted batch job 12100515
+Submitted batch job 12102567
+Submitted batch job 12102968
 
 
 SingleR ohne bulking: Submitted batch job 12098385

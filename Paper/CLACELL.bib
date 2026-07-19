@@ -1,0 +1,249 @@
+
+@online{scikit-optimize_contributors_skoptbayessearchcv_2020,
+	title = {skopt.{BayesSearchCV} — scikit-optimize 0.8.1 documentation},
+	url = {https://scikit-optimize.github.io/stable/modules/generated/skopt.BayesSearchCV.html},
+	author = {scikit-optimize contributors},
+	urldate = {2025-08-13},
+	date = {2020},
+}
+
+@article{li_scmrma_2021,
+	title = {{scMRMA}: single cell multiresolution marker-based annotation},
+	volume = {50},
+	issn = {0305-1048},
+	url = {https://doi.org/10.1093/nar/gkab931},
+	doi = {10.1093/nar/gkab931},
+	abstract = {Single-cell {RNA} sequencing has become a powerful tool for identifying and characterizing cellular heterogeneity. One essential step to understanding cellular heterogeneity is determining cell identities. The widely used strategy predicts identities by projecting cells or cell clusters unidirectionally against a reference to find the best match. Here, we develop a bidirectional method, {scMRMA}, where a hierarchical reference guides iterative clustering and deep annotation with enhanced resolutions. Taking full advantage of the reference, {scMRMA} greatly improves the annotation accuracy. {scMRMA} achieved better performance than existing methods in four benchmark datasets and successfully revealed the expansion of {CD}8 T cell populations in squamous cell carcinoma after anti-{PD}-1 treatment.},
+	pages = {e7--e7},
+	number = {2},
+	journaltitle = {Nucleic Acids Research},
+	author = {Li, Jia and Sheng, Quanhu and Shyr, Yu and Liu, Qi},
+	date = {2021-10},
+	note = {\_eprint: https://academic.oup.com/nar/article-pdf/50/2/e7/42269805/gkab931.pdf},
+}
+
+@article{zhang_probabilistic_2019,
+	location = {United States},
+	title = {Probabilistic cell-type assignment of single-cell {RNA}-seq for tumor microenvironment profiling.},
+	volume = {16},
+	issn = {1548-7105 1548-7091},
+	doi = {10.1038/s41592-019-0529-1},
+	abstract = {Single-cell {RNA} sequencing has enabled the decomposition of complex tissues into functionally distinct cell types. Often, investigators wish to assign cells to  cell types through unsupervised clustering followed by manual annotation or via  'mapping' to existing data. However, manual interpretation scales poorly to large  datasets, mapping approaches require purified or pre-annotated data and both are  prone to batch effects. To overcome these issues, we present {CellAssign}, a  probabilistic model that leverages prior knowledge of cell-type marker genes to  annotate single-cell {RNA} sequencing data into predefined or de novo cell types.  {CellAssign} automates the process of assigning cells in a highly scalable manner  across large datasets while controlling for batch and sample effects. We  demonstrate the advantages of {CellAssign} through extensive simulations and  analysis of tumor microenvironment composition in high-grade serous ovarian  cancer and follicular lymphoma.},
+	pages = {1007--1015},
+	number = {10},
+	journaltitle = {Nature methods},
+	shortjournal = {Nat Methods},
+	author = {Zhang, Allen W. and O'Flanagan, Ciara and Chavez, Elizabeth A. and Lim, Jamie L. P. and Ceglia, Nicholas and {McPherson}, Andrew and Wiens, Matt and Walters, Pascale and Chan, Tim and Hewitson, Brittany and Lai, Daniel and Mottok, Anja and Sarkozy, Clementine and Chong, Lauren and Aoki, Tomohiro and Wang, Xuehai and Weng, Andrew P. and {McAlpine}, Jessica N. and Aparicio, Samuel and Steidl, Christian and Campbell, Kieran R. and Shah, Sohrab P.},
+	date = {2019-10},
+	keywords = {*Gene Expression Profiling, *Probability, *Tumor Microenvironment, Humans, Lymphoma, Follicular/immunology/*pathology, Sequence Analysis, {RNA}/*methods, Single-Cell Analysis/*methods},
+}
+
+@article{ma_actinn_2019,
+	title = {{ACTINN}: automated identification of cell types in single cell {RNA} sequencing},
+	volume = {36},
+	issn = {1367-4803},
+	url = {https://doi.org/10.1093/bioinformatics/btz592},
+	doi = {10.1093/bioinformatics/btz592},
+	abstract = {Cell type identification is one of the major goals in single cell {RNA} sequencing ({scRNA}-seq). Current methods for assigning cell types typically involve the use of unsupervised clustering, the identification of signature genes in each cluster, followed by a manual lookup of these genes in the literature and databases to assign cell types. However, there are several limitations associated with these approaches, such as unwanted sources of variation that influence clustering and a lack of canonical markers for certain cell types. Here, we present {ACTINN} (Automated Cell Type Identification using Neural Networks), which employs a neural network with three hidden layers, trains on datasets with predefined cell types and predicts cell types for other datasets based on the trained parameters.We trained the neural network on a mouse cell type atlas (Tabula Muris Atlas) and a human immune cell dataset, and used it to predict cell types for mouse leukocytes, human {PBMCs} and human T cell sub types. The results showed that our neural network is fast and accurate, and should therefore be a useful tool to complement existing {scRNA}-seq pipelines.The codes and datasets are available at https://figshare.com/articles/{ACTINN}/8967116. Tutorial is available at https://github.com/mafeiyang/{ACTINN}. All codes are implemented in python.Supplementary data are available at Bioinformatics online.},
+	pages = {533--538},
+	number = {2},
+	journaltitle = {Bioinformatics},
+	author = {Ma, Feiyang and Pellegrini, Matteo},
+	date = {2019-07},
+	note = {\_eprint: https://academic.oup.com/bioinformatics/article-pdf/36/2/533/48991869/btz592.pdf},
+}
+
+@article{liu_knowledge-based_2021,
+	title = {Knowledge-based classification of fine-grained immune cell types in single-cell {RNA}-Seq data},
+	volume = {22},
+	issn = {1477-4054},
+	url = {https://doi.org/10.1093/bib/bbab039},
+	doi = {10.1093/bib/bbab039},
+	abstract = {Single-cell {RNA} sequencing ({scRNA}-Seq) is an emerging strategy for characterizing immune cell populations. Compared to flow or mass cytometry, {scRNA}-Seq could potentially identify cell types and activation states that lack precise cell surface markers. However, {scRNA}-Seq is currently limited due to the need to manually classify each immune cell from its transcriptional profile. While recently developed algorithms accurately annotate coarse cell types (e.g. T cells versus macrophages), making fine distinctions (e.g. {CD}8+ effector memory T cells) remains a difficult challenge. To address this, we developed a machine learning classifier called {ImmClassifier} that leverages a hierarchical ontology of cell type. We demonstrate that its predictions are highly concordant with flow-based markers from {CITE}-seq and outperforms other tools (+15\% recall, +14\% precision) in distinguishing fine-grained cell types with comparable performance on coarse ones. Thus, {ImmClassifier} can be used to explore more deeply the heterogeneity of the immune system in {scRNA}-Seq experiments.},
+	pages = {bbab039},
+	number = {5},
+	journaltitle = {Briefings in Bioinformatics},
+	author = {Liu, Xuan and Gosline, Sara J C and Pflieger, Lance T and Wallet, Pierre and Iyer, Archana and Guinney, Justin and Bild, Andrea H and Chang, Jeffrey T},
+	date = {2021-03},
+	note = {\_eprint: https://academic.oup.com/bib/article-pdf/22/5/bbab039/40828462/immc\_supplementary\_data\_01062021\_bbab039.pdf},
+}
+
+@misc{boiarsky_deep_2023,
+	title = {A Deep Dive into Single-Cell {RNA} Sequencing Foundation Models},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2023.10.19.563100},
+	doi = {10.1101/2023.10.19.563100},
+	abstract = {Abstract
+          
+            Large-scale foundation models, which are pre-trained on massive, unlabeled datasets and subsequently fine-tuned on specific tasks, have recently achieved unparalleled success on a wide array of applications, including in healthcare and biology. In this paper, we explore two foundation models recently developed for single-cell {RNA} sequencing data, {scBERT} and {scGPT}. Focusing on the fine-tuning task of cell type annotation, we explore the relative performance of pre-trained models compared to a simple baseline, L1-regularized logistic regression, including in the few-shot setting. We perform ablation studies to understand whether pretraining improves model performance and to better understand the difficulty of the pre-training task in {scBERT}. Finally, using {scBERT} as an example, we demonstrate the potential sensitivity of fine-tuning to hyperparameter settings and parameter initializations. Taken together, our results highlight the importance of rigorously testing foundation models against well established baselines, establishing challenging fine-tuning tasks on which to benchmark foundation models, and performing deep introspection into the embeddings learned by the model in order to more effectively harness these models to transform single-cell data analysis. Code is available at
+            https://github.com/clinicalml/sc-foundation-eval
+            .},
+	publisher = {Genomics},
+	author = {Boiarsky, Rebecca and Singh, Nalini and Buendia, Alejandro and Getz, Gad and Sontag, David},
+	urldate = {2026-07-04},
+	date = {2023-10-23},
+	langid = {english},
+	file = {Accepted Version:/home/boolean/Zotero/storage/BYHGATAC/Boiarsky et al. - 2023 - A Deep Dive into Single-Cell RNA Sequencing Foundation Models.pdf:application/pdf},
+}
+
+@article{dominguez_conde_cross-tissue_2022,
+	title = {Cross-tissue immune cell analysis reveals tissue-specific features in humans},
+	volume = {376},
+	issn = {0036-8075, 1095-9203},
+	url = {https://www.science.org/doi/10.1126/science.abl5197},
+	doi = {10.1126/science.abl5197},
+	abstract = {Despite their crucial role in health and disease, our knowledge of immune cells within human tissues remains limited. We surveyed the immune compartment of 16 tissues from 12 adult donors by single-cell {RNA} sequencing and {VDJ} sequencing generating a dataset of {\textasciitilde}360,000 cells. To systematically resolve immune cell heterogeneity across tissues, we developed {CellTypist}, a machine learning tool for rapid and precise cell type annotation. Using this approach, combined with detailed curation, we determined the tissue distribution of finely phenotyped immune cell types, revealing hitherto unappreciated tissue-specific features and clonal architecture of T and B cells. Our multitissue approach lays the foundation for identifying highly resolved immune cell types by leveraging a common reference dataset, tissue-integrated expression analysis, and antigen receptor sequencing.
+          , 
+            Immune cell diversity in the human body
+            
+              The human immune system is composed of many different cell types spread across the entire body, but little is currently known about the fine-grained variations in these cell types across organs. Using single-cell genomics, Domínguez Conde
+              et al
+              . examined the gene expression profile of more than 300,000 individual immune cells extracted from 16 different tissues in 12 deceased adult organ donors (see the Perspective by Liu and Zhang). Cell identity was assigned using {CellTypist}, an automated cell classification tool designed by the authors. In-depth data analysis revealed insights into how the immune system adapts to function effectively in different organ contexts. —{LZ} and {DJ}
+            
+          , 
+            An immune cell atlas of human innate and adaptive immune cells across lymphoid, mucosal, and exocrine sites reveals tissue-specific compositions and features.
+          , 
+            
+              {INTRODUCTION}
+              Immune cells that seed peripheral tissues play a vital role in health and disease, yet most studies of human immunity focus on blood-derived cells. Immune cells adapt to local microenvironments, acquiring distinct features and functional specialization. Dissecting these molecular adaptations through the systematic assessment of cells across the human body promises to transform our understanding of the immune system at the organismal level.
+            
+            
+              {RATIONALE}
+              To comprehensively assess immune cell types, we collected donor-matched tissues from 12 deceased organ donors. We isolated immune cells and performed single-cell {RNA} sequencing and paired {VDJ} sequencing for T cell and B cell receptors, resulting in high-quality data for {\textasciitilde}330,000 immune cells. To resolve cell identities, we developed {CellTypist}, a logistic regression–based framework using stochastic gradient descent learning. This cross-tissue annotation enabled interrogation of shared and tissue-specific expression modules and cell states within myeloid and lymphoid cell lineages.
+            
+            
+              {RESULTS}
+              
+                We developed {CellTypist} by curating and harmonizing public datasets to assemble a comprehensive immune cell type reference database (
+                https://www.celltypist.org
+                ). {CellTypist} was then applied to our data, generated across multiple tissues and individuals (
+                https://www.tissueimmunecellatlas.org/
+                ). Altogether, we detected 101 immune populations and performed extensive cross-tissue comparisons for each subset. Although macrophages displayed prominent tissue-restricted features, some convergent features were also detected. For example, macrophages expressing erythrophagocytosis-related genes were widely found in spleen, liver, bone marrow, and lymph nodes. Heterogeneity within defined subpopulations was also observed, such as migratory dendritic cell adaptations. Within adaptive immune lineages, we identified tissue-specific distributions of memory populations. Plasma cells showed a restricted tissue distribution, whereas memory B cells were more widely distributed. Similarly, tissue-resident memory T (T
+                {RM}
+                ) cells were more restricted in distribution compared with central and effector memory T cells. Notably, T
+                {RM}
+                cells harbored significant diversity, including αβ and γδ lineages, ascertained by {VDJ} sequencing. Assessment of clonal dynamics revealed the highest clonal expansions in T
+                {RM}
+                cells and the most frequent clonal sharing between resident and effector memory populations.
+              
+            
+            
+              {CONCLUSION}
+              Here we present an immune cell atlas of myeloid and lymphoid lineages across adult human tissues. We developed {CellTypist} for automated immune cell annotation and performed an in-depth dissection of cell populations, identifying 101 cell types or states from more than one million cells, including previously underappreciated cell states. We also uncovered convergent phenotypes across tissues within given lineages and described tissue adaptation signatures for a number of cell types, including macrophages and resident memory T cells. Together, we have extended our understanding of how human immunity functions as an integrated, cross-tissue network, and we provide the scientific community with several key new resources.
+              
+                
+                  Cross-tissue atlas of human immune cells.
+                  Donor-matched tissues from 12 deceased organ donors were profiled using single-cell {RNA} sequencing [including single-cell {VDJ} sequencing ({scVDJ}-seq)]. Cell type annotation was achieved with {CellTypist}, an automated cell type annotation pipeline, followed by manual curation. In-depth analysis of transcriptional features revealed convergent and divergent gene expression programs for each cell lineage across lymphoid and nonlymphoid tissues. {scVDJ}-seq enabled repertoire analysis across cell subsets and tissues. {scRNA}-seq, single-cell {RNA} sequencing; {TCR}, T cell receptor; {BCR}, B cell receptor.},
+	pages = {eabl5197},
+	number = {6594},
+	journaltitle = {Science},
+	shortjournal = {Science},
+	author = {Domínguez Conde, C. and Xu, C. and Jarvis, L. B. and Rainbow, D. B. and Wells, S. B. and Gomes, T. and Howlett, S. K. and Suchanek, O. and Polanski, K. and King, H. W. and Mamanova, L. and Huang, N. and Szabo, P. A. and Richardson, L. and Bolt, L. and Fasouli, E. S. and Mahbubani, K. T. and Prete, M. and Tuck, L. and Richoz, N. and Tuong, Z. K. and Campos, L. and Mousa, H. S. and Needham, E. J. and Pritchard, S. and Li, T. and Elmentaite, R. and Park, J. and Rahmani, E. and Chen, D. and Menon, D. K. and Bayraktar, O. A. and James, L. K. and Meyer, K. B. and Yosef, N. and Clatworthy, M. R. and Sims, P. A. and Farber, D. L. and Saeb-Parsy, K. and Jones, J. L. and Teichmann, S. A.},
+	urldate = {2026-07-05},
+	date = {2022-05-13},
+	langid = {english},
+	file = {Full Text PDF:/home/boolean/Zotero/storage/PERE7X7E/Domínguez Conde et al. - 2022 - Cross-tissue immune cell analysis reveals tissue-specific features in humans.pdf:application/pdf},
+}
+
+@article{ding_systematic_2020,
+	title = {Systematic comparison of single-cell and single-nucleus {RNA}-sequencing methods},
+	volume = {38},
+	issn = {1087-0156, 1546-1696},
+	url = {https://www.nature.com/articles/s41587-020-0465-8},
+	doi = {10.1038/s41587-020-0465-8},
+	pages = {737--746},
+	number = {6},
+	journaltitle = {Nature Biotechnology},
+	shortjournal = {Nat Biotechnol},
+	author = {Ding, Jiarui and Adiconis, Xian and Simmons, Sean K. and Kowalczyk, Monika S. and Hession, Cynthia C. and Marjanovic, Nemanja D. and Hughes, Travis K. and Wadsworth, Marc H. and Burks, Tyler and Nguyen, Lan T. and Kwon, John Y. H. and Barak, Boaz and Ge, William and Kedaigle, Amanda J. and Carroll, Shaina and Li, Shuqiang and Hacohen, Nir and Rozenblatt-Rosen, Orit and Shalek, Alex K. and Villani, Alexandra-Chloé and Regev, Aviv and Levin, Joshua Z.},
+	urldate = {2026-07-15},
+	date = {2020-06-01},
+	langid = {english},
+}
+
+@article{abdelaal_comparison_2019,
+	title = {A comparison of automatic cell identification methods for single-cell {RNA} sequencing data},
+	volume = {20},
+	issn = {1474-760X},
+	url = {https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1795-z},
+	doi = {10.1186/s13059-019-1795-z},
+	abstract = {Abstract
+            
+              Background
+              Single-cell transcriptomics is rapidly advancing our understanding of the cellular composition of complex tissues and organisms. A major limitation in most analysis pipelines is the reliance on manual annotations to determine cell identities, which are time-consuming and irreproducible. The exponential growth in the number of cells and samples has prompted the adaptation and development of supervised classification methods for automatic cell identification.
+            
+            
+              Results
+              Here, we benchmarked 22 classification methods that automatically assign cell identities including single-cell-specific and general-purpose classifiers. The performance of the methods is evaluated using 27 publicly available single-cell {RNA} sequencing datasets of different sizes, technologies, species, and levels of complexity. We use 2 experimental setups to evaluate the performance of each method for within dataset predictions (intra-dataset) and across datasets (inter-dataset) based on accuracy, percentage of unclassified cells, and computation time. We further evaluate the methods’ sensitivity to the input features, number of cells per population, and their performance across different annotation levels and datasets. We find that most classifiers perform well on a variety of datasets with decreased accuracy for complex datasets with overlapping classes or deep annotations. The general-purpose support vector machine classifier has overall the best performance across the different experiments.
+            
+            
+              Conclusions
+              
+                We present a comprehensive evaluation of automatic cell identification methods for single-cell {RNA} sequencing data. All the code used for the evaluation is available on {GitHub} (
+                https://github.com/tabdelaal/{scRNAseq}\_Benchmark
+                ). Additionally, we provide a Snakemake workflow to facilitate the benchmarking and to support the extension of new methods and new datasets.},
+	pages = {194},
+	number = {1},
+	journaltitle = {Genome Biology},
+	shortjournal = {Genome Biol},
+	author = {Abdelaal, Tamim and Michielsen, Lieke and Cats, Davy and Hoogduin, Dylan and Mei, Hailiang and Reinders, Marcel J. T. and Mahfouz, Ahmed},
+	urldate = {2026-07-15},
+	date = {2019-12},
+	langid = {english},
+	file = {Full Text:/home/boolean/Zotero/storage/X27JLBFY/Abdelaal et al. - 2019 - A comparison of automatic cell identification methods for single-cell RNA sequencing data.pdf:application/pdf},
+}
+
+@article{luecken_current_2019,
+	title = {Current best practices in single‐cell {RNA}‐seq analysis: a tutorial},
+	volume = {15},
+	issn = {1744-4292},
+	url = {https://link.springer.com/10.15252/msb.20188746},
+	doi = {10.15252/msb.20188746},
+	shorttitle = {Current best practices in single‐cell {RNA}‐seq analysis},
+	abstract = {Abstract
+            
+              Single‐cell {RNA}‐seq has enabled gene expression to be studied at an unprecedented resolution. The promise of this technology is attracting a growing user base for single‐cell analysis methods. As more analysis tools are becoming available, it is becoming increasingly difficult to navigate this landscape and produce an up‐to‐date workflow to analyse one's data. Here, we detail the steps of a typical single‐cell {RNA}‐seq analysis, including pre‐processing (quality control, normalization, data correction, feature selection, and dimensionality reduction) and cell‐ and gene‐level downstream analysis. We formulate current best‐practice recommendations for these steps based on independent comparison studies. We have integrated these best‐practice recommendations into a workflow, which we apply to a public dataset to further illustrate how these steps work in practice. Our documented case study can be found at
+              https://www.github.com/theislab/single-cell-tutorial
+              . This review will serve as a workflow tutorial for new entrants into the field, and help established users update their analysis pipelines.},
+	pages = {MSB188746},
+	number = {6},
+	journaltitle = {Molecular Systems Biology},
+	shortjournal = {Mol Syst Biol},
+	author = {Luecken, Malte D and Theis, Fabian J},
+	urldate = {2026-07-17},
+	date = {2019-06-01},
+	langid = {english},
+	file = {Full Text PDF:/home/boolean/Zotero/storage/ZJBFDM84/Luecken and Theis - 2019 - Current best practices in single‐cell RNA‐seq analysis a tutorial.pdf:application/pdf},
+}
+
+@article{cui_scgpt_2024,
+	title = {{scGPT}: toward building a foundation model for single-cell multi-omics using generative {AI}},
+	volume = {21},
+	issn = {1548-7091, 1548-7105},
+	url = {https://www.nature.com/articles/s41592-024-02201-0},
+	doi = {10.1038/s41592-024-02201-0},
+	shorttitle = {{scGPT}},
+	pages = {1470--1480},
+	number = {8},
+	journaltitle = {Nature Methods},
+	shortjournal = {Nat Methods},
+	author = {Cui, Haotian and Wang, Chloe and Maan, Hassaan and Pang, Kuan and Luo, Fengning and Duan, Nan and Wang, Bo},
+	urldate = {2026-07-17},
+	date = {2024-08},
+	langid = {english},
+}
+
+@article{aran_reference-based_2019,
+	title = {Reference-based analysis of lung single-cell sequencing reveals a transitional profibrotic macrophage},
+	volume = {20},
+	issn = {1529-2908, 1529-2916},
+	url = {https://www.nature.com/articles/s41590-018-0276-y},
+	doi = {10.1038/s41590-018-0276-y},
+	pages = {163--172},
+	number = {2},
+	journaltitle = {Nature Immunology},
+	shortjournal = {Nat Immunol},
+	author = {Aran, Dvir and Looney, Agnieszka P. and Liu, Leqian and Wu, Esther and Fong, Valerie and Hsu, Austin and Chak, Suzanna and Naikawadi, Ram P. and Wolters, Paul J. and Abate, Adam R. and Butte, Atul J. and Bhattacharya, Mallar},
+	urldate = {2026-07-17},
+	date = {2019-02},
+	langid = {english},
+}

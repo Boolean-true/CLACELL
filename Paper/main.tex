@@ -102,7 +102,7 @@ Random Forest and LinearSVC have the highest peak RAM usage, while Logistic Regr
 After covering the technical specifications, we now focus on the performance of the models. The Macro F1 score is highest for LinearSVC and Logistic Regression, while Random Forest has the lowest Macro F1 score. LinearSVC and Extra Trees have the lowest variance.
 The Random Dropout Accuracy score is highest for LinearSVC and Logistic Regression, while LightGBM has the lowest Random Dropout Accuracy score. The performance difference between the linear and the tree-based models is smaller for the Random Dropout Accuracy score than for the Macro F1 score.
 The Macro F1 score on the out of distribution test set has a different result than the in distribution test set. LinearSVC and Logistic Regression have a similar Macro F1 score to the Random Forest model. LightGBM is the best performing model and Extra Trees is the worst performing model.
-The Random Dropout Accuracy score on the out of distribution test set as the Random Forest has the best performance followed by Extra Trees. LightGBM has the highest variance and its median is the lowest score of all models.
+The Random Dropout Accuracy score on the out of distribution test set is different, as the Random Forest has the best performance followed by Extra Trees. LightGBM has the highest variance and its median is the lowest score of all models. %TODO!: Überarbeiten, hier arbeite ich nur metrik für metrik ab, das klingt auch nicht so gut!
 
 Overall, the linear models perform better than the tree-based models in terms of both Macro F1 score and Random Dropout Accuracy score. The tree-based models were better in the out of distribution Random Dropout test, however the performance difference between the linear and tree-based models is smaller than in the other tests. Random Forest also yields good results while LightGBM performs worst of all models.
 
@@ -327,29 +327,21 @@ GPU Training\tnote{c} & \makecell[l]{Unknown} & 32 / 32                 & 117 GB
 
 %TODO: Maybe describe the datasets (Number of Samples, Number of Features)
 
-The preprocessing described in this section was inspired by the scRNA-seq analysis best practices presented by \textcite{luecken_current_2019}. %TODO: Sollte ich erwähnen welche Komponenten ich übernommen habe? Oder reicht das so?
-%TODO!: Zitat auf scanpy, evtl auch ganze subsection darauf anpassen
+The preprocessing pipeline described in this section was inspired by the scRNA-seq analysis best practices presented by \textcite{luecken_current_2019} and the scanpy tutorial \cite{scanpy_development_team_preprocessing_2026}.
 It was applied to both the in-distribution and out-of-distribution datasets. The preprocessing pipeline was designed to ensure that the datasets are comparable and that the models can be trained and evaluated effectively.
 
 Before we started with the preprocessing, we made sure to use the raw counts of the datasets. As we later normalize the data, already normalized data would have been a problem. We also filtered the in distribution dataset for blood data, as it contained more data. The out-of-distribution dataset already only contains blood data.
 
-First we filtered mitochondrial, ribosomal and hemoglobin genes from the datasets, as they are not informative for cell type classification. %TODO: Stimmt das, Quelle; qc metrics erwähnen?
-After that we removed doublets as they can introduce noise and bias into the data. %TODO: Stimmt das, Quelle?
+To prevent the misinterpretation of mitochondrial and ribosomal genes as cell type specific markers, we filtered them out of the datasets. Additionally, hemoglobin genes were removed as part of gene-level quality control to focus on genes relevant for the classification of immune cells \cite{ding_systematic_2020, luecken_current_2019}. %TODO ODER: To prevent models from relying on cell stress and metabolic activity rather than lineage-specific markers, mitochondrial and ribosomal genes were excluded from the dataset. Additionally, hemoglobin genes were filtered out as technical noise from red blood cell lysis to focus solely on biologically relevant immune cell features.
+%Dobulets were then removed to prevent misclassifications. %ODER
+After that we removed doublets to avoid misclassifications \cite{scanpy_development_team_preprocessing_2026}.
 
-Then we nomralized the data to a target sum of $1e4$ and log transformed it. This is a common preprocessing step in single-cell RNA sequencing data analysis, as it helps to stabilize the variance and make the data more normally distributed. %TODO: Stimmt letzter Satz + Quelle
+To ensure comparable data and soften the mean-variance relationship, we then applied a normalization to a target sum of $1e4$ and log(x+1)-transformation to the datasets \cite{luecken_current_2019}.
+%ODER: Then we normalized the data to a target sum of $1e4$ and log(x+1)-transformed it. This ensured that the data is comparable across cells and is normally distributed \cite{luecken_current_2019}.
 
-Finally we filtered the datasets for highly variable genes, as they are more informative for cell type classification. 
-In order to determine the number of highly variable genes to use, we created an elbow plot that shows the variance of the genes in the dataset. The elbow plot is shown in \Cref{fig:elbow-plot-gene-count}. It shows that until around 10,000 genes the biological variance is still grater than 0. Additionally we trained Random Forest models to determine which threshold to use. Despite the low variance at 10,000 genes, the Random Forest models performed best with this threshold. Therefore we decided to use the top 10,000 highly variable genes for our analysis. %TODO: Besser beschreiben?
+Finally, we filtered the datasets for highly variable genes to focus on the most informative ones for the cell type classification \cite{scanpy_development_team_preprocessing_2026}. 
+To determine the number of highly variable genes to use, we created the elbow plot in \Cref{fig:elbow-plot-gene-count} that shows the variance of the genes in the dataset. It indicates that until around 10,000 genes the biological variance is still greater than 0. Additionally, an empirical evaluation with Random Forest models confirmed that using the top 10,000 highly variable genes yielded the best performance. Therefore, we decided to use this threshold for our analysis.
 
-\begin{figure}[htb]
-    \centering
-    \includegraphics[width=\linewidth]{figures/gene\_count\_elbow\_plot.png}
-    \caption{Elbow-Plot for Comparison of Gene Count}
-    \label{fig:elbow-plot-gene-count}
-\end{figure}
-%TODO: Figure in den Anhang?!?
-
-%TODO: Ganze Subsection nochmal drüberlesen und überarbeiten, evtl. noch mehr Details zu den einzelnen Schritten
 
 \subsection{Reference Models}\label{sec:methods:reference-models}
 
@@ -414,6 +406,24 @@ To save computational resources, we used the optimal hyperparameters from the tu
 \subsection{Denoising \& Hybrid Approaches}\label{sec:methods:denoising-hybrid}
 
 TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic Regression. Mention why this approach can help with robustness and why the conditional autoencoder helps even further.
+
+We scaled the input data before applying the Denoising Autoencoder and Conditional Autoencoder. %TODO: Begründen warum das gemacht wurde
+
+The idea behind the Denoising Autoencoder is to learn a robust representation of the input data by reconstructing the original input from a corrupted version. The Encoder learns to map the corrupted input to a latent representation, while the Decoder learns to reconstruct the original input from this latent representation. This approach can help the model to generalize better and be more robust against noise in the input data. %TODO: Drüberlesen und Überarbeiten
+We followed the standard architecture: %TODO: Quelle!
+The Encoder of the Denoising Autoencoder consists of two sets of Linear layers with Batch Normalization and ReLU activation functions. Between the sets is a Dropout layer with a dropout rate of 0.2. The first set reduces the input dimension to 512, while the second set reduces it to the latent dimension of 128. The Decoder consists of two Linear layers with Batch Normalization and ReLU activation functions between them. The first Linear layer increases the latent dimension to 256, while the second set increases it to the original input dimension. We used a noise factor of 0.3 to corrupt the input data during training. 
+
+The Conditional Autoencoder extends the idea of the Denoising Autoencoder by conditioning the reconstruction on additional information, such as donor ids, which can further improve the robustness and accuracy of the model by removing the influence of the donor-specific noise.
+Again, the architecture of the Conditional Autoencoder follows the standard architecture. %TODO: Quelle!
+The Encoder consists of two Linear layers with a ReLU activation function and a Dropout layer with a dropout rate of 0.3 between them. The first Linear layer reduces the input dimension to 256, while the second set reduces it to the latent dimension of 128. The Decoder consists of two Linear layers with a ReLU activation functions between them. The first Linear layer increases the latent dimension to 256, while the second one increases it to the original input dimension. The donor ids are one-hot encoded and concatenated to the input data before passing it through the Encoder and Decoder. In the inference phase, the donor ids are set to 0, as we do not have this information for the test data.
+
+
+Both autoencoders were trained for 150 epochs with a batch size of 128 and a learning rate of 0.001 using the AdamW optimizer. The loss function used was the Mean Squared Error (MSE) loss. We also added an early stopping mechanism to prevent overfitting. The training was stopped if the validation loss did not improve more than 0.0002 for 5 consecutive epochs.
+
+These approaches have to be combined with a classifier, as they only learn a representation of the input data and do not perform classification. We combined the autoencoders with the best machine learning models. %TODO: Passt die Stelle?; Besser formulieren, vor allem den zweiten Satz
+
+
+%TODO: Über die ganze subsection drüberlesen
 
 
 \subsection{Robustness Tests}\label{sec:methods:robustness-tests}
@@ -593,13 +603,11 @@ For the out-of-distribution testing, we used the dataset ``A single cell immune 
 
 \section{Supplementary figures}\label{appendix:figures}
 
-Supplementary figures that provide additional results but do not fit into the narrative of the main text can be put here. All supplementary figures should be referenced from the main text and should be listed here in the order of these references. Delete this section if not needed.
-
 \begin{figure}[htb]
     \centering
-    \includegraphics[width=0.5\linewidth]{example-image-b}
-    \caption{Caption of \Cref{fig:supp-fig}.}
-    \label{fig:supp-fig}
+    \includegraphics[width=\linewidth]{figures/gene\_count\_elbow\_plot.png}
+    \caption{Elbow-Plot for Comparison of Gene Count}
+    \label{fig:elbow-plot-gene-count}
 \end{figure}
 
 \section{Supplementary tables}\label{appendic:tables}

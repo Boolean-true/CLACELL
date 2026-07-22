@@ -96,15 +96,14 @@ To avoid single bad runs of the models, we ran each model 10 times and calculate
 
 %TODO?: Maybe mention the Accuracy of all methods before introducing the box plot as an overview
 
-\Cref{fig:overall-ml-robustness-comparison} shows an overview of the performance of the different machine learning models. The Random Forest and Extra Trees models have the lowest and most consistent runtime, while LightGBM has the highest runtime. LinearSVC varies most in runtime.
-Random Forest and LinearSVC have the highest peak RAM usage, while Logistic Regression and LightGBM reach similar peaks but less often. Extra Trees has the lowest peak RAM usage. LinearSVC and LightGBM show the highest variance in peak RAM usage.
+\Cref{fig:overall-ml-robustness-comparison} provides an overview of the performance and resource usage of all evaluated machine learning models on both the in-distribution and out-of-distribution test set.
 
-After covering the technical specifications, we now focus on the performance of the models. The Macro F1 score is highest for LinearSVC and Logistic Regression, while Random Forest has the lowest Macro F1 score. LinearSVC and Extra Trees have the lowest variance.
-The Random Dropout Accuracy score is highest for LinearSVC and Logistic Regression, while LightGBM has the lowest Random Dropout Accuracy score. The performance difference between the linear and the tree-based models is smaller for the Random Dropout Accuracy score than for the Macro F1 score.
-The Macro F1 score on the out of distribution test set has a different result than the in distribution test set. LinearSVC and Logistic Regression have a similar Macro F1 score to the Random Forest model. LightGBM is the best performing model and Extra Trees is the worst performing model.
-The Random Dropout Accuracy score on the out of distribution test set is different, as the Random Forest has the best performance followed by Extra Trees. LightGBM has the highest variance and its median is the lowest score of all models. %TODO!: Überarbeiten, hier arbeite ich nur metrik für metrik ab, das klingt auch nicht so gut!
+Random Forest and Extra Trees have the shortest and most consistent runtime, while LightGBM has the longest runtime. LinearSVC shows the highest variability in runtime. In terms of peak memory consumption, Random Forest and LinearSVC exhibit the highest peaks, whereas Logistic Regression and LightGBM reach similar peaks but less frequently. Extra Trees is the most memory-efficient model. %LinearSVC and LightGBM have the highest variance in peak memory usage. %TODO?: Noch erwähnen?
 
-Overall, the linear models perform better than the tree-based models in terms of both Macro F1 score and Random Dropout Accuracy score. The tree-based models were better in the out of distribution Random Dropout test, however the performance difference between the linear and tree-based models is smaller than in the other tests. Random Forest also yields good results while LightGBM performs worst of all models.
+The evaluation of the performance on the in-distribution test set shows that linear models generally outperform the tree-based models. LinearSVC and Logistic Regression achieve the highest Macro F1 scores and Random Dropout Accuracy and the LinearSVC has the lowest variance. Among the tree-based models, Random Forest yields the lowest Macro F1 score, while LightGBM has the lowest Random Dropout Accuracy score. The performance gap between linear and tree-based models is higher for the Macro F1 score than for the Random Dropout Accuracy score.
+
+For the out-of-distribution test set, the relative performance shifts.% as the tree-based models perform similar and even better than the linear models in some metrics. %TODO: Soll/Kann ich das so noch ergänzen?
+LightGBM achieves the highest Macro F1 score, while Random Forest has the best Random Dropout Accuracy score. Extra Trees performs worst in Macro F1 score but better than the linear models in Random Dropout Accuracy. The variance of LightGBM is the highest among all models, while LinearSVC has the lowest variance. However, the performance difference between linear and tree-based models is smaller than in the in-distribution test set. Therefore, the linear models remain the overall best performing models. The best performing tree-based model is still Random Forest, as it shows a good performance in both out-of-distribution metrics. %TODO?: Random Forest als bestes tree-based model erwähnen?
 
 \begin{figure}[htb]
     \centering
@@ -113,12 +112,9 @@ Overall, the linear models perform better than the tree-based models in terms of
     \label{fig:overall-ml-robustness-comparison}
 \end{figure}
 
-To evaluate the robustness of the models, we visualized the baseline accuracy and the accuracy for the different feature importance dropouts in a line plot. This shows how much the Accuracy score declines with an increasing number of missing important features.
+To evaluate the robustness of the models, we analyzed the decline of the Accuracy score with an increasing number of missing important features. As illustrated in \Cref{fig:ml-robustness-comparison}, the linear models offer the overall best performance on both in-distribution and out-of-distribution test sets. Although tree-based models occasionally outperform linear models, the performance gains are marginal. In contrast, when linear models outperform tree-based models, the performance difference is substantial. Random Forest and Extra Trees have a similar performance across different Feature Importance Dropouts. LinearSVC is the top-performing model, while LightGBM shows the weakest performance across all metrics. Amongst the tree-based models, Random Forest and Extra Trees offer the best performance.
 
-The results of this comparison for the in and out of distribution test sets are shown in \Cref{fig:ml-robustness-comparison}. They show that the linear models Logistic Regression and LinearSVC perform better than the tree-based models Random Forest, Extra Trees and LightGBM. When the tree-based models are better than the linear models, they are only slightly better, however the other way around the linear models are significantly better than the tree-based models. LinearSVC is generally the best performing model, while LightGBM performs worst of all models.
-%TODO: Besser formulieren; Evtl. noch mehr zu den Ergebnissen schreiben
-
-In the following subsections, we will focus on the LinearSVC, Logistic Regression and Random Forest as they are the best performing models. We also included the Random Forest to compare the linear models with a tree-based model.
+In the following subsections, we focus on LinearSVC, Logistic Regression, and Random Forest. LinearSVC and Logistic Regression were selected as the top-performing models, while Random Forest is included as the best tree-based model.
 
 \begin{figure}[htb]
     \centering
@@ -128,10 +124,6 @@ In the following subsections, we will focus on the LinearSVC, Logistic Regressio
 \end{figure}
 
 %TODO: Schrift in den Grafiken evtl größer machen
-
-%TODO: Evtl nur out of distribution Grafik im Text anzeigen und in distribution Grafik in den Anhang packen
-
-%TODO: Subsection drüberlesen
 
 
 \subsection{Comparison of Ensemble and Denoising Approaches}\label{sec:results:ensemble-ae}
@@ -409,6 +401,7 @@ TODO: the Denoising Autoencoder + Conditional Autoencoder combined with Logistic
 
 We scaled the input data before applying the Denoising Autoencoder and Conditional Autoencoder. %TODO: Begründen warum das gemacht wurde
 
+\iffalse
 The idea behind the Denoising Autoencoder is to learn a robust representation of the input data by reconstructing the original input from a corrupted version. The Encoder learns to map the corrupted input to a latent representation, while the Decoder learns to reconstruct the original input from this latent representation. This approach can help the model to generalize better and be more robust against noise in the input data. %TODO: Drüberlesen und Überarbeiten
 We followed the standard architecture: %TODO: Quelle!
 The Encoder of the Denoising Autoencoder consists of two sets of Linear layers with Batch Normalization and ReLU activation functions. Between the sets is a Dropout layer with a dropout rate of 0.2. The first set reduces the input dimension to 512, while the second set reduces it to the latent dimension of 128. The Decoder consists of two Linear layers with Batch Normalization and ReLU activation functions between them. The first Linear layer increases the latent dimension to 256, while the second set increases it to the original input dimension. We used a noise factor of 0.3 to corrupt the input data during training. 
@@ -416,6 +409,15 @@ The Encoder of the Denoising Autoencoder consists of two sets of Linear layers w
 The Conditional Autoencoder extends the idea of the Denoising Autoencoder by conditioning the reconstruction on additional information, such as donor ids, which can further improve the robustness and accuracy of the model by removing the influence of the donor-specific noise.
 Again, the architecture of the Conditional Autoencoder follows the standard architecture. %TODO: Quelle!
 The Encoder consists of two Linear layers with a ReLU activation function and a Dropout layer with a dropout rate of 0.3 between them. The first Linear layer reduces the input dimension to 256, while the second set reduces it to the latent dimension of 128. The Decoder consists of two Linear layers with a ReLU activation functions between them. The first Linear layer increases the latent dimension to 256, while the second one increases it to the original input dimension. The donor ids are one-hot encoded and concatenated to the input data before passing it through the Encoder and Decoder. In the inference phase, the donor ids are set to 0, as we do not have this information for the test data.
+\fi
+
+The idea behind the Denoising Autoencoder is to learn a robust representation of the input data by reconstructing the original input from a corrupted version. The Encoder learns to map the corrupted input to a latent representation, while the Decoder learns to reconstruct the original input from this latent representation. This approach can help the model to generalize better and be more robust against noise in the input data. %TODO: Drüberlesen und Überarbeiten, Quelle
+We followed the architecture for Feed-forward autoencoders presented by %TODO: Quelle!
+: The Encoder of the Denoising Autoencoder consists of two Linear layers with a Batch Normalization, ReLU activation function and a Dropout layer between them. The Decoder has a similar architecture, but we removed the Dropout layer. This was done to avoid too much noise. %TODO: Besser begründen
+We used a noise factor of 0.3 to corrupt the input data during training. The first Linear layer of the Encoder reduces the input dimension to 256, while the second Linear layer reduces it to the latent dimension of 128. The first Linear layer of the Decoder increases the latent dimension to 256, while the second Linear layer increases it to the original input dimension.
+
+The Conditional Autoencoder extends the idea of the Denoising Autoencoder by conditioning the reconstruction on additional information, such as donor ids, which can further improve the robustness and accuracy of the model by removing the influence of the donor-specific noise. %TODO: Quelle
+We used the same architecture as for the Denoising Autoencoder and added only the donor ids. They are one-hot encoded and concatenated to the input data before passing it through the Encoder and Decoder. In the inference phase, the donor ids are set to 0, as we do not have this information for the test data. %TODO: Überarbeiten, stimmt das alles zu den Donor IDs?
 
 
 Both autoencoders were trained for 150 epochs with a batch size of 128 and a learning rate of 0.001 using the AdamW optimizer. The loss function used was the Mean Squared Error (MSE) loss. We also added an early stopping mechanism to prevent overfitting. The training was stopped if the validation loss did not improve more than 0.0002 for 5 consecutive epochs.
@@ -666,74 +668,88 @@ In the boxes below, please specify which AI tool you used, to what extent, and f
 \vspace{.25em}
 
 \begin{answerbox}{Task: Brainstorming and concept development}
-    Tools used for the development of ideas, obtaining research goals, objectives, designing the research, and identifying and defining relevant concepts.
+    %Tools used for the development of ideas, obtaining research goals, objectives, designing the research, and identifying and defining relevant concepts.
+    I used Gemini and ChatGPT to brainstorm ideas and to develop the concept of the work. I also used Gemini to identify relevant concepts and to define the research goals and objectives.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Literature review and analysis}
-    Tools used for identifying relevant literature, reviewing potentially relevant literature,  and creating summaries.
+    %Tools used for identifying relevant literature, reviewing potentially relevant literature,  and creating summaries.
+    I used Gemini and Semantic Scholar to identify and explore relevant literature.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Methodology}
-    Tools used for identifying a suitable methodology and developing and adapting the methodology to the research question(s).
+    %Tools used for identifying a suitable methodology and developing and adapting the methodology to the research question(s).
+    I used Gemini to identify suitable methodologies and to adapt them to the research questions.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Coding}
-     Tools used for writing and documenting code, algorithms, and software, testing and debugging, and understanding existing code.
+     %Tools used for writing and documenting code, algorithms, and software, testing and debugging, and understanding existing code.
+     I used Gemini, ChatGPT and the Github Copilot extension in my IDE for code completion, generating code snippets, and understanding existing code. For the reimplementation of the scumi R package in Python, I used Opencode.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Data collection, generation, and analysis}
-     Tools used for collecting, generating, and processing primary or secondary data. Tools for qualitative or quantitative data analysis.
+     %Tools used for collecting, generating, and processing primary or secondary data. Tools for qualitative or quantitative data analysis.
+     TODO
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Interpretation and validation}
-     Tools used for interpreting results, deriving implications, and assessing general replicability and reproducibility of the results or other research findings.  
+     %Tools used for interpreting results, deriving implications, and assessing general replicability and reproducibility of the results or other research findings.  
+     I used Gemini and ChatGPT to interpret the results and to derive implications.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Structuring and planning the text}
-     Tools used for generating the outline of the work and/or the outline of specific sections.
+     %Tools used for generating the outline of the work and/or the outline of specific sections.
+     I used Gemini to generate the outline of the work and to define key points for each sections.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Text generation}
-     Tools used for generating text on various topics in different sections of the work, including titles and abstracts.
+     %Tools used for generating text on various topics in different sections of the work, including titles and abstracts.
+     I used Gemini and Github Copilot to generate text for various sections of the work, including the Introduction. %TODO: Eigentlich nur für die Einleitung, oder?
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Translating text}
-     Tools used for translating text written by the author or by others.
+     %Tools used for translating text written by the author or by others.
+     I used DeepL to translate text from English to German and vice versa.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Review and editing of the text}
-     Tools used for critically reviewing the written text, obtaining feedback, revising the content, structure, or grammar of the text, proofreading, rewording or paraphrasing the given text, and shortening or expanding the text.
+     %Tools used for critically reviewing the written text, obtaining feedback, revising the content, structure, or grammar of the text, proofreading, rewording or paraphrasing the given text, and shortening or expanding the text.
+     I used Gemini and Github Copilot to review and refine all sections of the text, including grammar, structure, and content.
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Bibliography management}
-     Tools used to create or format the reference list.
+     %Tools used to create or format the reference list.
+     TODO
 \end{answerbox}
 
 \vspace{.25em}
 
 \begin{answerbox}{Task: Other activities}
-     Tools used for anything not covered by the given tasks.
+     %Tools used for anything not covered by the given tasks.
+     TODO
 \end{answerbox}
+
+%TODO: Nochmal drübergehen
 
 \clearpage
 

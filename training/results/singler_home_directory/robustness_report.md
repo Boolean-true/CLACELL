@@ -46,7 +46,7 @@ Baseline accuracy score 0.7762 +- 0.0
                macro avg   0.9082 +- 0.0   0.7648 +- 0.0   0.7543 +- 0.0  28986.0 +- 0.0
             weighted avg   0.8963 +- 0.0   0.7762 +- 0.0   0.7626 +- 0.0  28986.0 +- 0.0
 
-Random dropout accuracy score 0.7734 +- 0.0053
+Random dropout accuracy score 0.7695 +- 0.0065
 Total samples: 28986.0 +- 0.0
 Number of inconsistent predictions: 0.0 +- 0.0
 Feature importance dropout (0.1% features dropped) accuracy score 0.779 +- 0.0

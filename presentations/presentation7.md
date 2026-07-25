@@ -119,3 +119,28 @@ LinearSVC: Submitted batch job 12132693
 
 RF: Submitted batch job 12132458
 10+: Submitted batch job 12132459
+
+
+## Higher Dropout Rate in Robustness Tests
+
+### CustomEnsemble LinearSVC
+
+Submitted batch job 12143642
+
+### Conditional Autoencoder RF:
+
+Submitted batch job 12143635
+Submitted batch job 12145053
+10+: Submitted batch job 12143636
+Submitted batch job 12145054
+
+
+CLACELL Cond
+Submitted batch job 12155796
+Submitted batch job 12156109
+10+: Submitted batch job 12155797
+Submitted batch job 12156110
+
+CLACELL Cond Bayes
+Submitted batch job 12156661
+10+: Submitted batch job 12156662

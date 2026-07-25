@@ -278,3 +278,108 @@
 	langid = {english},
 	file = {Snapshot:/home/boolean/Zotero/storage/R9Y376J9/clustering.html:text/html},
 }
+
+@misc{sklearn,
+  title = {Scikit-learn: Machine Learning in Python},
+  url = {http://arxiv.org/abs/1201.0490},
+  doi = {10.48550/arXiv.1201.0490},
+  shorttitle = {Scikit-learn},
+  abstract = {Scikit-learn is a Python module integrating a wide range of
+              state-of-the-art machine learning algorithms for medium-scale
+              supervised and unsupervised problems. This package focuses on
+              bringing machine learning to non-specialists using a
+              general-purpose high-level language. Emphasis is put on ease of use
+              , performance, documentation, and {API} consistency. It has minimal
+              dependencies and is distributed under the simplified {BSD} license,
+              encouraging its use in both academic and commercial settings.
+              Source code, binaries, and documentation can be downloaded from
+              http://scikit-learn.org.},
+  number = {{arXiv}:1201.0490},
+  publisher = {{arXiv}},
+  author = {Pedregosa, Fabian and Varoquaux, Gaël and Gramfort, Alexandre and
+            Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel
+            , Mathieu and Müller, Andreas and Nothman, Joel and Louppe, Gilles
+            and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and
+            Vanderplas, Jake and Passos, Alexandre and Cournapeau, David and
+            Brucher, Matthieu and Perrot, Matthieu and Duchesnay, Édouard},
+  urldate = {2026-07-05},
+  date = {2018-06-05},
+  eprinttype = {arxiv},
+  eprint = {1201.0490 [cs.LG]},
+  keywords = {Computer Science - Machine Learning, Computer Science -
+              Mathematical Software},
+}
+
+@inproceedings{NIPS2017_6449f44a,
+ author = {Ke, Guolin and Meng, Qi and Finley, Thomas and Wang, Taifeng and Chen, Wei and Ma, Weidong and Ye, Qiwei and Liu, Tie-Yan},
+ booktitle = {Advances in Neural Information Processing Systems},
+ editor = {I. Guyon and U. Von Luxburg and S. Bengio and H. Wallach and R. Fergus and S. Vishwanathan and R. Garnett},
+ pages = {},
+ publisher = {Curran Associates, Inc.},
+ title = {LightGBM: A Highly Efficient Gradient Boosting Decision Tree},
+ url = {https://proceedings.neurips.cc/paper_files/paper/2017/file/6449f44a102fde848669bdd9eb6b76fa-Paper.pdf},
+ volume = {30},
+ year = {2017}
+}
+
+% Conditional Autoencoder
+@article{lin_scdilt_2025,
+	title = {{scDILT}: A Model-Based and Constrained Deep Learning Framework for Single-Cell Data Integration, Label Transferring, and Clustering},
+	volume = {22},
+	rights = {https://ieeexplore.ieee.org/Xplorehelp/downloads/license-information/{IEEE}.html},
+	issn = {2998-4165},
+	url = {https://ieeexplore.ieee.org/document/10932718/},
+	doi = {10.1109/TCBBIO.2025.3553068},
+	shorttitle = {{scDILT}},
+	pages = {1086--1094},
+	number = {3},
+	journaltitle = {{IEEE} Transactions on Computational Biology and Bioinformatics},
+	shortjournal = {{IEEE} Trans. Comput. Biol. Bioinform.},
+	author = {Lin, Xiang and Ren, Jianlan and Gao, Le and Wang, Junwen and Wei, Zhi},
+	urldate = {2026-07-25},
+	date = {2025-05},
+}
+
+% Autoencoder Architecture
+@article{hayashi_conformer-based_2020,
+	title = {{CONFORMER}-{BASED} {ID}-{AWARE} {AUTOENCODER} {FOR} {UNSUPERVISED} {ANOMALOUS} {SOUND} {DETECTION}},
+	abstract = {This paper presents an autoencoder-based unsupervised anomalous sound detection ({ASD}) method for the {DCASE} 2020 Challenge Task 2. Inspired by the great successes of the self-attention architecture in various ﬁelds such as speech recognition, we propose Transformer- and Conformer-based autoencoder for {ASD}, enabling us to perform sequence-by-sequence processing. As opposed to the standard autoencoder, they can extract sequence-level information from whole audio inputs. Furthermore, we propose two simple methods for exploiting machine {ID} information: machine {ID} embedding and machine {ID} regression. The two methods enable the proposed models to avoid the confusion of anomalous and normal sounds among the different machine {IDs}. The experimental evaluation demonstrates that the proposed autoencoders outperform the conventional frame-level autoencoder, and the explicit use of machine {ID} information signiﬁcantly improves the {ASD} performance. We achieved an averaged area under the curve ({AUC}) of 91.33\% and averaged partial {AUC} (p = 0.1) of 83.34\% on the development set.},
+	author = {Hayashi, Tomoki and Yoshimura, Takenori and Adachi, Yusuke},
+	date = {2020},
+	langid = {english},
+	file = {PDF:/home/boolean/Zotero/storage/I2GY2NXP/Hayashi et al. - 2020 - CONFORMER-BASED ID-AWARE AUTOENCODER FOR UNSUPERVISED ANOMALOUS SOUND DETECTION.pdf:application/pdf},
+}
+
+% AdamW
+@inproceedings{loshchilov2018decoupled,
+	title={Decoupled Weight Decay Regularization},
+	author={Ilya Loshchilov and Frank Hutter},
+	booktitle={International Conference on Learning Representations},
+	year={2019},
+	url={https://openreview.net/forum?id=Bkg6RiCqY7},
+}
+
+@misc{virshup_anndata_2021,
+	title = {anndata: Annotated data},
+	url = {http://biorxiv.org/lookup/doi/10.1101/2021.12.16.473007},
+	doi = {10.1101/2021.12.16.473007},
+	shorttitle = {anndata},
+	abstract = {Summary
+          
+            anndata is a Python package for handling annotated data matrices in memory and on disk (
+            github.com/theislab/anndata
+            ), positioned between pandas and xarray. anndata offers a broad range of computationally efficient features including, among others, sparse data support, lazy operations, and a {PyTorch} interface.
+          
+          
+            Statement of need
+            
+              Generating insight from high-dimensional data matrices typically works through training models that annotate observations and variables via low-dimensional representations. In exploratory data analysis, this involves
+              iterative
+              training and analysis using original and learned annotations and task-associated representations. anndata offers a canonical data structure for book-keeping these, which is neither addressed by pandas ({McKinney}, 2010), nor xarray (Hoyer \& Hamman, 2017), nor commonly-used modeling packages like scikit-learn (Pedregosa et al., 2011).},
+	publisher = {Bioinformatics},
+	author = {Virshup, Isaac and Rybakov, Sergei and Theis, Fabian J. and Angerer, Philipp and Wolf, F. Alexander},
+	urldate = {2026-07-25},
+	date = {2021-12-19},
+	langid = {english},
+	file = {Accepted Version:/home/boolean/Zotero/storage/NMIRJ7VE/Virshup et al. - 2021 - anndata Annotated data.pdf:application/pdf},
+}

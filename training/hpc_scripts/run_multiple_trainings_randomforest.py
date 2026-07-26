@@ -18,7 +18,7 @@ for i in range(num_runs):
         importlib.reload(train_randomforest_bayes)
     else:
         # The first import executes the script
-        import train_randomforest_bayes
+        import train_randomforest_bayes as train_randomforest_bayes
     
     total_script_time_min = (time.time() - script_start) / 60
 

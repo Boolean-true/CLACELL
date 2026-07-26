@@ -40,20 +40,4 @@ scp -r /home/boolean/Documents/Uni/Semester_2/Project_CLACELL/data/CellTypistDat
 scp -r /home/boolean/Documents/Uni/Semester_2/Project_CLACELL/training/custom_stopper.py  csnhr.nhr.fau.de:custom_stopper.py
 
 ### Download folder
-scp -r csnhr.nhr.fau.de:results/ /home/boolean//Documents/Uni/Semester_2/Project_CLACELL/training/results
-
-
-
-## Batch Jobs
-
-Submitted batch job 11828366
-Submitted batch job 11828908
-Submitted batch job 11829010
-Submitted batch job 11829046
-Submitted batch job 11829068
-Submitted batch job 11835882
-
-### Final Jobs
-LogisticRegression: Submitted batch job 11839954
-RandomForest: Submitted batch job 11839951
-XGBoost: Submitted batch job 11841031
+scp -r csnhr.nhr.fau.de:results/ /home/boolean/Documents/Uni/Semester_2/Project_CLACELL/training/results

@@ -1,3 +1,35 @@
 # Other Github Repos
 python_marker_based_annotation
 scumi-dev
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+# data
+data/*
+blood.tar.gz
+# trained models
+evaluation/models/*
+models/*
+training/models/*
+training/results/*.pkl
+# result csvs with only one line
+training/results/*/result_*.csv
+# pycache
+evaluation/__pycache__/*
+clacell/__pycache__/*
+clacell/_marker_based_annotation/__pycache__/*
+training/__pycache__/*
+# Latex compile files
+docs/report/main.*
+# Include main.tex
+!docs/report/main.tex
+# Don't include temporary files
+docs/report/sample.tex
+docs/report/old.tex
+docs/report/CLACELL.bib
+docs/papers/autoencoder_quellen.md
+# checkpoints
+*/.ipynb_checkpoints/*
+training/results/*/.ipynb_checkpoints/*
+*.pkl
+pypi_token.md

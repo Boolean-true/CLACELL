@@ -109,11 +109,11 @@ def compute_baseline_score(model, X, y):
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
-def compute_robustness_random_dropout(model, X, y):
+def compute_robustness_random_dropout(model, X, y, drop_pct=0.10):
     scores = []
     for _ in range(10):
         rng = np.random.default_rng()
-        dropped = _drop_features(X, 0.10, rng)
+        dropped = _drop_features(X, drop_pct, rng)
         y_pred = _predict_labels(model, dropped)
         accuracy = accuracy_score(y, y_pred)
         scores.append(accuracy)
@@ -228,7 +228,11 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
     baseline_accuracy, baseline_report = compute_baseline_score(model, X, y)
 
     # Robustness
-    random_dropout_score = compute_robustness_random_dropout(model, X, y)
+    random_dropout_score_10 = compute_robustness_random_dropout(model, X, y, drop_pct=0.10)
+    random_dropout_score_50 = compute_robustness_random_dropout(model, X, y, drop_pct=0.50)
+    random_dropout_score_90 = compute_robustness_random_dropout(model, X, y, drop_pct=0.90)
+    random_dropout_score_925 = compute_robustness_random_dropout(model, X, y, drop_pct=0.925)
+    random_dropout_score_95 = compute_robustness_random_dropout(model, X, y, drop_pct=0.95)
     num_samples, num_different_predictions = compute_robustness_multiple_executions(model, X, y, 5)
     if feature_importances is not None:
         feature_importance_dropout_scores = compute_robustness_feature_importance_dropout(model, X, y, feature_importances)
@@ -243,7 +247,11 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
         else:
             # For the row "accuracy" in the report (it is a float not a dict)
             results[(dist_name, "Classification Report", "Total_Accuracy", class_name)] = metrics
-    results[(dist_name, "Dropout", "Random", "score")] = random_dropout_score
+    results[(dist_name, "Dropout", "Random_10", "score")] = random_dropout_score_10
+    results[(dist_name, "Dropout", "Random_50", "score")] = random_dropout_score_50
+    results[(dist_name, "Dropout", "Random_90", "score")] = random_dropout_score_90
+    results[(dist_name, "Dropout", "Random_925", "score")] = random_dropout_score_925
+    results[(dist_name, "Dropout", "Random_95", "score")] = random_dropout_score_95
     results[(dist_name, "Consistency", "Num Samples", "Count")] = num_samples
     results[(dist_name, "Consistency", "Inconsistent Predictions", "Count")] = num_different_predictions
     if feature_importances is not None:

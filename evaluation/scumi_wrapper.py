@@ -9,7 +9,7 @@ from rpy2.robjects.packages import importr
 # Sets the path to the users R library
 custom_libs = "~/R/library"
 robjects.r(f'.libPaths(c(path.expand("{custom_libs}"), .libPaths()))')
-s
+
 rocr = importr('ROCR')
 #seurat = importr('Seurat')
 dplyr = importr('dplyr')

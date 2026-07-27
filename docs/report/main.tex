@@ -16,7 +16,7 @@ Semester: SS2026\\% For project reports and student papers
 Matriculation number: 23766907\\
 Biomedical Network Science Lab, Department Artificial Intelligence in Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}
 
-\date{Submission date: [date]}
+\date{Submission date: 27.07.2026}
 
 
 \begin{document}
@@ -132,11 +132,11 @@ In the following subsections, we focus on LinearSVC, Logistic Regression, and Ra
 
 We used the Logistic Regression, LinearSVC and Random Forest models to create our custom ensemble, Denoising Autoencoder and Conditional Autoencoder. To avoid overcrowded diagrams, we only show the best performing model for each approach. We chose the best model for each approach based on mean Accuracy, Macro F1 score, Random Dropout score and Feature Importance Dropout Score on both in-distribution and out-of-distribution test sets. The best performing model for all three approaches is the LinearSVC.
 
-For the custom ensemble, the Random Forest slightly outperforms the LinearSVC on the out-of-distribution test set with a small Dropout. At a Feature Importance Dropout of 1\% and 2\% the LinearSVC performs better than the Random Forest. Its performance on the in-distribution test set is significantly higher than the Random Forest. The custom ensemble with the Logistic Regression performs better than the Random Forest on the in-distribution test set, but still slightly worse than the LinearSVC. On the out-of-distribution test set it has a similar performance to the LinearSVC until the Feature Importance Dropout of 0.5\%, where it performs worse than the LinearSVC.
+For the custom ensemble, the Random Forest slightly outperforms the LinearSVC on the out-of-distribution test set with a small Dropout. At a Feature Importance Dropout of 1\% and 2\% the LinearSVC performs better than the Random Forest. Its performance on the in-distribution test set is significantly higher than the Random Forest. The custom ensemble with the Logistic Regression performs better than the Random Forest on the in-distribution test set, but still slightly worse than the LinearSVC. On the out-of-distribution test set it has a similar performance to the LinearSVC until the Feature Importance Dropout of 0.5\%, where it performs worse than the LinearSVC. These results are illustrated in \Cref{fig:overall-ensemble-robustness-comparison,fig:ensemble-robustness-comparison} in the appendix.
 
-For the Denoising Autoencoder, the LinearSVC provides the best performance in every metric. The Logistic Regression yielded mostly better results than the Random Forest, but worse than the LinearSVC.
+For the Denoising Autoencoder, the LinearSVC provides the best performance in every metric. The Logistic Regression yielded mostly better results than the Random Forest, but worse than the LinearSVC. This is demonstrated in \Cref{fig:overall-dae-robustness-comparison,fig:dae-robustness-comparison} in the appendix.
 
-The Conditional Autoencoder with the Random Forest performed best in the Accuracy metrics on the in-distribution test set, while the LinearSVC performed best in the Macro F1 score. In the out-of-distribution test set, the LinearSVC performed best in high Feature Importance Dropout rates. The LinearSVC outperformed the Logistic Regression in every metric. As the Random Forest and LinearSVC have a similar overall performance, we additionally considered the standard deviation of the models. The Random Forest has nearly double the maximum and mean standard deviation of the LinearSVC across all metrics. Therefore, we chose the LinearSVC as the representative model for the Conditional Autoencoder.
+The Conditional Autoencoder with the Random Forest performed best in the Accuracy metrics on the in-distribution test set, while the LinearSVC performed best in the Macro F1 score. In the out-of-distribution test set, the LinearSVC performed best in high Feature Importance Dropout rates. The LinearSVC outperformed the Logistic Regression in every metric. As the Random Forest and LinearSVC have a similar overall performance, we additionally considered the standard deviation of the models. The Random Forest has nearly double the maximum and mean standard deviation of the LinearSVC across all metrics. Therefore, we chose the LinearSVC as the representative model for the Conditional Autoencoder. The diagrams for these results are shown in \Cref{fig:overall-cae-robustness-comparison,fig:cae-robustness-comparison} in the appendix.
 
 For simplicity, we will reference each model only with the name of the approach. For example, we will refer to the custom ensemble with the LinearSVC as the custom ensemble.
 
@@ -149,7 +149,7 @@ In the out-of-distribution test set, the Conditional Autoencoder has the highest
 \begin{figure}[htb]
     \centering
     \includegraphics[width=0.9\linewidth]{figures/ensemble\_ae\_table\_metrics\_box\_plot.png}
-    \caption{Overall Comparison of Ensemble and Autoencoder Models on the in-distribution (ID) and out-of-distribution (OOD) Test Set}
+    \caption{Overall Comparison of the custom ensemble (CE), Denoising Autoencoder (DAE) and Conditional Autoencoder (CAE) combined with the LinearSVC (LinSVC) on the in-distribution (ID) and out-of-distribution (OOD) Test Set}
     \label{fig:overall-ensemble-ae-robustness-comparison}
 \end{figure}
 
@@ -158,7 +158,7 @@ In the out-of-distribution test set, the Conditional Autoencoder has the highest
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\linewidth]{figures/ensemble\_ae\_robustness\_comparison\_side\_by\_side.png}
-    \caption{Robustness Comparison of Ensemble and Autoencoder Models}
+    \caption{Robustness Comparison of the custom ensemble, Denoising Autoencoder and Conditional Autoencoder combined with the LinearSVC (LinSVC)}
     \label{fig:ensemble-ae-robustness-comparison}
 \end{figure}
 
@@ -187,7 +187,8 @@ In summary, the Conditional Autoencoder has the best performance on the out-of-d
 
 \subsection{Comparison with Reference Models}\label{sec:results:reference-models}
 
-For the comparison with the reference model, we trained the classifiers from our package and used their results to get a meaningful comparison. \Cref{fig:overall-reference-models-robustness-comparison} provides an overview of the performance of the reference models CellTypist, scGPT and SingleR and compares them with our classifiers. CLACELL refers to the \texttt{CellClassifier} with the custom ensemble and CLACELL CAE refers to the \texttt{ConditionalCellClassifier} with the Conditional Autoencoder. %TODO: Anpassen wenn ich die Namen anpasse
+For the comparison with the reference model, we trained the classifiers from our package and used their results to get a meaningful comparison. The training times are lower compared to previous sections, because we trained the CLACELL models as well as the reference models on the dedicated working file system (\$WORK) of the HPC cluster rather than the backed-up home storage (\$HOME).
+\Cref{fig:overall-reference-models-robustness-comparison} provides an overview of the performance of the reference models CellTypist, scGPT and SingleR and compares them with our classifiers. CLACELL refers to the \texttt{CellClassifier} with the custom ensemble and CLACELL CAE refers to the \texttt{ConditionalCellClassifier} with the Conditional Autoencoder. %TODO: Anpassen wenn ich die Namen anpasse
 
 CellTypist has the highest average runtime with the highest fluctuation, while SingleR has the lowest average runtime with the lowest fluctuation. Our classifiers have a slightly higher runtime than SingleR. CLACELL CAE and scGPT have the highest peak RAM usage, while SingleR has the lowest peak RAM usage. CLACELL has a slightly higher peak RAM usage than CellTypists. Another technical aspect to consider is the required hardware. scGPT requires a GPU for training and inference, while the other models were trained and inferred on a CPU.
 
@@ -499,7 +500,7 @@ To train the CLACELL model, a labeled dataset is required. For this purpose, the
 \subsection{Preprocessing}\label{sec:package:preprocessing}
 
 Before training the CLACELL model, the input dataset needs to be preprocessed. Our package offers a built-in preprocessing pipeline that implements the steps described in \Cref{sec:methods:data-preprocessing}. 
-However, this preprocessing pipeline is not mandatory, users can choose to implement their own preprocessing steps if desired. It should include a normalization, log transformation and filtering for highly variable genes, as these steps are crucial for the performance of the CLACELL model.
+However, this preprocessing pipeline is not mandatory, users can choose to implement their own preprocessing steps if desired. It should include a normalization, log transformation and filtering for highly variable genes, as these steps are crucial for the performance of the CLACELL models.
 
 After preprocessing, the dataset should be split into a training and a test set in order to train and evaluate the model. We highly recommend a split among the batch or donor level to avoid data leakage. The test set size should be between 20\% and 35\% of the total samples.
 To use the training and test sets with the CLACELL model, they need to be converted into a dataframe, where the rows represent the samples and the columns represent the genes. %TODO: das mit rows un columns erwähnen?
@@ -508,11 +509,13 @@ The cell type labels should be stored in a separate series.
 
 \subsection{Classification}\label{sec:package:classification}
 
-We provide two classifiers in our package: the \texttt{CellClassifier} and the \texttt{ConditionalCellClassifier}. The first one implements the custom ensemble with the LinearSVC, while the second one implements the Conditional Autoencoder with the LinearSVC. Both classifiers can be used for training and inference on new data. As mentioned in \Cref{sec:discussion:interpretation}, the \texttt{CellClassifier} is recommended when high prediction stability is desired, while the \texttt{ConditionalCellClassifier} is recommended when a superior out-of-distribution generalization is required. Both provide the same five methods for four different tasks:
+We provide two classifiers in our package: the \texttt{CellClassifier} and the \texttt{ConditionalCellClassifier}. The first one implements the custom ensemble with the LinearSVC, while the second one implements the Conditional Autoencoder with the LinearSVC. Both classifiers can be used for training and inference on new data. As mentioned in \Cref{sec:discussion:interpretation}, the \texttt{CellClassifier} is recommended when high prediction stability is desired, while the \texttt{ConditionalCellClassifier} is recommended when a superior out-of-distribution generalization is required. For the custom ensemble a Random Forest is additionally trained without hyperparameter tuning to determine the feature importance for the feature subsampling.
+
+Both classifiers provide the same five methods for four different tasks:
 
 \begin{itemize}
-    \item \textbf{Hyperparameter Optimization (\texttt{random\_search} and \texttt{bayes\_search}):} Identifies optimal hyperparameters for the LinearSVC with a random search or a bayes search with a custom stopper and offers parallel processing for it. If a training and a test set are provided, it evaluates the hyperparameters with the evaluate method and afterwards calls the train method wit the combined sets and the optimal hyperparameters to train the final model on the whole dataset.
-    \item \textbf{Model Training (\texttt{train}):} Trains the LinearSVC with the specified hyperparameters on the given data.
+    \item \textbf{Hyperparameter Optimization (\texttt{random\_search} and \texttt{bayes\_search}):} Identifies optimal hyperparameters for the LinearSVC with a random search or a bayes search with a custom stopper and offers parallel processing for it. If a training and a test set are provided, it evaluates the hyperparameters with the evaluate method and afterwards calls the train method with the combined sets and the optimal hyperparameters to train the final model on the whole dataset.
+    \item \textbf{Model Training (\texttt{train}):} Trains the classifier with the specified hyperparameters for the LinearSVC on the given data.
     \item \textbf{Robustness Evaluation (\texttt{evaluate}):} Implements a wrapper around the robustness tests presented in \Cref{sec:methods:robustness-tests} and evaluates the model's performance on the given in distribution and out of distribution test sets. It generates a multi-index evaluation report that can be logged to the console or exported to a file.
     \item \textbf{Inference (\texttt{predict}):} Applies the trained model to new data to predict the immune cell type. Missing genes in the new data are filled with zeros to ensure compatibility with the model.
 \end{itemize}
@@ -550,12 +553,60 @@ For the out-of-distribution testing, we used the dataset ``A single cell immune 
 
 \section{Supplementary figures}\label{appendix:figures}
 
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/ensemble\_table\_metrics\_box\_plot.png}
+    \caption{Overall Comparison of the custom ensemble (CE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) on the in-distribution (ID) and out-of-distribution (OOD) Test Set}
+    \label{fig:overall-ensemble-robustness-comparison}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/ensemble\_robustness\_comparison\_side\_by\_side.png}
+    \caption{Robustness Comparison of the custom ensemble (CE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) models}
+    \label{fig:ensemble-robustness-comparison}
+\end{figure}
+
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/dae\_table\_metrics\_box\_plot.png}
+    \caption{Overall Comparison of the Denoising Autoencoder (DAE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) on the in-distribution (ID) and out-of-distribution (OOD) Test Set}
+    \label{fig:overall-dae-robustness-comparison}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/dae\_robustness\_comparison\_side\_by\_side.png}
+    \caption{Robustness Comparison of the Denoising Autoencoder (DAE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) models}
+    \label{fig:dae-robustness-comparison}
+\end{figure}
+
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/cae\_table\_metrics\_box\_plot.png}
+    \caption{Overall Comparison of the Conditional Autoencoder (CAE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) on the in-distribution (ID) and out-of-distribution (OOD) Test Set}
+    \label{fig:overall-cae-robustness-comparison}
+\end{figure}
+
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\linewidth]{figures/cae\_robustness\_comparison\_side\_by\_side.png}
+    \caption{Robustness Comparison of the Conditional Autoencoder (CAE) combined with Logistic Regression (LR), LinearSVC (LinSVC) and Random Forest (RF) models}
+    \label{fig:cae-robustness-comparison}
+\end{figure}
+
+
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\linewidth]{figures/gene\_count\_elbow\_plot.png}
     \caption{Elbow-Plot for Comparison of Gene Count}
     \label{fig:elbow-plot-gene-count}
 \end{figure}
+
+\clearpage
 
 \section{Supplementary tables}\label{appendic:tables}
 

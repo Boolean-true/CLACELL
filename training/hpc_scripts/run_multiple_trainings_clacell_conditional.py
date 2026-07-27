@@ -8,41 +8,29 @@ import numpy as np
 
 all_runs_data = []
 num_runs = 10
+start_run = 0
+end_run = 9
 
-for i in range(num_runs):
+for i in range(start_run, end_run + 1):
     print(f"=== Start Run {i+1}/{num_runs} ===")
     script_start = time.time()
 
-    if 'train_randomforest_bayes' in sys.modules:
+    if 'train_clacell_conditional' in sys.modules:
         # Force python to rerun the script by reloading the module
-        importlib.reload(train_randomforest_bayes)
+        importlib.reload(train_clacell_conditional)
     else:
         # The first import executes the script
-        import train_randomforest_bayes
+        import train_clacell_conditional
     
     total_script_time_min = (time.time() - script_start) / 60
 
     # Access the global variable of the training script
-    df_run = train_randomforest_bayes.robustness_results.copy()
+    df_run = train_clacell_conditional.robustness_results.copy()
     
     # Add Technical Metrics
     ## Runtime
     df_run[("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min")] = round(total_script_time_min, 2)
 
-    ## Runtime per Iteration
-    mean_fit_per_fold = train_randomforest_bayes.opt.cv_results_['mean_fit_time']
-    mean_score_per_fold = train_randomforest_bayes.opt.cv_results_['mean_score_time']
-
-    n_splits = 5
-
-    total_time_per_iteration = (mean_fit_per_fold + mean_score_per_fold) * n_splits
-    avg_time_per_iter_seconds = np.mean(total_time_per_iteration)
-    dist = "All"
-    cat = "Technical_Metrics"
-    sub_cat = "Resource_Usage"
-    metric = "Avg_Time_per_Iteration_Sec"
-    df_run[(dist, cat, sub_cat, metric)] = round(avg_time_per_iter_seconds, 2)
-    
     ## RAM Peak
     usage = resource.getrusage(resource.RUSAGE_SELF)
     peak_ram_gb = usage.ru_maxrss / (1024 * 1024)
@@ -52,9 +40,30 @@ for i in range(num_runs):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    df_run.to_csv(f'results/randomforest/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/clacell_conditional_bayes/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
+current_count = len(all_runs_data)
+
+# If there aren'T all Dataframes in the array, load them
+if current_count < num_runs:
+    loaded_samples = []
+    needed_samples = num_samples - current_count
+    print(
+        f"There are {needed_samples} DataFrames missing. Load them from save directory..."
+    )
+
+    for i in range(needed_samples):
+        file_path = f"results/clacell_conditional_bayes/result_{i}.csv"
+
+        if os.path.exists(file_path):
+            old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
+            loaded_samples.append(old_df)
+        else:
+            print(
+                f"Warning: File {file_path} not found! Skip it..."
+            )
+    all_runs_data = pd.concat([loaded_samples, all_runs_data], axis=0)
 
 # Average over runs
 combined_df = pd.concat(all_runs_data, axis=0)
@@ -78,4 +87,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/randomforest/combined_result.csv', index=True)
+final_df.to_csv('results/clacell_conditional_bayes/combined_result.csv', index=True)

@@ -1,0 +1,117 @@
+import importlib
+import sys
+import pandas as pd
+import resource
+import time
+import numpy as np
+import os
+import torch
+
+project_path = os.path.abspath(os.path.join(os.getcwd(), "scGPT/examples"))
+if project_path not in sys.path:
+    sys.path.append(project_path)
+
+
+all_runs_data = []
+num_runs = 10
+start_run = 2
+end_run = 2
+
+for i in range(start_run, end_run + 1):
+    print(f"=== Start Run {i+1}/{num_runs} ===")
+    script_start = time.time()
+
+    if 'train_scGPT' in sys.modules:
+        # Force python to rerun the script by reloading the module
+        importlib.reload(train_scGPT)
+    else:
+        # The first import executes the script
+        import train_scGPT as train_scGPT
+    
+    total_script_time_min = (time.time() - script_start) / 60
+
+    # Access the global variable of the training script
+    df_run = train_scGPT.robustness_results.copy()
+    
+    # Add Technical Metrics
+    ## Runtime
+    df_run[("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min")] = round(total_script_time_min, 2)
+
+    ## Runtime per Iteration
+    epoch_times = train_scGPT.epoch_times
+    avg_time_per_iter_seconds = np.mean(epoch_times)
+    dist = "All"
+    cat = "Technical_Metrics"
+    sub_cat = "Resource_Usage"
+    metric = "Avg_Time_per_Epoch_Sec"
+    df_run[(dist, cat, sub_cat, metric)] = round(avg_time_per_iter_seconds, 2)
+    
+    ## RAM Peak
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    peak_ram_gb = usage.ru_maxrss / (1024 * 1024)
+    dist = "All"
+    cat = "Technical_Metrics"
+    sub_cat = "Resource_Usage"
+    metric = "Peak_RAM_GB"
+    df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
+
+    ## VRAM Peak
+    if torch.cuda.is_available():
+        peak_vram_bytes = torch.cuda.max_memory_allocated()
+        peak_vram_gb = peak_vram_bytes / (1024 ** 3)
+    else:
+        peak_vram_gb = 0.0
+    dist = "All"
+    cat = "Technical_Metrics"
+    sub_cat = "Resource_Usage"
+    metric = "Peak_VRAM_GB"
+    df_run[(dist, cat, sub_cat, metric)] = peak_vram_gb
+
+    df_run.to_csv(f'results/scgpt/result_{i}.csv', index=True)
+    all_runs_data.append(df_run)
+
+current_count = len(all_runs_data)
+
+# If there aren'T all Dataframes in the array, load them
+if current_count < num_runs:
+    loaded_samples = []
+    needed_samples = num_samples - current_count
+    print(
+        f"There are {needed_samples} DataFrames missing. Load them from save directory..."
+    )
+
+    for i in range(needed_samples):
+        file_path = f"results/scgpt/result_{i}.csv"
+
+        if os.path.exists(file_path):
+            old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
+            loaded_samples.append(old_df)
+        else:
+            print(
+                f"Warning: File {file_path} not found! Skip it..."
+            )
+    all_runs_data = pd.concat([loaded_samples, all_runs_data], axis=0)
+
+# Average over runs
+combined_df = pd.concat(all_runs_data, axis=0)
+
+# Compute Statistics for Robustness Test results
+means = combined_df.mean()
+stds = combined_df.std()
+
+combined = means.round(4).astype(str) + " +- " + stds.round(4).astype(str)
+
+# Create Dataframe with Statistics
+stats_df = pd.DataFrame(
+    [means, stds, combined], 
+    index=["mean", "std", "mean +- std"], 
+    columns=combined_df.columns
+)
+
+# Combine original Dataframe with Statistic Dataframe
+final_df = pd.concat([combined_df, stats_df], axis=0)
+
+print("=== Final result ===")
+print(final_df.head())
+
+final_df.to_csv('results/scgpt/combined_result.csv', index=True)

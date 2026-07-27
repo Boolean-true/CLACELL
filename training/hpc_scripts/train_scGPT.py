@@ -876,8 +876,8 @@ for epoch in range(1, config.epochs + 1):
         logger.info(f"Best model with score {best_val_loss:5.4f}")
 
     if epoch % config.save_eval_interval == 0 or epoch == config.epochs:
-        logger.info(f"Saving model to {save_dir}")
-        torch.save(best_model.state_dict(), save_dir / f"model_e{best_model_epoch}.pt")
+        #logger.info(f"Saving model to {save_dir}")
+        #torch.save(best_model.state_dict(), save_dir / f"model_e{best_model_epoch}.pt")
 
         # eval on testdata
         results = eval_testdata(
@@ -1158,13 +1158,15 @@ elif isinstance(feature_importance, pd.DataFrame):
     print(f"Feature Importance (DataFrame) filtered. Remaining genes: {len(feature_importance)}")
 
 
-test_robustness(
+robustness_results = test_robustness(
     scgpt_predictor,
     X_test_robustness,
     y_test_robustness,
     #labels="scumi-annotation",
     ood_dataset_path="data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad",
     feature_importances=feature_importance,
+    log_to_console=True,
+    log_to_file=False,
 )
 
 # %%

@@ -1,6 +1,10 @@
+[![DOI](https://zenodo.org/badge/1211898528.svg)](https://doi.org/10.5281/zenodo.21609470)
+
 # CLACELL
 
-Robust cell type classifier for immune cells
+This package includes two robust cell type classifier for immune cells. The CellClassifier has a high prediction stability with a low standard deviation of scores, while the ConditionalCellClassifier offers a higher out-of-distribution generalization at the cost of a lower prediction stability.
+
+For a detailed example workflow, check out the [example notebook](https://github.com/Boolean-true/CLACELL/blob/main/sample_scripts/clacell_example.ipynb).
 
 ## Usage
 
@@ -28,11 +32,12 @@ adata_preprocessed = preprocess_data(adata)
 
 ### CellClassifier
 
-The cell type classifier has four different methods:
+This classifier is a feature-subsampling custom ensemble using multiple LinearSVC with different amount of features as Input. It has five different methods:
 1. **random_search**: Makes a search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
-2. **train**: Trains the model with the given hyperparameters.
-3. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called. The logs can be printed in the console as well as in a log file. The results will be returned in a dataframe with a multi index for easier access.
-4. **predict**: Predicts new samples. The model needs to be trained before this method is called.
+2. **bayes_search**: Makes a bayesian search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
+3. **train**: Trains the model with the given hyperparameters.
+4. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called. The logs can be printed in the console as well as in a log file. The results will be returned in a dataframe with a multi index for easier access.
+5. **predict**: Predicts new samples. The model needs to be trained before this method is called.
 
 All methods can be called with Dataframes or with an Anndata object. Either way the data has to be processed. We recommend to use Dataframes so you can choose the train test split yourself for more realistic results. If an Anndata object is provided, the train test split will be random and won't consider batches.
 
@@ -45,16 +50,63 @@ classifier = CellClassifier()
 print("\n1. random_search")
 classifier.random_search(X_train, y_train, X_test, y_test, n_jobs=3)
 
-# 2. Train
-print("\n2. train")
+# 2. Bayes Search
+print("\n2. bayes_search")
+classifier.bayes_search(X_train, y_train, X_test, y_test, n_jobs=3)
+
+# 3. Train
+print("\n3. train")
 classifier.train(X_train, y_train, C=0.001)
 
-# 3. Evaluate
-print("\n3. evaluate")
+# 4. Evaluate
+print("\n4. evaluate")
 classifier.evaluate(X_test, y_test, log_to_console=True, log_to_file=True)
 
-# 4. Predict
-print("\n4. predict")
+# 5. Predict
+print("\n5. predict")
+predictions = classifier.predict(X_test)
+print(f"Macro F1: {f1_score(y_test, predictions, average="macro")}")
+```
+
+
+### ConditionalCellClassifier
+
+This classifier is a Conditional Autoencoder with a LinearSVC. It has five different methods:
+1. **random_search**: Makes a search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
+2. **bayes_search**: Makes a bayesian search over the hyperparameters of the model, evaluates the best model and retrains it on the whole dataset using 'train'.
+3. **train**: Trains the model with the given hyperparameters.
+4. **evaluate**: Evaluates the current model with robustness tests. The model needs to be trained before this method is called. The logs can be printed in the console as well as in a log file. The results will be returned in a dataframe with a multi index for easier access.
+5. **predict**: Predicts new samples. The model needs to be trained before this method is called.
+
+All methods can be called with Dataframes or with an Anndata object. Either way the data has to be processed. We recommend to use Dataframes so you can choose the train test split yourself for more realistic results. If an Anndata object is provided, the train test split will be random and won't consider batches.
+Additionally, you have to specify the batch id for each sample (e.g. the donor). The Conditional Autoencoder then learns to avoid batch effects.
+
+```python
+from clacell import CellClassifier
+
+classifier = CellClassifier()
+
+train_donor = adata_train.obs['Donor']
+test_donor = adata_test.obs['Donor']
+
+# 1. RandomSearch
+print("\n1. random_search")
+classifier.random_search(X_train, y_train, train_donor, X_test, y_test, test_donor, n_jobs=3)
+
+# 2. Bayes Search
+print("\n2. bayes_search")
+classifier.bayes_search(X_train, y_train, train_donor, X_test, y_test, test_donor, n_jobs=3)
+
+# 3. Train
+print("\n3. train")
+classifier.train(X_train, y_train, train_donor, C=0.001)
+
+# 4. Evaluate
+print("\n4. evaluate")
+classifier.evaluate(X_test, y_test, log_to_console=True, log_to_file=True)
+
+# 5. Predict
+print("\n5. predict")
 predictions = classifier.predict(X_test)
 print(f"Macro F1: {f1_score(y_test, predictions, average="macro")}")
 ```

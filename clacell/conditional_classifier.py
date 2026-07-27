@@ -111,7 +111,6 @@ class ConditionalCellClassifier(BaseEstimator, ClassifierMixin):
         X_test=None,
         y_test=None,
         donor_test=None,
-        labels="scumi-annotation",
         n_jobs=1,
     ):
         """
@@ -249,7 +248,7 @@ class ConditionalCellClassifier(BaseEstimator, ClassifierMixin):
 
         if X_test is not None and y_test is not None:
             # Compute Robustness score on test set with best parameters
-            self.evaluate(X_test, y_test, labels=labels)
+            self.evaluate(X_test, y_test)
 
             # Automatically call train with best parameters on complete dataset after random search
             print(
@@ -268,7 +267,6 @@ class ConditionalCellClassifier(BaseEstimator, ClassifierMixin):
         X_test=None,
         y_test=None,
         donor_test=None,
-        labels="scumi-annotation",
         n_jobs=1,
     ):
         """
@@ -408,7 +406,7 @@ class ConditionalCellClassifier(BaseEstimator, ClassifierMixin):
 
         if X_test is not None and y_test is not None:
             # Compute Robustness score on test set with best parameters
-            self.evaluate(X_test, y_test, labels=labels)
+            self.evaluate(X_test, y_test)
 
             # Automatically call train with best parameters on complete dataset after random search
             print(

@@ -19,18 +19,14 @@ def _to_anndata(umi_count: pd.DataFrame) -> ad.AnnData:
     return adata
 
 
-def cluster_scanpy(
+def prepare_adata(
     umi_count: pd.DataFrame,
-    number_neighbor: int = 30,
     variable_gene: bool = False,
-    resolution: float = 1.0,
-    num_pc: int = 50,
     species: str = "human",
     normalize: bool = True,
     min_cells: int = 3,
     min_genes: int = 1,
-    random_state: int = 0,
-) -> ClusterResult:
+) -> ad.AnnData:
     adata = _to_anndata(umi_count)
 
     sc.pp.filter_cells(adata, min_genes=min_genes)
@@ -75,22 +71,45 @@ def cluster_scanpy(
         adata_use = adata.copy()
 
     sc.pp.scale(adata_use)
+    return adata_use
 
+
+def pca_on_adata(
+    adata_use: ad.AnnData,
+    num_pc: int = 50,
+    random_state: int = 0,
+) -> int:
     n_pc_eff = min(num_pc, adata_use.n_vars - 1, adata_use.n_obs - 1)
     n_pc_eff = max(n_pc_eff, 2)
-
     sc.tl.pca(
         adata_use,
         n_comps=n_pc_eff,
         random_state=random_state,
         mask_var=None,
     )
+    return n_pc_eff
+
+
+def knn_on_adata(
+    adata_use: ad.AnnData,
+    number_neighbor: int = 30,
+    n_pcs: int = 50,
+    random_state: int = 0,
+) -> None:
+    n_pcs = min(n_pcs, adata_use.obsm["X_pca"].shape[1])
     sc.pp.neighbors(
         adata_use,
         n_neighbors=number_neighbor,
-        n_pcs=n_pc_eff,
+        n_pcs=n_pcs,
         random_state=random_state,
     )
+
+
+def leiden_on_adata(
+    adata_use: ad.AnnData,
+    resolution: float = 1.0,
+    random_state: int = 0,
+) -> None:
     sc.tl.leiden(
         adata_use,
         resolution=resolution,
@@ -99,6 +118,41 @@ def cluster_scanpy(
         flavor="igraph",
         n_iterations=2,
         directed=False,
+    )
+
+
+def cluster_scanpy(
+    umi_count: pd.DataFrame,
+    number_neighbor: int = 30,
+    variable_gene: bool = False,
+    resolution: float = 1.0,
+    num_pc: int = 50,
+    species: str = "human",
+    normalize: bool = True,
+    min_cells: int = 3,
+    min_genes: int = 1,
+    random_state: int = 0,
+) -> ClusterResult:
+    adata = _to_anndata(umi_count)
+    adata_use = prepare_adata(
+        umi_count,
+        variable_gene=variable_gene,
+        species=species,
+        normalize=normalize,
+        min_cells=min_cells,
+        min_genes=min_genes,
+    )
+    n_pc_eff = pca_on_adata(adata_use, num_pc=num_pc, random_state=random_state)
+    knn_on_adata(
+        adata_use,
+        number_neighbor=number_neighbor,
+        n_pcs=n_pc_eff,
+        random_state=random_state,
+    )
+    leiden_on_adata(
+        adata_use,
+        resolution=resolution,
+        random_state=random_state,
     )
     sc.tl.tsne(adata_use, n_pcs=n_pc_eff, random_state=random_state)
 

@@ -9,7 +9,13 @@ import pandas as pd
 from scipy.spatial.distance import pdist, squareform
 from sklearn.metrics import silhouette_samples
 
-from .clustering import cluster_scanpy
+from .clustering import (
+    cluster_scanpy,
+    knn_on_adata,
+    leiden_on_adata,
+    pca_on_adata,
+    prepare_adata,
+)
 from .markers import average_auc, calculate_auc
 from .types import MarkerDict, ModelCandidate, SelectionResult
 
@@ -86,27 +92,59 @@ def select_cluster_model(
     filtered = _filter_matrix(umi_count, min_cells=min_cells, min_genes=min_genes)
     distance = _prepare_distance(filtered, marker=marker, normalize=normalize)
 
-    # prepare parameter grid
-    param_list = [
-        {"variable_gene": vg, "k": k, "resolution": r, "n_pc": n_pc}
-        for vg, k, r, n_pc in product(variable_gene, number_neighbor, resolution, num_pc)
-    ]
-
-    def _eval_candidate(p: dict) -> ModelCandidate:
-        # run clustering and scoring for one parameter combination
-        model = cluster_scanpy(
+    # Stage 1: prepare adata for each variable_gene option
+    prepared: dict[bool, object] = {}
+    for vg in variable_gene:
+        prepared[vg] = prepare_adata(
             filtered,
-            number_neighbor=p["k"],
-            variable_gene=p["variable_gene"],
-            resolution=p["resolution"],
-            num_pc=p["n_pc"],
+            variable_gene=vg,
             species=species,
             normalize=normalize,
             min_cells=min_cells,
             min_genes=min_genes,
+        )
+
+    # Stage 2: PCA for each variable_gene (with max_pc)
+    max_pc = max(num_pc)
+    pca_cache: dict[bool, tuple[object, int]] = {}
+    for vg in variable_gene:
+        adata_pca = prepared[vg].copy()
+        n_pc_eff = pca_on_adata(adata_pca, num_pc=max_pc, random_state=random_state)
+        pca_cache[vg] = (adata_pca, n_pc_eff)
+
+    # Stage 3: KNN for each (variable_gene, number_neighbor, num_pc)
+    knn_cache: dict[tuple[bool, int, int], object] = {}
+    for vg in variable_gene:
+        for k in number_neighbor:
+            for n_pc in num_pc:
+                adata_knn = pca_cache[vg][0].copy()
+                knn_on_adata(
+                    adata_knn,
+                    number_neighbor=k,
+                    n_pcs=n_pc,
+                    random_state=random_state,
+                )
+                knn_cache[(vg, k, n_pc)] = adata_knn
+
+    # Stage 4: grid over (variable_gene, number_neighbor, resolution, num_pc)
+    param_list = [
+        {"variable_gene": vg, "k": k, "resolution": r, "n_pc": n_pc}
+        for vg, k, r, n_pc in product(
+            variable_gene, number_neighbor, resolution, num_pc
+        )
+    ]
+
+    def _eval_candidate(p: dict) -> ModelCandidate:
+        adata_result = knn_cache[
+            (p["variable_gene"], p["k"], p["n_pc"])
+        ].copy()
+        leiden_on_adata(
+            adata_result,
+            resolution=p["resolution"],
             random_state=random_state,
         )
-        clusters = model.clusters.astype(str)
+
+        clusters = adata_result.obs["cluster"].copy().astype(str)
         cluster_count = clusters.value_counts()
         n_cluster = int(cluster_count.shape[0])
 
@@ -116,10 +154,14 @@ def select_cluster_model(
             sil = _mean_silhouette(clusters, distance)
 
             min_cell_in_cluster = max(3, int(np.ceil(p["k"] / 5.0)))
-            keep_clusters = set(cluster_count[cluster_count >= min_cell_in_cluster].index)
+            keep_clusters = set(
+                cluster_count[cluster_count >= min_cell_in_cluster].index
+            )
             keep_cells = clusters[clusters.isin(keep_clusters)].index
 
-            auc_out = calculate_auc(filtered.loc[:, keep_cells], clusters.loc[keep_cells], marker)
+            auc_out = calculate_auc(
+                filtered.loc[:, keep_cells], clusters.loc[keep_cells], marker
+            )
             auc = auc_out.auc
 
         return ModelCandidate(
@@ -133,10 +175,9 @@ def select_cluster_model(
                 "resolution": p["resolution"],
                 "num_pc": p["n_pc"],
             },
-            model=model,
+            model=None,
         )
 
-    # choose reasonable number of workers
     max_workers = min(32, (os.cpu_count() or 1))
     candidates: list[ModelCandidate]
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
@@ -162,25 +203,18 @@ def select_cluster_model(
         final_idx = model_sil_idx
 
     final_params = candidates[final_idx].params
-    # reuse the computed model if available to avoid recomputation
-    final_model = None
-    for c in candidates:
-        if c.params == final_params and getattr(c, "model", None) is not None:
-            final_model = c.model
-            break
-    if final_model is None:
-        final_model = cluster_scanpy(
-            filtered,
-            number_neighbor=final_params["number_neighbor"],
-            variable_gene=final_params["variable_gene"],
-            resolution=final_params["resolution"],
-            num_pc=final_params["num_pc"],
-            species=species,
-            normalize=normalize,
-            min_cells=min_cells,
-            min_genes=min_genes,
-            random_state=random_state,
-        )
+    final_model = cluster_scanpy(
+        filtered,
+        number_neighbor=final_params["number_neighbor"],
+        variable_gene=final_params["variable_gene"],
+        resolution=final_params["resolution"],
+        num_pc=final_params["num_pc"],
+        species=species,
+        normalize=normalize,
+        min_cells=min_cells,
+        min_genes=min_genes,
+        random_state=random_state,
+    )
     final_auc_result = calculate_auc(filtered, final_model.clusters, marker)
     auc_final = final_auc_result.auc
     label_final = final_auc_result.label

@@ -26,6 +26,10 @@ source test_bayes/bin/activate
 
 pip install --no-cache-dir --ignore-installed anndata scanpy scrublet scikit-learn scikit-optimize joblib pandas pytz python-dateutil
 
+### Update CLACELL package
+
+pip install --upgrade clacell
+
 
 ## Copying data to HPC
 

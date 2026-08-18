@@ -61,3 +61,26 @@ Submitted batch job 1494806 on cluster tinyfat
 30.000 Samples: Submitted batch job 1494825 on cluster tinyfat
 30.000 Samples + DC und Plasma: Submitted batch job 1496045 on cluster tinyfat
 Submitted batch job 1496868 on cluster tinyfat
+
+Test with improved memory and runtime: Submitted batch job 1498144 on cluster tinyfat
+
+
+
+## Todo
+- AIDA Datensatz
+- Annes Datensatz
+- Marker gene aus Github verwenden
+
+Optimierungen beim Annotieren
+X- PCA nur einmal für je hvg und nicht hvg
+X- knn nur viermal (ergebnisse abspeichern) (einmal pro pca und parameter)
+Meine Ideen
+X- tsne evtl entfernen, ist ja nur zur Visualisierung da, die ich nicht mache
+=> 1h36min->17min, 322GB->235GB
+
+Spatial
+- Wir betrachten erstmal nur 2um spatial daten (subzellular) und klassifizieren das
+
+Weitere Tests
+- Kein Scaling vor CAE
+- Rejection Class

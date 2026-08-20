@@ -31,6 +31,21 @@ Submitted batch job 12371390
 40+: Submitted batch job 12376885
 50+: Submitted batch job 12376886
 
+### Conditional Autoencoder without scaling
+
+Submitted batch job 12390004
+Submitted batch job 12390006
+Submitted batch job 12390668
+
+### Custom Ensemble
+
+#### LinearSVC
+
+Rejection Class: Submitted batch job 12399369
+
+Stacking Classifier with Logistic Regression and no passthrough: Submitted batch job 12408410
+Stacking Classifier with Logistic Regression and passthrough: Submitted batch job 12408460
+
 
 ### Reevaluation on new OOD Dataset
 
@@ -63,6 +78,20 @@ Submitted batch job 1494806 on cluster tinyfat
 Submitted batch job 1496868 on cluster tinyfat
 
 Test with improved memory and runtime: Submitted batch job 1498144 on cluster tinyfat
+100.000 Samples: Submitted batch job 1498161 on cluster tinyfat
+90.000 Samples: Submitted batch job 1498164 on cluster tinyfat
+80.000 Samples: Submitted batch job 1498182 on cluster tinyfat
+
+
+#### Human Cell Atlas
+
+80.000 Samples: Submitted batch job 1498209 on cluster tinyfat
+Submitted batch job 1498210 on cluster tinyfat
+Submitted batch job 1498214 on cluster tinyfat
+Submitted batch job 1498215 on cluster tinyfat
+70.000 Samples: Submitted batch job 1498241 on cluster tinyfat
+60.000 Samples: Submitted batch job 1498257 on cluster tinyfat
+50.000 Samples: Submitted batch job 1498266 on cluster tinyfat
 
 
 
@@ -84,3 +113,12 @@ Spatial
 Weitere Tests
 - Kein Scaling vor CAE
 - Rejection Class
+- Reevaluierung aller Algorithmen auf $WORK
+- Metriken in Robustnesstests von Accuracy auf F1 Score ändern
+- Custom Ensemble mit mehreren Modellen
+- Custom Ensemble mit Stacking (passthrough mit False und True testen!)
+
+Donnerstag
+X- ergebnisse von cae ohne scaling anschauen
+- annotation
+X- rejection class ergebnisse anschauen

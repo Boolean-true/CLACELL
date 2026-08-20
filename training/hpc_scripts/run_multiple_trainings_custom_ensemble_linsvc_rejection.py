@@ -21,6 +21,32 @@ from sklearn.metrics import classification_report, accuracy_score, f1_score
 from test_robustness_higher_dropout import test_robustness
 
 
+# ==============================================================================
+# Rejection Class Wrapper Definition
+# ==============================================================================
+class RejectionWrapper:
+    def __init__(self, model, threshold=0.5, reject_label="Reject"):
+        self.model = model
+        self.threshold = threshold
+        self.reject_label = reject_label
+        self.classes_ = model.classes_
+
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
+
+    def predict(self, X):
+        probas = self.predict_proba(X)
+        max_probas = np.max(probas, axis=1)
+        best_class_idx = np.argmax(probas, axis=1)
+        
+        # dtype=object to avoid String-Truncation with NumPy Arrays
+        preds = np.array(self.classes_[best_class_idx], dtype=object)
+        
+        # Predictions below the threshold are rejected
+        preds[max_probas < self.threshold] = self.reject_label
+        return preds
+
+
 # Load training data
 adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad')
 
@@ -115,6 +141,10 @@ hyperparameters = {
         9: {'C': 0.0011596846285095244, 'dual': False, 'penalty': 'l2', 'tol': 0.00011474581565452661},
 }
 
+# Parameter for Rejection Class
+REJECT_THRESHOLD = 0.5
+REJECT_LABEL = "Reject"
+
 all_runs_data = []
 num_runs = 10
 start_run = 0
@@ -174,21 +204,32 @@ for i in range(start_run, end_run + 1):
     )
     print("Train custom ensemble...")
     ensemble.fit(X_train, y_train)
-    print(ensemble.score(X_test, y_test))
     
-    best_model = ensemble
-    y_pred = best_model.predict(X_test)
-    print("\n--- EVALUATION AUF DEN TESTDATEN ---")
-    print(f"Test Accuracy: {accuracy_score(y_test, y_pred):.4f}\n")
-    print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
-    #print(classification_report(y_test, y_pred))
+    # Create RejectionWrapper with the trained ensemble
+    best_model = RejectionWrapper(ensemble, threshold=REJECT_THRESHOLD, reject_label=REJECT_LABEL)
 
+    y_pred = best_model.predict(X_test)
+    
+    # Compute rejection rate
+    rejected_mask = (y_pred == REJECT_LABEL)
+    rejection_rate = np.mean(rejected_mask)
+    
+    print("\n--- EVALUATION AUF DEN TESTDATEN (mit Rejection Class) ---")
+    print(f"Rejection Threshold: {REJECT_THRESHOLD}")
+    print(f"Rejection Rate: {rejection_rate:.4f} ({np.sum(rejected_mask)}/{len(y_pred)} Zellen verworfen)")
+    print(f"Test Accuracy (Gesamt inkl. Reject): {accuracy_score(y_test, y_pred):.4f}")
+    
+    # Accuracy nur auf den akzeptierten Zellen
+    if np.sum(~rejected_mask) > 0:
+        acc_accepted = accuracy_score(y_test[~rejected_mask], y_pred[~rejected_mask])
+        print(f"Test Accuracy (nur akzeptierte Zellen): {acc_accepted:.4f}")
+    
+    print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
 
     # Compute model score and robustness
     with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
         feature_importance = pickle.load(f)
 
-    #feature_importance = feature_importance.sort_values('Importance', ascending=False)
     robustness_results = test_robustness(
         best_model,
         X_test,

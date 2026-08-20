@@ -6,7 +6,8 @@ import time
 import numpy as np
 import pickle
 from sklearn.svm import LinearSVC
-from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import StackingClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.calibration import CalibratedClassifierCV
@@ -163,14 +164,17 @@ for i in range(start_run, end_run + 1):
     pipe_minus_15 = make_pipeline(features_model_minus_15, 'linsvc_15', model)
     pipe_minus_25 = make_pipeline(features_model_minus_25, 'linsvc_25', model)
 
-    ensemble = VotingClassifier(
+    ensemble = StackingClassifier(
         estimators=[
             ('all_features', pipe_all),
             ('minus_075_pct', pipe_minus_075),
             ('minus_15_pct', pipe_minus_15),
             ('minus_25_pct', pipe_minus_25)
         ],
-        voting='soft'
+        final_estimator=LogisticRegression(max_iter=1000),
+        cv=5,
+        n_jobs=-1,
+        passthrough=True
     )
     print("Train custom ensemble...")
     ensemble.fit(X_train, y_train)
@@ -218,7 +222,7 @@ for i in range(start_run, end_run + 1):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    df_run.to_csv(f'results/custom_ensemble_linsvc_higher_dropout/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/custom_ensemble_linsvc_higher_dropout_stacking_passthrough/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
 current_count = len(all_runs_data)
@@ -232,7 +236,7 @@ if current_count < num_runs:
     )
 
     for i in range(needed_samples):
-        file_path = f"results/custom_ensemble_linsvc_higher_dropout/result_{i}.csv"
+        file_path = f"results/custom_ensemble_linsvc_higher_dropout_stacking_passthrough/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -266,4 +270,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/custom_ensemble_linsvc_higher_dropout/combined_result.csv', index=True)
+final_df.to_csv('results/custom_ensemble_linsvc_higher_dropout_stacking_passthrough/combined_result.csv', index=True)

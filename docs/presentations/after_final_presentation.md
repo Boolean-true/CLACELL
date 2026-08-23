@@ -81,9 +81,11 @@ Submitted batch job 12420681
 Submitted batch job 12420691 -> Done
 Scaled: Submitted batch job 12420804
 Submitted batch job 12421088
-Submitted batch job 12421090
-Run 10+: Submitted batch job 12421105
-Run 20+: Submitted batch job 12421106
+Submitted batch job 12421090 -> canceled after 5 Runs (sufficient data)
+Run 10+: Submitted batch job 12421105 -> canceled after 4 Runs (sufficient data)
+Run 20+: Submitted batch job 12421106 -> canceled after 4 Runs (sufficient data)
+The chosen 10 runs are: 0,1,2,3,4,20 as 5,21 as 6,22 as 7,23 as 8,13 as 9
+Access runs: 10,12,13
 
 Random Forest: Submitted batch job 12420668
 Submitted batch job 12420672
@@ -123,6 +125,8 @@ Submitted batch job 12421098
 Run 10+: Submitted batch job 12421116
 Run 20+: Submitted batch job 12421117
 
+TODO: Bei den scaled ML Algorithmen neue evaluieren, weil die id test daten nicht skaliert wurden! einfach X_train und X_test mit den skalierten Werten überschreiben (siehe custom ensemble linearsvc scaled)
+
 #### Reference Models
 
 CellTypist: Submitted batch job 12420700
@@ -149,6 +153,9 @@ Submitted batch job 1790813
 own python 3.12 env: Submitted batch job 1790859
 Submitted batch job 1790886
 Submitted batch job 1790930
+Submitted batch job 1791019
+Run 10+: Submitted batch job 1791156
+Run 20+: Submitted batch job 1791157
 
 
 #### Ensembles and Autoencoder
@@ -172,7 +179,10 @@ Run 20+: Submitted batch job 12420752
 
 
 AB HIER WARTEN AUF HYPERPARAMETER AUS ML
-CE LinSVC: TODO
+CE LinSVC: Submitted batch job 12421169
+Submitted batch job 12421170
+Submitted batch job 12421175
+Scaled: Submitted batch job 12421186
 
 CE LR: TODO
 

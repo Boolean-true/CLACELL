@@ -57,6 +57,128 @@ CLACELL Conditional:
 All have an Error with the batch_key in scrublet detection
 
 
+### Reevaluation with combined training dataset
+
+CLACELL Test: Submitted batch job 12416425
+
+LinearSVC: Submitted batch job 12416428
+Submitted batch job 12416429
+
+
+
+NEW DATA
+Submitted batch job 12416706
+Submitted batch job 12417128
+
+Cleaned v2
+Submitted batch job 12420656
+
+
+#### ML
+
+LinearSVC: Submitted batch job 12420663
+Submitted batch job 12420681
+Submitted batch job 12420691 -> Done
+Scaled: Submitted batch job 12420804
+Submitted batch job 12421088
+Submitted batch job 12421090
+Run 10+: Submitted batch job 12421105
+Run 20+: Submitted batch job 12421106
+
+Random Forest: Submitted batch job 12420668
+Submitted batch job 12420672
+Submitted batch job 12420682
+Scaled: Submitted batch job 12420806
+Submitted batch job 12421092
+Submitted batch job 12421099
+Run 10+: Submitted batch job 12421108
+Run 20+: Submitted batch job 12421109
+
+Logistic Regression: Submitted batch job 12420673
+Submitted batch job 12420683 -> one run after 9 hours
+Run 0+: Submitted batch job 12421087
+Submitted batch job 12421089
+Scaled: Submitted batch job 12420803
+Submitted batch job 12420805
+Submitted batch job 12421091
+Submitted batch job 12421097
+Run 10+: Submitted batch job 12421111
+Run 20+: Submitted batch job 12421112
+
+ExtraTrees: Submitted batch job 12420675
+Submitted batch job 12420684
+Scaled: Submitted batch job 12420807
+Submitted batch job 12421093
+Submitted batch job 12421100
+Run 10+: Submitted batch job 12421118
+Run 20+: Submitted batch job 12421119
+
+LightGBM: Submitted batch job 12420676
+Submitted batch job 12420680
+Run 10+: Submitted batch job 12421095
+Run 20+: Submitted batch job 12421096
+Scaled: Submitted batch job 12420808
+Submitted batch job 12421094
+Submitted batch job 12421098
+Run 10+: Submitted batch job 12421116
+Run 20+: Submitted batch job 12421117
+
+#### Reference Models
+
+CellTypist: Submitted batch job 12420700
+Submitted batch job 12421113
+Run 10+: Submitted batch job 12420719
+Submitted batch job 12421114
+Run 20+: Submitted batch job 12420720
+Submitted batch job 12421115
+
+SingleR: Submitted batch job 12420763
+
+scGPT: Submitted batch job 1790377
+Submitted batch job 1790390
+Submitted batch job 1790443
+Submitted batch job 1790467
+Submitted batch job 1790474
+Submitted batch job 1790497
+Submitted batch job 1790542
+Submitted batch job 1790740
+torchtext copied from python 3.12 env: Submitted batch job 1790752
+Submitted batch job 1790776
+Submitted batch job 1790801
+Submitted batch job 1790813
+own python 3.12 env: Submitted batch job 1790859
+Submitted batch job 1790886
+Submitted batch job 1790930
+
+
+#### Ensembles and Autoencoder
+
+AE LinSVC: Submitted batch job 12420723
+
+AE LR: Submitted batch job 12420726
+
+AE RF: Submitted batch job 12420733
+Run 10+: Submitted batch job 12420735
+
+CAE LinSVC: Submitted batch job 12420745
+Run 10+: Submitted batch job 12421120
+Run 20+: Submitted batch job 12421121
+
+CAE LR: Submitted batch job 12420746
+
+CAE RF: Submitted batch job 12420749
+Run 10+: Submitted batch job 12420751
+Run 20+: Submitted batch job 12420752
+
+
+AB HIER WARTEN AUF HYPERPARAMETER AUS ML
+CE LinSVC: TODO
+
+CE LR: TODO
+
+CE RF: TODO
+
+
 ### Annotation
 
 #### Human Immune Health Atlas
@@ -83,6 +205,12 @@ Test with improved memory and runtime: Submitted batch job 1498144 on cluster ti
 80.000 Samples: Submitted batch job 1498182 on cluster tinyfat
 
 
+With more NK Cells:
+80.000 Samples: Submitted batch job 1498369 on cluster tinyfat
+Submitted batch job 1498371 on cluster tinyfat
+75.000 Samples: Submitted batch job 1498372 on cluster tinyfat
+
+
 #### Human Cell Atlas
 
 80.000 Samples: Submitted batch job 1498209 on cluster tinyfat
@@ -92,6 +220,22 @@ Submitted batch job 1498215 on cluster tinyfat
 70.000 Samples: Submitted batch job 1498241 on cluster tinyfat
 60.000 Samples: Submitted batch job 1498257 on cluster tinyfat
 50.000 Samples: Submitted batch job 1498266 on cluster tinyfat
+
+Fixed:
+80.000 Samples: Submitted batch job 1498295 on cluster tinyfat
+70.000 Samples: Submitted batch job 1498311 on cluster tinyfat
+60.000 Samples: Submitted batch job 1498312 on cluster tinyfat
+50.000 Samples: Submitted batch job 1498314 on cluster tinyfat
+40.000 Samples: Submitted batch job 1498324 on cluster tinyfat -> Success
+
+More Donors:
+40.000 Samples: Submitted batch job 1498361 on cluster tinyfat
+
+#### CellTypist Dataset
+
+Submitted batch job 1498283 on cluster tinyfat
+Submitted batch job 1498293 on cluster tinyfat
+Submitted batch job 1498294 on cluster tinyfat
 
 
 
@@ -122,3 +266,47 @@ Donnerstag
 X- ergebnisse von cae ohne scaling anschauen
 - annotation
 X- rejection class ergebnisse anschauen
+
+
+## Gespräch am 21.08.
+
+- Paper in Overlea reinkopieren
+- 10x-visium enthält die datensätze
+- modelle werden auf scrna seq datensätze trainiert und wir zeigen, wenn man auf spatial daten runterskaliert sind wir noch besser als die Vergleichsmodelle
+- Datensätze in 10x-visium sind zum abschätzen wie sparse die spatial daten sind
+- training auf 10x-gex datensätzen
+- ABER noch für alle anderen 5 datensätze in 10x-visium ein pendant in scrna seq finden und verwenden. Alle 6 Datensätze dann zusammen als Trainingsdatensatz erstellen
+
+schritt 1: wie gut können wir einzelne tissues klassifizieren? (6 Datensätze)
+schritt 2: auf spatial daten runtersamplen und dann classifier trainieren
+
+
+was ich mir überlegen kann in bezug auf modelltraining: trainingsmodus mit uniform dropout für spatial daten. Eigenen Downsampler anbieten (bereits testen, nur 10%, 5%, 2% der Datenpunkte nehmen (random runtergesampled), evaluieren wie gut das modell dann ist)
+
+preprocessing auf spatial daten anpassen mit weniger genen (evtl nur 1.000 gene)
+
+NEUEN OOD DATENSATZ VERWENDEN wegen scGPT
+
+
+PAPER
+in methods viele technische details (scheint aber nicht so schlimm zu sein, Anne hat sie nicht wieder gefunden)
+
+
+vor training annotationen checken
+- umap plotten
+- gene mit clustern vergleichen
+- datensätze evtl kombinieren (früherer OOD und ID)
+
+
+compute normalization target sum noch auf dem merged datensatz zum checken ob dort nur rohdaten drin sind
+
+
+### Neu Evaluieren
+
+#### ML
+
+- LinearSVC
+- LogisticRegression
+- ExtraTrees?
+- Random Forest
+- LightGBM?

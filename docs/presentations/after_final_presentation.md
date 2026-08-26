@@ -154,8 +154,11 @@ own python 3.12 env: Submitted batch job 1790859
 Submitted batch job 1790886
 Submitted batch job 1790930
 Submitted batch job 1791019
+Submitted batch job 1794197
 Run 10+: Submitted batch job 1791156
+Submitted batch job 1794198
 Run 20+: Submitted batch job 1791157
+Submitted batch job 1794199
 
 
 #### Ensembles and Autoencoder
@@ -188,6 +191,14 @@ CE LR: TODO
 
 CE RF: TODO
 
+
+CE LinSVC with refined cell types: Submitted batch job 12425203
+with ood test prints: Submitted batch job 12427077
+fixed confusion matrix: Submitted batch job 12427131
+Submitted batch job 12427345
+ood tests and fixed t reg cells: Submitted batch job 12427095
+fixed confusion matrix: Submitted batch job 12427132
+Submitted batch job 12427346
 
 ### Annotation
 

@@ -200,6 +200,158 @@ ood tests and fixed t reg cells: Submitted batch job 12427095
 fixed confusion matrix: Submitted batch job 12427132
 Submitted batch job 12427346
 
+
+Analyze ovarian dataset: Submitted batch job 12430763
+Submitted batch job 12430765
+Improved script: Submitted batch job 12436203
+Submitted batch job 1501706 on cluster tinyfat
+Submitted batch job 1501708 on cluster tinyfat
+Submitted batch job 1501712 on cluster tinyfat
+Submitted batch job 1501725 on cluster tinyfat
+Submitted batch job 1501740 on cluster tinyfat
+Submitted batch job 1501750 on cluster tinyfat
+
+breast: Submitted batch job 1501707 on cluster tinyfat
+Submitted batch job 1501709 on cluster tinyfat
+Submitted batch job 1501711 on cluster tinyfat
+Submitted batch job 1501726 on cluster tinyfat
+
+Downsample adata to spatial: Submitted batch job 12430766
+Submitted batch job 12430767
+Submitted batch job 12430768
+Submitted batch job 12430783 -> success but no genes
+without preprocessing: Submitted batch job 12431151
+Submitted batch job 12431154
+Submitted batch job 12434162
+Submitted batch job 12434555
+Submitted batch job 1501700 on cluster tinyfat
+Submitted batch job 1501701 on cluster tinyfat
+With Sparse matrix: Submitted batch job 1501794 on cluster tinyfat
+Convert dense matrix to sparse at the end: Submitted batch job 1501804 on cluster tinyfat
+
+Downsample breast to spatial: Submitted batch job 1501702 on cluster tinyfat
+With Sparse matrix: Submitted batch job 1501795 on cluster tinyfat
+Convert dense matrix to sparse at the end: Submitted batch job 1501805 on cluster tinyfat
+
+CE Spatial (mit estimated split): Submitted batch job 12430769
+Submitted batch job 12430770
+with loading of spatial data: Submitted batch job 12431134
+Submitted batch job 12431148
+Submitted batch job 12431150
+Submitted batch job 12431153
+Submitted batch job 12436198
+Submitted batch job 12438030
+
+CE Spatial with fixed dataset: Submitted batch job 12439870
+Submitted batch job 12439955
+
+
+### Reevaluation with refined cell types
+
+#### ML
+
+LinearSVC: Submitted batch job 12435834
+Submitted batch job 12436225
+Submitted batch job 12436781
+Submitted batch job 12438031
+Scaled: Submitted batch job 12435835
+Submitted batch job 12438039
+
+RandomForest: Submitted batch job 12435836
+Submitted batch job 12439082
+Scaled: Submitted batch job 12435837
+Submitted batch job 12439083
+
+LogisticRegression: Submitted batch job 12435838
+Submitted batch job 12438876
+Run 2+: Submitted batch job 12440803
+Run 3+: Submitted batch job 12441342
+Run 10+: Submitted batch job 12439975
+Run 20+: Submitted batch job 12440804
+Run 30+: Submitted batch job 12440805
+Scaled: Submitted batch job 12435839
+Submitted batch job 12438877
+Run 2+: Submitted batch job 12440806
+Run 10+: Submitted batch job 12439240
+Run 20+: Submitted batch job 12440808
+Run 30+: Submitted batch job 12440810
+
+ExtraTrees: Submitted batch job 12435840
+Submitted batch job 12439084
+Run 7+: Submitted batch job 12440795
+Scaled: Submitted batch job 12435841
+Submitted batch job 12439085
+Run 7+: Submitted batch job 12440796
+
+LightGBM: Submitted batch job 12435842
+Run 10+: Submitted batch job 12435845
+Submitted batch job 12439065
+Run 1+: Submitted batch job 12440812
+Run 10+: Submitted batch job 12439241
+Run 12+: Submitted batch job 12441176
+Run 20+: Submitted batch job 12440813
+Run 30+: Submitted batch job 12440824
+Run 40+: Submitted batch job 12440825
+Scaled: Submitted batch job 12435843
+Run 10+: Submitted batch job 12435846
+Submitted batch job 12439066
+Run 1+: Submitted batch job 12440814
+Run 10+: Submitted batch job 12439242
+Run 12+: Submitted batch job 12441177
+Run 20+: Submitted batch job 12440815
+Run 30+: Submitted batch job 12440826
+Run 40+: Submitted batch job 12440827
+
+#### Reference Models
+
+scGPT: Submitted batch job 1797244
+Submitted batch job 1797531
+Run 10+: Submitted batch job 1797245
+Submitted batch job 1797540
+Run 20+: Submitted batch job 1797246
+Submitted batch job 1797541
+Batch size 32: Submitted batch job 1798245
+Batch size 48: Submitted batch job 1798255
+Submitted batch job 1798525
+
+CellTypist: Submitted batch job 12439962
+Run 1+: Submitted batch job 12441339
+Run 10+: Submitted batch job 12439963
+Run 11+: Submitted batch job 12441340
+Run 20+: Submitted batch job 12439964
+Run 22+: Submitted batch job 12441341
+
+SingleR: Submitted batch job 12439971
+
+#### Autoencoders + Ensembles
+
+AE LinSVC: Submitted batch job 12439980
+Run 10+: Submitted batch job 12440820
+
+AE LR: Submitted batch job 12439981
+Run 1+: Submitted batch job 12441354
+
+AE RF: Submitted batch job 12439982
+Run 4+: Submitted batch job 12441350
+Run 10+: Submitted batch job 12439983
+
+CAE LinSVC: Submitted batch job 12439991
+Run 10+: Submitted batch job 12440821
+Run 20+: Submitted batch job 12440822
+
+CAE LR: Submitted batch job 12439992
+
+CAE RF: Submitted batch job 12439993
+
+CE LinSVC: Submitted batch job 12441263
+Submitted batch job 12441336
+Scaled: Submitted batch job 12441271
+
+CE LinSVC Stacking: Submitted batch job 12441901
+
+CE LinSVC Stacking Passthrough: Submitted batch job 12441902
+
+
 ### Annotation
 
 #### Human Immune Health Atlas
@@ -331,3 +483,34 @@ compute normalization target sum noch auf dem merged datensatz zum checken ob do
 - ExtraTrees?
 - Random Forest
 - LightGBM?
+
+
+
+## Aufgaben
+
+### TODOs vor Reevaluierung
+
+X- Robustness Tests zusätzlich noch mit F1-Score
+
+### Reevaluierung auf fine-grained
+
+- ML
+    X- LinSVC
+    - LR
+    X- RF
+    X- ExtraTrees
+    - LightGBM
+- Custom Ensemble (auch Stacking)
+- Autoencoder
+- Referenzmodelle (scGPT und SingleR hier auch ohne Anpassung)
+
+### Spatial
+
+- Downsampling durchlesen und gegebenenfalls anpassen
+
+#### Ovary
+
+
+#### Breast
+#### Tonsil
+#### Pancreas

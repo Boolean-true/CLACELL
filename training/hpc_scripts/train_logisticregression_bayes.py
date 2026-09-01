@@ -8,66 +8,27 @@ from custom_stopper import CustomStopper
 import joblib
 import pandas as pd
 import os
+from sklearn.metrics import classification_report, accuracy_score, f1_score
+from test_robustness_higher_dropout import test_robustness
+from preprocess_data import prepare_adata
+import pickle
+import time
+
+
+start = time.time()
+print(f'=== Start time: {start}')
 
 # Load training data
-adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad')
-
-# Filter blood data
-adata = adata[adata.obs['Organ'] == 'BLD'].copy()
-print(adata)
-
-# Use raw data instead of already preprocessed data
-adata.X = adata.layers['counts'].copy()
-
+adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
 
 # Preprocessing
-
-# mitochondrial genes, "MT-" for human, "Mt-" for mouse
-adata.var["mt"] = adata.var_names.str.startswith("MT-")
-# ribosomal genes
-adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
-# hemoglobin genes
-adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
-
-sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
-
-# Remove mitochondrial, ribosomal and hemoglobin
-adata = adata[:, ~adata.var["mt"]].copy()
-adata = adata[:, ~adata.var["ribo"]].copy()
-adata = adata[:, ~adata.var["hb"]].copy()
-
-# Doublet Detection
-sc.pp.scrublet(adata, batch_key="Donor")
-adata = adata[adata.obs['predicted_doublet'] == False].copy()
-
-
-# Normalization
-
-# Saving count data
-adata.layers["counts"] = adata.X.copy()
-
-# Normalizing to median total counts
-sc.pp.normalize_total(adata, target_sum=1e4)
-# Logarithmize the data
-sc.pp.log1p(adata)
-
-# Filtering Highly variable genes
-print('Before filtering highly variable genes ---')
-print(adata)
-
-sc.pp.highly_variable_genes(adata, n_top_genes=10000)
-
-# Apply filter
-adata = adata[:, adata.var['highly_variable']].copy()
-
-print('After filtering highly variable genes ---')
-print(adata)
+adata = prepare_adata(adata, batch_key="Donor")
 
 # Create train test split
 
 # All Donors: ['621B', '637C', 'A35', 'A36', 'D496', 'D503']
-donor_train = ['637C', 'A35', 'A36', 'D503']
-donor_test = ['621B', 'D496']
+donor_train = ['637C', 'A35', 'A36', 'D503', '2', '3', '4', '6']
+donor_test = ['621B', 'D496', '7', '8']
 
 adata_train = adata[
     adata.obs["Donor"].isin(donor_train)
@@ -84,22 +45,29 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.X#to_df()
 gene_names_train = adata_train.var_names
-y_train = adata_train.obs['scumi-annotation']
+#y_train = adata_train.obs['scumi-annotation']
+#y_train = adata_train.obs['scumi_clean']
+y_train = adata_train.obs['cell_type_final']
 
-X_test = adata_test.X#to_df()
+X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-y_test = adata_test.obs['scumi-annotation']
+#y_test = adata_test.obs['scumi-annotation']
+#y_test = adata_test.obs['scumi_clean']
+y_test = adata_test.obs['cell_type_final']
 
+preprocessing = time.time()
+print(f'=== Preprocessing Elapsed: {preprocessing - start:.2f} seconds')
 
 # Model training
 
-model = LogisticRegression(max_iter=1000, solver='saga')
+model = LogisticRegression(max_iter=1000, solver='saga', class_weight='balanced')
 
 search_space = {
     'C': Real(1e-3, 2.0, prior='log-uniform'),
-    'penalty': Categorical(['l1', 'l2']),
-    'class_weight': Categorical(['balanced', None]),
-    'tol': Real(1e-6, 1e-2, prior='log-uniform')
+    #'penalty': Categorical(['l1', 'l2']),
+    'l1_ratio': Categorical([0.0, 1.0]),
+    #'class_weight': Categorical(['balanced', None]),
+    'tol': Real(1e-4, 1e-2, prior='log-uniform')
 }
 
 my_stopper = CustomStopper(patience=5, min_delta=0.002, min_iter=15) 
@@ -117,20 +85,54 @@ opt = BayesSearchCV(
 print("Start BayesSearch with Early Stopping...")
 opt.fit(X_train, y_train, callback=my_stopper)
 
+bayes = time.time()
+print(f'=== Bayes Elapsed: {bayes - preprocessing:.2f} seconds')
+
 print(f"\nSearch terminated after {len(opt.cv_results_['mean_test_score'])} Iterations.")
 print(f"Best hyperparameters: {opt.best_params_}")
 print(f"Test-Split Accuracy:  {opt.score(X_test, y_test):.4f}")
 
 
 # Save results on HPC Cluster
-output_dir = './results'
-os.makedirs(output_dir, exist_ok=True)
+#output_dir = './results'
+#os.makedirs(output_dir, exist_ok=True)
 
 # 1. Save model
-joblib.dump(opt.best_estimator_, f'{output_dir}/best_logistic_regression_model.pkl')
+#joblib.dump(opt.best_estimator_, f'{output_dir}/best_logistic_regression_model.pkl')
 
 # 2. Save hyperparameter results as CSV (DataFrame)
-results_df = pd.DataFrame(opt.cv_results_)
-results_df.to_csv(f'{output_dir}/bayes_search_logisticregression_results.csv', index=False)
+#results_df = pd.DataFrame(opt.cv_results_)
+#results_df.to_csv(f'{output_dir}/bayes_search_logisticregression_results.csv', index=False)
 
-print(f"Results successfully saved in '{output_dir}'!")
+#print(f"Results successfully saved in '{output_dir}'!")
+
+best_model = opt.best_estimator_
+y_pred = best_model.predict(X_test)
+
+# Finale Evaluation
+print("\n--- EVALUATION AUF DEN TESTDATEN ---")
+print(f"Test Accuracy: {accuracy_score(y_test, y_pred):.4f}\n")
+print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
+#print(classification_report(y_test, y_pred))
+
+
+# Compute model score and robustness
+with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+    feature_importance = pickle.load(f)
+
+#feature_importance = feature_importance.sort_values('Importance', ascending=False)
+robustness_results = test_robustness(
+    best_model,
+    X_test,
+    y_test,
+    #"scumi-annotation",
+    "scumi_clean",
+    '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
+    feature_importance,
+    log_to_console=True,
+    log_to_file=False,
+)
+
+robustness = time.time()
+print(f'=== Robustness Elapsed: {robustness - bayes:.2f} seconds')
+print(f'=== Total Elapsed: {robustness - start:.2f} seconds')

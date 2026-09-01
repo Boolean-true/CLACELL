@@ -1,6 +1,6 @@
 import anndata as ad
 import scanpy as sc
-from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier
 from skopt import BayesSearchCV
 from skopt.space import Real, Categorical
 from custom_stopper import CustomStopper
@@ -24,6 +24,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import OneHotEncoder
 import scipy.stats as stats
 import pickle
+from scipy.stats import randint
 
 
 # Load training data
@@ -144,8 +145,7 @@ class ScRNACVAEClassifier:
         if hasattr(X, "toarray"):
             X = X.toarray()
         if self.scaler is not None:
-            X = X.to_numpy()
-            #X = self.scaler.transform(X)
+            X = self.scaler.transform(X)
             
         X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
         
@@ -223,7 +223,6 @@ for epoch in range(num_epochs):
         print(f"Early Stopping after [{epoch+1}/{num_epochs}] Epochs!")
         break
 
-
 # --- 4. FEATURE EXTRAKTION (LATENT SPACE) ---
 cdae.eval()
 print("\nExtract robust features...")
@@ -247,16 +246,16 @@ with torch.no_grad():
 print("Starte automatische Hyperparametersuche auf dem Latent Space...")
 
 # Basis-Modell definieren (feste Parameter, die du beibehalten willst)
-base_model = LinearSVC(class_weight="balanced")
+base_model = RandomForestClassifier(class_weight='balanced')
 
 # Suchraum (Distributionen) definieren, zentriert um deine bisherigen Favoriten
 # stats.loguniform sucht effizient über mehrere Größenordnungen hinweg
 param_distributions = {
-    'C': stats.loguniform(1e-3, 2.0),
-    'penalty': Categorical(['l2']),
-    'dual': Categorical([True, False]),
+    'n_estimators': randint(100, 250),
+    #'criterion': ['gini', 'entropy', 'log_loss'],
+    'max_depth': randint(10, 31),
     #'class_weight': ['balanced', None],
-    'tol': stats.loguniform(1e-3, 1e-1)
+    'max_features': ['sqrt', 'log2'],
 }
 
 # RandomizedSearch aufsetzen

@@ -8,32 +8,32 @@ import numpy as np
 
 all_runs_data = []
 num_runs = 10
-start_run = 0
+start_run = 2
 end_run = 9
 
 for i in range(start_run, end_run + 1):
     print(f"=== Start Run {i+1}/{num_runs} ===")
     script_start = time.time()
 
-    if 'train_linearsvc_bayes' in sys.modules:
+    if 'train_logisticregression_bayes_scaled' in sys.modules:
         # Force python to rerun the script by reloading the module
-        importlib.reload(train_linearsvc_bayes)
+        importlib.reload(train_logisticregression_bayes_scaled)
     else:
         # The first import executes the script
-        import train_linearsvc_bayes
+        import train_logisticregression_bayes_scaled
     
     total_script_time_min = (time.time() - script_start) / 60
 
     # Access the global variable of the training script
-    df_run = train_linearsvc_bayes.robustness_results.copy()
+    df_run = train_logisticregression_bayes_scaled.robustness_results.copy()
     
     # Add Technical Metrics
     ## Runtime
     df_run[("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min")] = round(total_script_time_min, 2)
 
     ## Runtime per Iteration
-    mean_fit_per_fold = train_linearsvc_bayes.opt.cv_results_['mean_fit_time']
-    mean_score_per_fold = train_linearsvc_bayes.opt.cv_results_['mean_score_time']
+    mean_fit_per_fold = train_logisticregression_bayes_scaled.opt.cv_results_['mean_fit_time']
+    mean_score_per_fold = train_logisticregression_bayes_scaled.opt.cv_results_['mean_score_time']
 
     n_splits = 5
 
@@ -54,22 +54,21 @@ for i in range(start_run, end_run + 1):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    df_run.to_csv(f'results/linearsvc/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/logisticregression_scaled/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
-
 
 current_count = len(all_runs_data)
 
 # If there aren'T all Dataframes in the array, load them
 if current_count < num_runs:
     loaded_samples = []
-    needed_samples = num_runs - current_count
+    needed_samples = num_samples - current_count
     print(
         f"There are {needed_samples} DataFrames missing. Load them from save directory..."
     )
 
     for i in range(needed_samples):
-        file_path = f"results/linearsvc/result_{i}.csv"
+        file_path = f"results/logisticregression_scaled/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -79,6 +78,7 @@ if current_count < num_runs:
                 f"Warning: File {file_path} not found! Skip it..."
             )
     all_runs_data = pd.concat([loaded_samples, all_runs_data], axis=0)
+
 
 # Average over runs
 combined_df = pd.concat(all_runs_data, axis=0)
@@ -102,4 +102,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/linearsvc/combined_result.csv', index=True)
+final_df.to_csv('results/logisticregression_scaled/combined_result.csv', index=True)

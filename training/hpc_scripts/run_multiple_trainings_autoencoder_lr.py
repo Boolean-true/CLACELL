@@ -8,32 +8,32 @@ import numpy as np
 
 all_runs_data = []
 num_runs = 10
-start_run = 0
+start_run = 1
 end_run = 9
 
 for i in range(start_run, end_run + 1):
     print(f"=== Start Run {i+1}/{num_runs} ===")
     script_start = time.time()
 
-    if 'train_conditional_autoencoder_lr_v2' in sys.modules:
+    if 'train_autoencoder_lr_v2' in sys.modules:
         # Force python to rerun the script by reloading the module
-        importlib.reload(train_conditional_autoencoder_lr_v2)
+        importlib.reload(train_autoencoder_lr_v2)
     else:
         # The first import executes the script
-        import train_conditional_autoencoder_lr_v2
+        import train_autoencoder_lr_v2
     
     total_script_time_min = (time.time() - script_start) / 60
 
     # Access the global variable of the training script
-    df_run = train_conditional_autoencoder_lr_v2.robustness_results.copy()
+    df_run = train_autoencoder_lr_v2.robustness_results.copy()
     
     # Add Technical Metrics
     ## Runtime
     df_run[("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min")] = round(total_script_time_min, 2)
 
     ## Runtime per Iteration
-    mean_fit_per_fold = train_conditional_autoencoder_lr_v2.tuned_classifier.cv_results_['mean_fit_time']
-    mean_score_per_fold = train_conditional_autoencoder_lr_v2.tuned_classifier.cv_results_['mean_score_time']
+    mean_fit_per_fold = train_autoencoder_lr_v2.tuned_classifier.cv_results_['mean_fit_time']
+    mean_score_per_fold = train_autoencoder_lr_v2.tuned_classifier.cv_results_['mean_score_time']
 
     n_splits = 5
 
@@ -55,14 +55,14 @@ for i in range(start_run, end_run + 1):
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
     
     ## Number of Epochs
-    epochs = train_conditional_autoencoder_lr_v2.epoch + 1
+    epochs = train_autoencoder_lr_v2.epoch + 1
     dist = "All"
     cat = "Technical_Metrics"
     sub_cat = "Training_Convergence"
     metric = "Autoencoder_Epochs"
     df_run[(dist, cat, sub_cat, metric)] = epochs
 
-    df_run.to_csv(f'results/conditional_autoencoder_v3/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/autoencoder_lr/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
 current_count = len(all_runs_data)
@@ -76,7 +76,7 @@ if current_count < num_runs:
     )
 
     for i in range(needed_samples):
-        file_path = f"results/conditional_autoencoder_v3/result_{i}.csv"
+        file_path = f"results/autoencoder_lr/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -109,4 +109,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/conditional_autoencoder_v3/combined_result.csv', index=True)
+final_df.to_csv('results/autoencoder_lr/combined_result.csv', index=True)

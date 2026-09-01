@@ -8,7 +8,7 @@ import numpy as np
 
 all_runs_data = []
 num_runs = 10
-start_run = 9
+start_run = 0
 end_run = 9
 
 for i in range(start_run, end_run + 1):

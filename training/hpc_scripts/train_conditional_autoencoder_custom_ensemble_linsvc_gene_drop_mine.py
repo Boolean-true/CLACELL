@@ -1,11 +1,14 @@
 import anndata as ad
 import scanpy as sc
 from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.calibration import CalibratedClassifierCV
 from skopt import BayesSearchCV
 from skopt.space import Real, Categorical
 from custom_stopper import CustomStopper
 from test_robustness_higher_dropout import test_robustness
-from preprocess_data import prepare_adata
 import pickle
 # For saving results on HPC Cluster
 import joblib
@@ -17,7 +20,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV
@@ -27,16 +29,64 @@ import pickle
 
 
 # Load training data
-adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad')
+
+# Filter blood data
+adata = adata[adata.obs['Organ'] == 'BLD'].copy()
+print(adata)
+
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
+
 
 # Preprocessing
-adata = prepare_adata(adata, batch_key="Donor")
+
+# mitochondrial genes, "MT-" for human, "Mt-" for mouse
+adata.var["mt"] = adata.var_names.str.startswith("MT-")
+# ribosomal genes
+adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
+# hemoglobin genes
+adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
+
+sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
+
+# Remove mitochondrial, ribosomal and hemoglobin
+adata = adata[:, ~adata.var["mt"]].copy()
+adata = adata[:, ~adata.var["ribo"]].copy()
+adata = adata[:, ~adata.var["hb"]].copy()
+
+# Doublet Detection
+sc.pp.scrublet(adata, batch_key="Donor")
+adata = adata[adata.obs['predicted_doublet'] == False].copy()
+
+
+# Normalization
+
+# Saving count data
+adata.layers["counts"] = adata.X.copy()
+
+# Normalizing to median total counts
+sc.pp.normalize_total(adata, target_sum=1e4)
+# Logarithmize the data
+sc.pp.log1p(adata)
+
+# Filtering Highly variable genes
+print('Before filtering highly variable genes ---')
+print(adata)
+
+sc.pp.highly_variable_genes(adata, n_top_genes=10000)
+
+# Apply filter
+adata = adata[:, adata.var['highly_variable']].copy()
+
+print('After filtering highly variable genes ---')
+print(adata)
 
 # Create train test split
 
 # All Donors: ['621B', '637C', 'A35', 'A36', 'D496', 'D503']
-donor_train = ['637C', 'A35', 'A36', 'D503', '2', '3', '4', '6']
-donor_test = ['621B', 'D496', '7', '8']
+donor_train = ['637C', 'A35', 'A36', 'D503']
+donor_test = ['621B', 'D496']
 
 adata_train = adata[
     adata.obs["Donor"].isin(donor_train)
@@ -53,15 +103,11 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-#y_train = adata_train.obs['scumi-annotation']
-#y_train = adata_train.obs['scumi_clean']
-y_train = adata_train.obs['cell_type_final']
+y_train = adata_train.obs['scumi-annotation']
 
 X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-#y_test = adata_test.obs['scumi-annotation']
-#y_test = adata_test.obs['scumi_clean']
-y_test = adata_test.obs['cell_type_final']
+y_test = adata_test.obs['scumi-annotation']
 
 
 # Autoencoder Training
@@ -131,7 +177,7 @@ class ConditionalDAE(nn.Module):
         return reconstructed, latent
 
 
-class ScRNACVAEClassifier:
+class ScRNACAEClassifier:
     def __init__(self, cdae, classifier, scaler, num_donors):
         self.cdae = cdae
         self.classifier = classifier
@@ -144,8 +190,7 @@ class ScRNACVAEClassifier:
         if hasattr(X, "toarray"):
             X = X.toarray()
         if self.scaler is not None:
-            X = X.to_numpy()
-            #X = self.scaler.transform(X)
+            X = self.scaler.transform(X)
             
         X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
         
@@ -170,7 +215,7 @@ class ScRNACVAEClassifier:
 
 
 
-# Train DAE
+# --- Training of the Conditional Autoencoder ---
 input_dim = X_train_scaled.shape[1]
 cdae = ConditionalDAE(input_dim, num_donors, latent_dim).to(device)
 
@@ -224,7 +269,7 @@ for epoch in range(num_epochs):
         break
 
 
-# --- 4. FEATURE EXTRAKTION (LATENT SPACE) ---
+# --- FEATURE EXTRAKTION (LATENT SPACE) ---
 cdae.eval()
 print("\nExtract robust features...")
 with torch.no_grad():
@@ -242,50 +287,111 @@ with torch.no_grad():
     X_test_latent = X_test_latent_tensor.cpu().numpy()
 
 
-
-# --- 5. AUTOMATISCHES HYPERPARAMETER-TUNING DER LOGISTIC REGRESSION ---
+# --- Hyperparametertuning of the LinearSVC on the latent space ---
 print("Starte automatische Hyperparametersuche auf dem Latent Space...")
 
 # Basis-Modell definieren (feste Parameter, die du beibehalten willst)
-base_model = LinearSVC(class_weight="balanced")
+base_model = LinearSVC()
 
-# Suchraum (Distributionen) definieren, zentriert um deine bisherigen Favoriten
-# stats.loguniform sucht effizient über mehrere Größenordnungen hinweg
-param_distributions = {
-    'C': stats.loguniform(1e-3, 2.0),
+param_distributions = [
+        {
+    'C': Real(1e-3, 2.0, prior='log-uniform'),
     'penalty': Categorical(['l2']),
     'dual': Categorical([True, False]),
-    #'class_weight': ['balanced', None],
-    'tol': stats.loguniform(1e-3, 1e-1)
-}
+    'class_weight': Categorical(['balanced', None]),
+    'tol': Real(1e-4, 1e-2, prior='log-uniform')
+        },
+        {
+    'C': Real(1e-3, 2.0, prior='log-uniform'),
+    'penalty': Categorical(['l1']),
+    'dual': Categorical([False]),
+    'class_weight': Categorical(['balanced', None]),
+    'tol': Real(1e-4, 1e-2, prior='log-uniform')
+        },
+]
+my_stopper = CustomStopper(patience=5, min_delta=0.002, min_iter=15)
+opt = BayesSearchCV(
+            estimator=base_model,
+            search_spaces=param_distributions,
+            n_iter=30,
+            cv=5,
+            scoring='accuracy',
+            n_jobs=-1,
+            verbose=10
+        )
 
-# RandomizedSearch aufsetzen
-# cv=3 bedeutet 3-fache Kreuzvalidierung auf den Trainings-Embeddings
-tuned_classifier = RandomizedSearchCV(
-    estimator=base_model,
-    param_distributions=param_distributions,
-    n_iter=50,
-    cv=5,
-    scoring='accuracy',
-    n_jobs=-1,
-    verbose=10
+print("Start BayesSearch with Early Stopping...")
+opt.fit(X_train_latent, y_train, callback=my_stopper)
+
+print(f"\nSearch terminated after {len(opt.cv_results_['mean_test_score'])} Iterations.")
+print(f"Best hyperparameters: {opt.best_params_}")
+print(f"Test-Split Accuracy:  {opt.score(X_test_latent, y_test):.4f}")
+
+
+# --- Start training the custom ensemble ---
+with open("feature_importance_randomforest_10_000_genes_scumi_annotated.pkl", "rb") as f:
+    feature_importance = pickle.load(f)
+
+feature_importance = feature_importance.sort_values('Importance', ascending=False)
+sorted_top_genes = feature_importance['Feature'].tolist()
+
+
+total_genes = len(sorted_top_genes)
+
+# Define subsets
+drop_075_pct = int(total_genes * 0.0075)
+drop_15_pct = int(total_genes * 0.015)
+drop_25_pct = int(total_genes * 0.025)
+
+# Compute Features for each subset
+features_model_all = sorted_top_genes
+features_model_minus_075 = sorted_top_genes[drop_075_pct:]
+features_model_minus_15 = sorted_top_genes[drop_15_pct:]
+features_model_minus_25 = sorted_top_genes[drop_25_pct:]
+
+
+# Build Pipelines with ColumnTransformer
+def make_pipeline(features_to_keep, model_name, model):
+    preprocessor = ColumnTransformer(
+        transformers=[('keep', 'passthrough', features_to_keep)],
+        remainder='drop'
+    )
+    return Pipeline([
+        ('select', preprocessor),
+        (model_name, model)
+    ])
+
+model_params = opt.best_params_
+model = CalibratedClassifierCV(LinearSVC(**model_params))
+robust_model = ScRNACAEClassifier(
+    cdae=cdae,
+    classifier=model,
+    scaler=scaler,
+    num_donors=num_donors
 )
+pipe_all = make_pipeline(features_model_all, 'linsvc_all', robust_model)
+pipe_minus_075 = make_pipeline(features_model_minus_075, 'linsvc_075', robust_model)
+pipe_minus_15 = make_pipeline(features_model_minus_15, 'linsvc_15', robust_model)
+pipe_minus_25 = make_pipeline(features_model_minus_25, 'linsvc_25', robust_model)
 
-# Die Suche wird auf den vom DAE extrahierten Features ausgeführt
-tuned_classifier.fit(X_train_latent, y_train)
+ensemble = VotingClassifier(
+    estimators=[
+        ('all_features', pipe_all),
+        ('minus_075_pct', pipe_minus_075),
+        ('minus_15_pct', pipe_minus_15),
+        ('minus_25_pct', pipe_minus_25)
+    ],
+    voting='soft'
+)
+print("Train custom ensemble...")
+ensemble.fit(X_train_latent, y_train)
+#print(ensemble.score(X_test, y_test))
 
-# Die besten gefundenen Hyperparameter ausgeben
-print("\n--- TUNING FINISHED ---")
-print(f"Beste Parameter: {tuned_classifier.best_params_}")
-print(f"Bester CV-Score: {tuned_classifier.best_score_:.4f}")
 
-# Das beste Modell automatisch für die Testdaten verwenden
-best_model = tuned_classifier.best_estimator_
-#best_model = LogisticRegression(C=0.2770278253617821, class_weight=None, l1_ratio=0.0, tol=0.0019489213147753446, solver='saga', max_iter=1000)
-#best_model.fit(X_train_latent, y_train)
-y_pred = best_model.predict(X_test_latent)
+# Predict test data
+y_pred = ensemble.predict(X_test_latent)
 
-# Finale Evaluation
+# Final Evaluation
 print("\n--- EVALUATION AUF DEN TESTDATEN ---")
 print(f"Test Accuracy: {accuracy_score(y_test, y_pred):.4f}\n")
 print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
@@ -293,12 +399,6 @@ print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
 
 
 print("\n--- Robustness Evaluation ---")
-robust_model = ScRNACVAEClassifier(
-    cdae=cdae,
-    classifier=best_model,
-    scaler=scaler,
-    num_donors=num_donors
-)
 # Compute model score and robustness
 with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
     feature_importance = pickle.load(f)
@@ -308,9 +408,8 @@ robustness_results = test_robustness(
     robust_model,
     X_test,
     y_test,
-    #"scumi-annotation",
-    "scumi_clean",
-    '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
+    "scumi-annotation",
+    '/home/hpc/iwbn/iwbn133h/data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad',
     feature_importance,
     log_to_console=True,
     log_to_file=False,

@@ -18,7 +18,7 @@ import joblib
 import pandas as pd
 import os
 from sklearn.metrics import classification_report, accuracy_score, f1_score
-#from test_robustness import test_robustness
+from sklearn.preprocessing import StandardScaler
 from test_robustness_higher_dropout import test_robustness
 from preprocess_data import prepare_adata
 
@@ -61,18 +61,22 @@ gene_names_test = adata_test.var_names
 #y_test = adata_test.obs['scumi_clean']
 y_test = adata_test.obs['cell_type_final']
 
+scaler = StandardScaler(with_mean=False).set_output(transform="pandas")
+X_train= scaler.fit_transform(X_train)
+X_test= scaler.transform(X_test)
+
 
 hyperparameters = {
-        0: {'C': 0.033645854251403165, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        1: {'C': 0.033030662821415015, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        2: {'C': 0.03429948310767735, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        3: {'C': 0.03229953973971724, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        4: {'C': 0.03353399534711077, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        5: {'C': 0.029918305898337064, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        6: {'C': 0.03937640873013549, 'dual': False, 'penalty': 'l1', 'tol': 0.009468662828490342},
-        7: {'C': 0.03786441645406222, 'dual': False, 'penalty': 'l1', 'tol': 0.005523576086634508},
-        8: {'C': 0.029642629364570676, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        9: {'C': 0.03174924998189852, 'dual': False, 'penalty': 'l1', 'tol': 0.0011375557337571533},
+        0: {'C': 0.013820818887741821, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        1: {'C': 0.013478498292660736, 'dual': False, 'penalty': 'l1', 'tol': 0.00010334323345713077},
+        2: {'C': 0.01223982403775, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        3: {'C': 0.010641513998079248, 'dual': False, 'penalty': 'l1', 'tol': 0.00010200719043281375},
+        4: {'C': 0.010916730716284797, 'dual': False, 'penalty': 'l1', 'tol': 0.00019936009797795568},
+        5: {'C': 0.010291101199976498, 'dual': False, 'penalty': 'l1', 'tol': 0.0025511234416539636},
+        6: {'C': 0.010810819806769366, 'dual': False, 'penalty': 'l1', 'tol': 0.009706409950671936},
+        7: {'C': 0.01367566197039949, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        8: {'C': 0.013466613220840746, 'dual': False, 'penalty': 'l1', 'tol': 0.00010159777038437947},
+        9: {'C': 0.013113133735054485, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
 }
 
 all_runs_data = []
@@ -157,6 +161,7 @@ for i in range(start_run, end_run + 1):
         "scumi_clean",
         '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
         feature_importance,
+        scaler=scaler,
         log_to_console=True,
         log_to_file=False,
     )
@@ -179,25 +184,21 @@ for i in range(start_run, end_run + 1):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    #break
-    df_run.to_csv(f'results/custom_ensemble_linsvc/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/custom_ensemble_linsvc_scaled/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
-
-# End the test execution
-#quit()
 
 current_count = len(all_runs_data)
 
 # If there aren'T all Dataframes in the array, load them
 if current_count < num_runs:
     loaded_samples = []
-    needed_samples = num_runs - current_count
+    needed_samples = num_samples - current_count
     print(
         f"There are {needed_samples} DataFrames missing. Load them from save directory..."
     )
 
     for i in range(needed_samples):
-        file_path = f"results/custom_ensemble_linsvc/result_{i}.csv"
+        file_path = f"results/custom_ensemble_linsvc_scaled/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -231,4 +232,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/custom_ensemble_linsvc/combined_result.csv', index=True)
+final_df.to_csv('results/custom_ensemble_linsvc_scaled/combined_result.csv', index=True)

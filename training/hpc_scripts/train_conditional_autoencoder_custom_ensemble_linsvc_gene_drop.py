@@ -149,14 +149,16 @@ class ConditionalDAE(nn.Module):
         
         return reconstructed, latent
 
-class SubsetCAELinearSVC(BaseEstimator, ClassifierMixin):
+class SubsetCAELinearSVC(ClassifierMixin, BaseEstimator):
     """
     A class that encapsulates the entire pipeline of gene filtering, scaling, 
     training a Conditional Autoencoder (with Early Stopping), and performing 
     BayesSearchCV for LinearSVC on the latent space, all within a single 
     Scikit-Learn estimator.
     """
-    def __init__(self, features_to_keep, donor_train_oh, device, latent_dim=128, num_epochs=150, name="Model"):
+    _estimator_type = "classifier"
+
+    def __init__(self, features_to_keep=None, donor_train_oh=None, device="cpu", latent_dim=128, num_epochs=150, name="Model"):
         self.features_to_keep = features_to_keep
         self.donor_train_oh = donor_train_oh
         self.device = device
@@ -164,11 +166,6 @@ class SubsetCAELinearSVC(BaseEstimator, ClassifierMixin):
         self.num_epochs = num_epochs
         self.name = name
         
-        self.scaler = None
-        self.cdae = None
-        self.classifier = None
-        self.classes_ = None
-
     def fit(self, X, y):
         print(f"\n--- Start training for Pipeline: {self.name} ---")
         # 1. Feature Subset

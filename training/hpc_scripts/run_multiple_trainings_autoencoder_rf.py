@@ -62,7 +62,7 @@ for i in range(start_run, end_run + 1):
     metric = "Autoencoder_Epochs"
     df_run[(dist, cat, sub_cat, metric)] = epochs
 
-    df_run.to_csv(f'results/autoencoder_rf_v3/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/autoencoder_rf/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
 current_count = len(all_runs_data)
@@ -76,7 +76,7 @@ if current_count < num_runs:
     )
 
     for i in range(needed_samples):
-        file_path = f"results/autoencoder_rf_v3/result_{i}.csv"
+        file_path = f"results/autoencoder_rf/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -109,4 +109,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/autoencoder_rf_v3/combined_result.csv', index=True)
+final_df.to_csv('results/autoencoder_rf/combined_result.csv', index=True)

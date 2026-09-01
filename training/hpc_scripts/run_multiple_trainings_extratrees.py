@@ -4,12 +4,15 @@ import pandas as pd
 import resource
 import time
 import numpy as np
+import os
 
 
 all_runs_data = []
 num_runs = 10
+start_run = 7
+end_run = 9
 
-for i in range(num_runs):
+for i in range(start_run, end_run + 1):
     print(f"=== Start Run {i+1}/{num_runs} ===")
     script_start = time.time()
 
@@ -55,6 +58,28 @@ for i in range(num_runs):
     df_run.to_csv(f'results/extratrees/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
+
+current_count = len(all_runs_data)
+
+# If there aren'T all Dataframes in the array, load them
+if current_count < num_runs:
+    loaded_samples = []
+    needed_samples = num_runs - current_count
+    print(
+        f"There are {needed_samples} DataFrames missing. Load them from save directory..."
+    )
+
+    for i in range(needed_samples):
+        file_path = f"results/extratrees/result_{i}.csv"
+
+        if os.path.exists(file_path):
+            old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
+            loaded_samples.append(old_df)
+        else:
+            print(
+                f"Warning: File {file_path} not found! Skip it..."
+            )
+    all_runs_data = pd.concat([loaded_samples, all_runs_data], axis=0)
 
 # Average over runs
 combined_df = pd.concat(all_runs_data, axis=0)

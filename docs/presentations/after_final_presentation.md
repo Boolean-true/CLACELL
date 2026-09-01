@@ -514,3 +514,32 @@ X- Robustness Tests zusätzlich noch mit F1-Score
 #### Breast
 #### Tonsil
 #### Pancreas
+
+
+
+
+## Mitschrieb vom 1.9.
+
+weiteren OOD Testdatensatz, evtl AIDA. Anne schaut sich AIDA an
+
+Bestehenden OOD Datensatz aufteilen in drei Altersstufen Pediatric, Young Adult und Adult !!!
+Bestehenden OOD evtl runtersamplen wenn AIDA dazukommt
+Test Script anpassen auf mehrere OOD Datensätze
+
+Evtl Weitere Option biem Package mit alle subclassifier trainieren
+
+Coarse grained auch noch evaluieren auf neuen Datensätzen
+
+kleineren run für spaptial (subsamplen) bis es läuft
+
+tonsil müsste bei spatial auch gehen. layer counts für Rohdaten
+
+Bei Marker genen bei ? bei spatial die letzte Spalte nehmen, wenn kein Wert da drin ist, dann das Gen verwerfen
+
+evtl plots für die ood datensätze nach modell und nicht nach ood datensatz, also ein plot für linsvc mit unterschiedlichen ood datensätzen
+
+
+Poster:
+- Eher Plots, kaum Text
+- Man kann auch Informationen aufbringen, die eine Erklärung benötigen, da ich ja neben dem Poster stehe. Also muss nicht alles auf dem Poster erklärt werden
+- Ergebnisse zuerst (als interessantestes; ganz oben), Architektur weiter unten für Interessierte

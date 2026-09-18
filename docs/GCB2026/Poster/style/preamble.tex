@@ -1,0 +1,70 @@
+%!TEX root = poster.tex
+\usepackage{xspace,booktabs} 
+\usepackage{svg}
+\usepackage{tikz,pgf,pgfplots,pgfplotstable}
+\usepgfplotslibrary{groupplots} 
+\usepackage{latexsym}
+\usetikzlibrary{decorations.pathreplacing,patterns,arrows,decorations.pathmorphing,positioning,fit,backgrounds,shapes.geometric,calc,matrix}
+\makeatletter
+\newcommand{\gettikzxy}[3]{%
+  \tikz@scan@one@point\pgfutil@firstofone#1\relax
+  \edef#2{\the\pgf@x}%
+  \edef#3{\the\pgf@y}%
+}
+\makeatother
+\usepackage{calc}
+\usepackage{graphicx}
+\usepackage{amsfonts,amssymb,amsmath,mathtools,nicefrac,stmaryrd}
+\usepackage{relsize}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{bm}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\usepackage{array}
+\usepackage{adjustbox}
+\usepackage{fixmath}
+\usepackage{marvosym}
+\pgfplotsset{compat=1.12}
+\usepackage{forest}
+\usepackage{varwidth}
+\usepackage{booktabs,siunitx,tabularx}
+\setlist[itemize]{leftmargin=*,itemsep=.5ex,parsep=0ex,partopsep=0ex,topsep=.25ex}
+\setlist[enumerate]{leftmargin=*,itemsep=.5ex,parsep=0ex,partopsep=0ex,topsep=.25ex}
+
+\usepackage[backend=bibtex, citestyle=numeric-comp, url=false, bibstyle=ieee, minbibnames=1, maxbibnames=1, doi=false]{biblatex}
+\setlength\bibitemsep{.25\itemsep}
+\addbibresource{references.bib}
+% ======= commands ======== 
+
+\newcommand{\comment}[2]{\textcolor{red}{**** #1: #2 ****}}
+\newcommand{\ie}{i.\,e.\@\xspace}
+\newcommand{\eg}{e.\,g.\@\xspace}
+\newcommand{\etal}{et~al.\@\xspace}
+\newcommand{\wrt}{w.\,r.\,t.\@\xspace}
+\newcommand{\cf}{cf.\@\xspace}
+\newcommand{\mywlog}{w.\,l.\,o.\,g.\@\xspace}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\myavg}{avg}
+\DeclareMathOperator*{\supp}{supp}
+\DeclareMathOperator*{\diam}{diam}
+\DeclareMathOperator*{\sgn}{sgn}
+\DeclareMathOperator*{\img}{img}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\newcommand{\dist}{d}
+\DeclareMathOperator*{\degree}{deg}
+\DeclareMathOperator*{\swap}{swap}
+\DeclareMathOperator*{\var}{var}
+\DeclareMathOperator*{\enc}{enc}
+\DeclareMathOperator*{\ecc}{e}
+\DeclareMathOperator*{\vectorize}{vec}
+\DeclareMathOperator*{\maxdeg}{max\,deg}
+\sisetup{exponent-product=\cdot,detect-all=true,detect-inline-weight=math}

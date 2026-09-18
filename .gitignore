@@ -13,8 +13,8 @@ models/*
 training/models/*
 training/results/*.pkl
 # result csvs with only one line
-training/results/*/result_*.csv
-training/results/*/*/result_*.csv
+training/results/**/result_*.csv
+training/results/**/*/result_*.csv
 # pycache
 __pycache__/*
 evaluation/__pycache__/*
@@ -23,8 +23,11 @@ clacell/_marker_based_annotation/__pycache__/*
 training/__pycache__/*
 # Latex compile files
 docs/report/main.*
+docs/GCB2026/Poster/poster.*
+docs/GCB2026/Poster/*.bib
 # Include main.tex
 !docs/report/main.tex
+!docs/GCB2026/Poster/poster.tex
 # Don't include temporary files
 docs/report/outline.md
 docs/report/sample.tex

@@ -1,0 +1,131 @@
+\documentclass[
+portrait, 
+final,
+a0paper, 
+fontscale=0.292
+]{style/baposter}
+
+\definecolor{TFlight}{cmyk}{.0, .0, .0, .0}
+\definecolor{TFdark}{cmyk}{.70,.30,.20,.30}
+\definecolor{FAUlight}{cmyk}{1,.70,0,.45}
+\definecolor{FAUdark}{cmyk}{1,.70,0,.70}
+\definecolor{shadecolor}{cmyk}{.55, .25, .15, .10}
+\setlength{\columnseprule}{.5pt}
+
+\input{style/preamble}
+
+\newcommand{\highlight}[2][TFdark]{\textcolor{#1}{\boldmath\bf #2}}
+
+\usepackage{url,csquotes}
+\usepackage{multicol,framed}
+%\setlength{\FrameRule}{1pt}
+\setlength{\FrameSep}{2pt}
+
+%%%%%%%%% FONTS %%%%%%%%% 
+\usepackage[sfdefault]{roboto}
+
+
+\begin{document}
+\begin{poster}{
+columns=4,
+colspacing=1em,
+bgColorOne=TFlight,
+background=plain,
+borderColor=FAUlight,
+% can swap headerColorOne and headerFontColor for white header, dark font
+headerColorOne=FAUlight,
+headerFontColor=white,
+% Box borders: options are none,bars,coils,triangles,rectangle,rounded,roundedleft,roundedright,roundedsmall,faded
+textborder=rectangle,
+boxColorOne=white,
+headerborder=open,
+headerheight=0.17\textheight,
+headershade=plain,
+headerfont=\bf\Large,
+linewidth=2pt}{\includegraphics[height=4em]{style/BIONETS.pdf}}
+{
+CLACELL: Robust cell type classifier for immune cells
+%scCAT \& spatialCAT: a robust cell type classifier for single-cell and spatial transcriptomics data
+}
+{
+J. Kraus\textsuperscript{1}\textsuperscript{\Letter}, D. B. Blumenthal\textsuperscript{1}, A. Hartebrodt\textsuperscript{1}\\[.5em]
+{ \textsuperscript{1}Biomedical Network Science Lab, Department Artificial Intelligence in Biomedical Engineering, Friedrich-Alexander-Universität Erlangen-Nürnberg}\\[.5em]
+{ \textsuperscript{\Letter}\url{boolean.kraus@fau.de}}
+}
+{
+\includegraphics[height=4em]{img/funding_logo.jpg}%
+\includegraphics[height=4em]{img/funding_logo2.png}\hspace{0.5em}%
+\includegraphics[height=4em]{style/FAU.pdf}%
+}
+	
+\headerbox{Motivation}{name=motivation, column=0, span=2}{
+\begin{itemize}
+\item \highlight{Background:} Single-cell RNA sequencing (scRNA-seq) reveals cellular heterogeneity, but assigning cell types remains a massive analytical bottleneck.
+\item \highlight{Problem:} Manual marker-based annotation is highly subjective and scale-limited and existing automated classifiers often suffer from high performance variance, sensitivity to gene dropout, and overfitting.
+\item \highlight{Our approach:} We propose CLACELL, an open-source Python framework for robust and deterministic cell type classification of single-cell data.% and spatial transcriptomics data.
+\end{itemize}
+}
+
+\headerbox{Results on coarse labels}{name=results_coarse, column=2, span=2}{
+\includegraphics[width=\linewidth]{img/poster_reference_table_metrics_box_plot.png}%
+\newline
+\includegraphics[width=\linewidth]{img/poster_reference_cell_types_heatmap_ood.png}%
+}
+
+\headerbox{Results on fine grained labels}{name=results_fine_grained, column=0, span=2, below=motivation}{
+\includegraphics[width=\linewidth]{img/poster_reference_comparison_table_metrics_box_plot.png}%
+\newline
+\includegraphics[width=\linewidth]{img/poster_reference_fine_grained_cell_types_heatmap_ood.png}%
+}
+
+\headerbox{Architecture for the Custom Ensemble}{name=ce_architecture, column=2, span=2, below=results_coarse}{
+Optimized for high prediction stability (referenced as \textbf{CLACELL} in results).
+\par\vspace{0.3em}
+\includegraphics[width=\linewidth]{img/CLACELL_pipeline.drawio.png}%
+}
+
+\headerbox{Architecture for the Conditional Autoencoder}{name=cae_architecture, column=2, span=2, below=ce_architecture}{
+Designed for superior Out-of-Distribution (OOD) generalization (referenced as \textbf{CLACELL CAE} in results).
+%\newline
+\par\vspace{0.3em}
+\includegraphics[width=\linewidth]{img/ConditionalAutoencoder.drawio.png}%
+}
+
+\headerbox{The CLACELL Package}{name=package, column=0, span=2, below=results_fine_grained}{
+End-to-end Python solution for robust scRNA-seq classification:
+\begin{itemize}
+\item \highlight{MarkerAnnotator:} Native Python reimplementation of the \textit{scumi} R algorithm.
+\item \highlight{preprocess\_data:} Built-in pipeline (normalization, log-transform, feature selection).
+\item \highlight{CellClassifier:} Custom Ensemble with built-in methods for hyperparameter tuning, training, evaluation, and prediction.
+\item \highlight{ConditionalCellClassifier:} Conditional Autoencoder with built-in methods for hyperparameter tuning, training, evaluation, and prediction.
+\end{itemize}
+}
+
+\headerbox{Future work}{name=conclusion, column=2, span=2, below=cae_architecture, above=bottom}{
+\begin{itemize}
+\item \highlight{Optimization of CLACELL:} Stacking and a combination of Custom Ensemble and Conditional Autoencoder.
+\item \highlight{Hierarchical Classification:} Implement a two-level approach for improved performance.
+\item \highlight{Spatial Data Evaluation:} Assess CLACELL's performance with low gene counts.
+\end{itemize}
+}
+
+\headerbox{Github Repository}{name=github, column=0, span=1, below=package, above=bottom}{
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=0.6\linewidth]{img/clacell_github_repo.png}
+\end{minipage}
+}
+
+\headerbox{PyPI Package}{name=pypi, column=1, span=1, below=package, above=bottom}{
+\begin{minipage}{\linewidth}
+\centering
+\includegraphics[width=0.6\linewidth]{img/clacell_pypi_package.png}
+\end{minipage}
+}
+
+% alternatively: span all 4 columns with the references and bottomalign the boxes left and right
+
+\end{poster}%
+%
+\end{document}
+

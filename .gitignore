@@ -40,4 +40,5 @@ docs/papers/autoencoder_quellen.md
 training/results/**/.ipynb_checkpoints/*
 training/results/*/*/.ipynb_checkpoints/*
 *.pkl
+!evaluation/pegasus_feature_importance_interleaved_marker_genes.pkl
 pypi_token.md

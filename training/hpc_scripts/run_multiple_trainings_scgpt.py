@@ -14,31 +14,31 @@ if project_path not in sys.path:
 
 all_runs_data = []
 num_runs = 10
-start_run = 2
-end_run = 2
+start_run = 0
+end_run = 9
 
 for i in range(start_run, end_run + 1):
     print(f"=== Start Run {i+1}/{num_runs} ===")
     script_start = time.time()
 
-    if 'train_scGPT' in sys.modules:
+    if 'finetune_integration_adjusted' in sys.modules:
         # Force python to rerun the script by reloading the module
-        importlib.reload(train_scGPT)
+        importlib.reload(finetune_integration_adjusted)
     else:
         # The first import executes the script
-        import train_scGPT as train_scGPT
+        import finetune_integration_adjusted
     
     total_script_time_min = (time.time() - script_start) / 60
 
     # Access the global variable of the training script
-    df_run = train_scGPT.robustness_results.copy()
+    df_run = finetune_integration_adjusted.robustness_results.copy()
     
     # Add Technical Metrics
     ## Runtime
     df_run[("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min")] = round(total_script_time_min, 2)
 
     ## Runtime per Iteration
-    epoch_times = train_scGPT.epoch_times
+    epoch_times = finetune_integration_adjusted.epoch_times
     avg_time_per_iter_seconds = np.mean(epoch_times)
     dist = "All"
     cat = "Technical_Metrics"

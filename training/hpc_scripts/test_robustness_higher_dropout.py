@@ -91,9 +91,18 @@ def _prepare_sparse_input(X, gene_names=None):
 def _drop_features(X, pct: float, rng: np.random.Generator):
     if pct <= 0:
         return X
-    n_features = X.shape[1]
-    n_drop = max(1, int(n_features * pct))
-    drop_idx = rng.choice(n_features, size=n_drop, replace=False)
+
+    # Only consider genes that are not 0 for all cells
+    X_vals = X.values if hasattr(X, "values") else X
+    active_mask = (X_vals != 0).any(axis=0)
+    active_indices = np.where(active_mask)[0]
+
+    if len(active_indices) == 0:
+        return X
+
+    # Compute number of genes to drop on active genes
+    n_drop = max(1, int(len(active_indices) * pct))
+    drop_idx = rng.choice(active_indices, size=n_drop, replace=False)
 
     X_copy = X.copy()
     X_copy.iloc[:, drop_idx] = 0
@@ -129,11 +138,11 @@ def _print_text_confusion_matrix(y_true, y_pred):
     logging.info("\n" + cm_perc.round(1).to_string())
 
 
-# Computes the score on all features (baseline)
-def compute_baseline_score(model, X, y):
+def compute_baseline_score(model, X, y, batch_obs=None):
     y_pred = _predict_labels(model, X)
     accuracy = accuracy_score(y, y_pred)
     macro_f1 = f1_score(y, y_pred, average='macro', zero_division=0)
+
     logging.info(f"Baseline accuracy score {accuracy:.4f} | Macro F1 {macro_f1:.4f}")
     logging.info(
         f"Classification Report:\n{classification_report(y, y_pred, zero_division=0)}"
@@ -141,7 +150,30 @@ def compute_baseline_score(model, X, y):
 
     _print_text_confusion_matrix(y, y_pred)
 
-    return accuracy, classification_report(y, y_pred, zero_division=0, output_dict=True)
+    batch_metrics = {"batch_f1_mean": None, "batch_f1_std": None}
+
+    if batch_obs is not None:
+        # Convert batch_ops in a numpy array for clean masking
+        batch_obs_array = np.asarray(batch_obs)
+        y_array = np.asarray(y)
+        y_pred_array = np.asarray(y_pred)
+
+        unique_batches = np.unique(batch_obs_array)
+        batch_f1_scores = []
+
+        for b in unique_batches:
+            idx = (batch_obs_array == b)
+            # Compute the F1-Score only for batches that contain cells
+            if np.sum(idx) > 0:
+                score = f1_score(y_array[idx], y_pred_array[idx], average='macro', zero_division=0)
+                batch_f1_scores.append(score)
+
+        if batch_f1_scores:
+            batch_metrics["batch_f1_mean"] = np.mean(batch_f1_scores)
+            batch_metrics["batch_f1_std"] = np.std(batch_f1_scores)
+            logging.info(f"Batch Stability (N={len(unique_batches)}): Mean F1 {batch_metrics['batch_f1_mean']:.4f} | Std F1 {batch_metrics['batch_f1_std']:.4f}")
+
+    return accuracy, classification_report(y, y_pred, zero_division=0, output_dict=True), batch_metrics
 
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
@@ -175,10 +207,10 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
     num_samples = len(y)
     num_different_predictions = 0
     for i in range(num_samples):
-        for j in range(n_executions):
-            for k in range(j + 1, n_executions):
-                if results[j][i] != results[k][i]:
-                    num_different_predictions += 1
+        # Prüfen, ob für Zelle i unterschiedliche Label vorhergesagt wurden
+        unique_preds = {results[exec_idx][i] for exec_idx in range(n_executions)}
+        if len(unique_preds) > 1:
+            num_different_predictions += 1
 
     logging.info(f"Total samples: {num_samples}")
     logging.info(f"Number of inconsistent predictions: {num_different_predictions}")
@@ -190,66 +222,50 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
 # This is done for different percentages of dropped features and the scores are reported.
 # feature_importances should be a pandas dataframe with columns "feature" and "importance" sorted by importance in descending order. The "feature" column can contain feature names that are not present in the dataset.
 def compute_robustness_feature_importance_dropout(model, X, y, feature_importances):
+    # 1. Compute feature column in feature_importances
+    feature_col = None
+    for column in feature_importances.columns:
+        if str(column).lower() == "feature":
+            feature_col = column
+            break
+
+    if feature_col is None:
+        if len(feature_importances.columns) >= 1:
+            feature_col = feature_importances.columns[0]
+            logging.warning(
+                f"Warning: Could not find a column named 'feature'; using '{feature_col}' as feature column."
+            )
+        else:
+            logging.error("feature_importances dataframe has no columns; skipping dropout test.")
+            return [], []
+
+    # 2. Compute active genes (not 0 for every gene)
+    if hasattr(X, "columns"):
+        active_cols = X.columns[(X != 0).any(axis=0)]
+    else:
+        logging.error("X does not have columns attribute. DataFrame input required.")
+        return [], []
+
+    # 3. Filter feature_importances on the active genes
+    fi_filtered = feature_importances[feature_importances[feature_col].isin(active_cols)].copy()
+
+    if len(fi_filtered) == 0:
+        logging.warning("No matching active features found between X and feature_importances; skipping test.")
+        return [], []
+
+    # 4. Number of available genes after filtering
+    n_available_features = len(fi_filtered)
+
     acc_scores = []
     f1_scores = []
     for pct in [0.001, 0.005, 0.01, 0.02]:
-        n_features = X.shape[1]
-        n_drop = max(1, int(n_features * pct))
-
-        # Extract top features from feature_importances
-        if hasattr(feature_importances, "iloc") and hasattr(
-            feature_importances, "columns"
-        ):
-            feature_col = None
-            for column in feature_importances.columns:
-                if str(column).lower() == "feature":
-                    feature_col = column
-                    break
-
-            if feature_col is None:
-                if len(feature_importances.columns) >= 1:
-                    feature_col = feature_importances.columns[0]
-                    logging.warning(
-                        f"Warning: could not find a column named 'feature'; using '{feature_col}' as feature column."
-                    )
-                else:
-                    logging.error(
-                        "feature_importances dataframe has no columns; skipping this pct"
-                    )
-                    continue
-
-            top_features = feature_importances[feature_col].iloc[:n_drop].tolist()
-        else:
-            # assume list/array/series-like of feature identifiers (names or indices)
-            try:
-                top_features = list(feature_importances)[:n_drop]
-            except Exception:
-                logging.error(
-                    "feature_importances has unexpected format; skipping this pct"
-                )
-                continue
+        # Compute n_drop according to active genes
+        n_drop = max(1, int(n_available_features * pct))
+        top_features = fi_filtered[feature_col].iloc[:n_drop].tolist()
 
         # Prepare a copy of X with selected features zeroed
         X_dropped = X.copy()
-        drop_idx = []
-        for feat in top_features:
-            if feat in X_dropped.columns:
-                drop_idx.append(X_dropped.columns.get_loc(feat))
-            else:
-                # If features were provided as integer indices, allow that too
-                try:
-                    idx = int(feat)
-                    if 0 <= idx < n_features:
-                        drop_idx.append(idx)
-                    else:
-                        logging.warning(
-                            f"Warning: feature index {idx} out of range; skipping."
-                        )
-                except Exception:
-                    logging.warning(
-                        f"Warning: feature '{feat}' not found in X.columns; skipping."
-                    )
-                    continue
+        drop_idx = [X_dropped.columns.get_loc(feat) for feat in top_features if feat in X_dropped.columns]
 
         if drop_idx:
             X_dropped.iloc[:, drop_idx] = 0
@@ -268,16 +284,16 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
 
 
 # Computes the score and robustness of the given model on the given dataset (X, y) and feature importance
-def compute_model_score_and_robustness(model, X, y, feature_importances=None, dist_name="In-Distribution"):
+def compute_model_score_and_robustness(model, X, y, feature_importances=None, dist_name="In-Distribution", batch_obs=None):
     # Baseline
-    baseline_accuracy, baseline_report = compute_baseline_score(model, X, y)
+    baseline_accuracy, baseline_report, batch_metrics = compute_baseline_score(model, X, y, batch_obs=batch_obs)
 
     # Random Robustness Dropouts
     rd_10_acc, rd_10_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.10)
-    rd_50_acc, rd_50_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.50)
-    rd_90_acc, rd_90_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.90)
-    rd_925_acc, rd_925_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.925)
-    rd_95_acc, rd_95_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.95)
+    #rd_50_acc, rd_50_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.50)
+    #rd_90_acc, rd_90_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.90)
+    #rd_925_acc, rd_925_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.925)
+    #rd_95_acc, rd_95_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.95)
     
     num_samples, num_different_predictions = compute_robustness_multiple_executions(model, X, y, 5)
 
@@ -288,6 +304,14 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
     # Combine results into a single DataFrame for easier comparison
     results = {}
     results[(dist_name, "Baseline", "Overall", "Accuracy")] = baseline_accuracy
+    # Add Batch Metrics
+    results[(dist_name, "Baseline", "Batch Effect", "Macro_F1_Mean")] = (
+        batch_metrics["batch_f1_mean"]
+    )
+    results[(dist_name, "Baseline", "Batch Effect", "Macro_F1_Std")] = (
+        batch_metrics["batch_f1_std"]
+    )
+    # Classification Report
     for class_name, metrics in baseline_report.items():
         if isinstance(metrics, dict):
             for metric_name, val in metrics.items():
@@ -299,11 +323,11 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
     # Map Random Dropout scores
     random_dropouts = [
         ("Random", rd_10_acc, rd_10_f1),
-        ("Random_10", rd_10_acc, rd_10_f1),
-        ("Random_50", rd_50_acc, rd_50_f1),
-        ("Random_90", rd_90_acc, rd_90_f1),
-        ("Random_925", rd_925_acc, rd_925_f1),
-        ("Random_95", rd_95_acc, rd_95_f1),
+        #("Random_10", rd_10_acc, rd_10_f1),
+        #("Random_50", rd_50_acc, rd_50_f1),
+        #("Random_90", rd_90_acc, rd_90_f1),
+        #("Random_925", rd_925_acc, rd_925_f1),
+        #("Random_95", rd_95_acc, rd_95_f1),
     ]
     for name, acc_val, f1_val in random_dropouts:
         results[(dist_name, "Dropout", name, "Accuracy")] = acc_val
@@ -322,104 +346,6 @@ def compute_model_score_and_robustness(model, X, y, feature_importances=None, di
     return pd.DataFrame.from_dict([results])
 
 
-
-
-# ==============================================================================
-# Temporary test to analyse the OOD Dataset
-# ==============================================================================
-COARSE_MAPPING = {
-    'CD14+ Monocyte': 'Myeloid', 'CD16+ Monocyte': 'Myeloid',
-    'CD1C+ dendritic cell': 'Myeloid', 'Plasmacytoid dendritic cell': 'Myeloid',
-    'CD4 Memory T cell': 'T_cell', 'CD4 Naive T cell': 'T_cell',
-    'CD8 Memory T cell': 'T_cell', 'CD8 Naive T cell': 'T_cell',
-    'Gamma-delta T cell': 'T_cell', 'MAIT': 'T_cell', 'T regulatory cell': 'T_cell',
-    'NK cell': 'NK_cell',
-    'Memory B cell': 'B_cell', 'Naive B cell': 'B_cell', 'Plasma cell': 'B_cell'
-}
-
-def run_full_ood_evaluation(model, X_ood, y_true_ood, output_prefix="ood_metrics"):
-    """
-    Führt alle OOD-Analysen durch und gibt Ergebnisse im Terminal sowie als Datei aus.
-    """
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.width', 1000)
-
-    # 1. Modell-Vorhersagen & Wahrscheinlichkeiten
-    y_pred_ood = model.predict(X_ood)
-    probs_ood = model.predict_proba(X_ood)
-
-    # 2. Text-Ausgabe der Confusion Matrix
-    print("\n" + "="*80)
-    print("--- OOD TEXT CONFUSION MATRIX (%) ---")
-    print("="*80)
-    cm_perc = pd.crosstab(
-        pd.Series(y_true_ood, name='True_Author'),
-        pd.Series(y_pred_ood, name='Pred_Model'),
-        normalize='index'
-    ) * 100
-    print(cm_perc.round(1))
-    cm_perc.to_csv(f"{output_prefix}_confusion_matrix_perc.csv")
-
-    # 3. Standard Classification Report (Fine Level)
-    print("\n" + "="*80)
-    print("--- FINE LEVEL CLASSIFICATION REPORT ---")
-    print("="*80)
-    report_fine_str = classification_report(y_true_ood, y_pred_ood, digits=4)
-    print(report_fine_str)
-
-    report_fine_dict = classification_report(y_true_ood, y_pred_ood, output_dict=True)
-
-    # 4. Hierarchische Evaluierung (Coarse Level)
-    y_true_coarse = [COARSE_MAPPING.get(lbl, 'Unknown') for lbl in y_true_ood]
-    y_pred_coarse = [COARSE_MAPPING.get(lbl, 'Unknown') for lbl in y_pred_ood]
-
-    print("\n" + "="*80)
-    print("--- COARSE LEVEL (LINEAGE) CLASSIFICATION REPORT ---")
-    print("="*80)
-    report_coarse_str = classification_report(y_true_coarse, y_pred_coarse, digits=4)
-    print(report_coarse_str)
-
-    # 5. Konfidenz- & Entropie-Analyse
-    max_probs = np.max(probs_ood, axis=1)
-    pred_entropies = entropy(probs_ood.T)
-
-    conf_df = pd.DataFrame({
-        'true_label': y_true_ood,
-        'pred_label': y_pred_ood,
-        'confidence': max_probs,
-        'entropy': pred_entropies,
-        'is_correct': (np.array(y_true_ood) == np.array(y_pred_ood))
-    })
-
-    print("\n" + "="*80)
-    print("--- MODELL-KONFIDENZ UND ENTROPIE PRO ZELLTYP ---")
-    print("="*80)
-    summary_conf = conf_df.groupby('true_label').agg(
-        mean_confidence=('confidence', 'mean'),
-        mean_entropy=('entropy', 'mean'),
-        accuracy=('is_correct', 'mean')
-    ).round(4)
-    print(summary_conf)
-
-    # 6. JSON Export aller aggregierten Kennzahlen (für lokales Plotten)
-    metrics_summary = {
-        'overall_accuracy_fine': float(accuracy_score(y_true_ood, y_pred_ood)),
-        'macro_f1_fine': float(f1_score(y_true_ood, y_pred_ood, average='macro')),
-        'overall_accuracy_coarse': float(accuracy_score(y_true_coarse, y_pred_coarse)),
-        'macro_f1_coarse': float(f1_score(y_true_coarse, y_pred_coarse, average='macro')),
-        'mean_ood_confidence': float(np.mean(max_probs)),
-        'mean_ood_entropy': float(np.mean(pred_entropies))
-    }
-
-    with open(f"{output_prefix}_summary.json", "w") as f:
-        json.dump(metrics_summary, f, indent=4)
-
-    conf_df.to_csv(f"{output_prefix}_confidence_per_cell.csv", index=False)
-    print(f"\n[INFO] Evaluierung abgeschlossen. Dateien '{output_prefix}_*' wurden gespeichert.")
-
-
-
 # Tests the robustness of the given model on the given dataset (X, y) as well as on an out-of-distribution dataset loaded from the given path.
 # The score and robustness are computed on both datasets and reported.
 # If X is sparse then gene_names must be provided to convert it into a dataframe. If it is not provided the test will be skipped.
@@ -427,8 +353,9 @@ def test_robustness(
     model,
     X,
     y,
-    labels="scumi-annotation",
-    ood_dataset_path="data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad",
+    id_donor_col=None,
+    labels="scumi_clean_fine_grained",
+    ood_dataset_paths=None,
     feature_importances=None,
     gene_names=None,
     log_to_console=True,
@@ -446,91 +373,102 @@ def test_robustness(
             return
 
     id_results = compute_model_score_and_robustness(
-        model, X, y, feature_importances=feature_importances, dist_name="In-Distribution"
+        model, X, y, feature_importances=feature_importances, dist_name="In-Distribution", batch_obs=id_donor_col
     )
 
     train_classes = set(y.unique())
 
     logging.info("--- Out of data distribution ---")
-    if ood_dataset_path is None:
+    if ood_dataset_paths is None:
         logging.error(
             "No out-of-distribution dataset path provided. Skipping out-of-distribution tests."
         )
-        return
-    # Assume the dataset at the given path contains raw counts
-    complete_adata = ad.io.read_h5ad(ood_dataset_path)
-    adata = complete_adata[complete_adata.obs[labels].isin(train_classes)].copy()
-
-    # Prepare Adata for Doublet Detection
-    # 1. Remove NaN values from batch_id after filtering
-    adata = adata[adata.obs["batch_id"].notna()].copy()
-    
-    # 2. Filter empty cells and genes
-    sc.pp.filter_cells(adata, min_genes=1)
-    sc.pp.filter_genes(adata, min_cells=1)
-
-    # 3. Exclude too small batches
-    min_cells_per_batch = 30
-    batch_counts = adata.obs["batch_id"].value_counts()
-    valid_batches = batch_counts[batch_counts >= min_cells_per_batch].index
-    adata = adata[adata.obs["batch_id"].isin(valid_batches)].copy()
-
-    # 3. Remove unused batch_ids
-    if str(adata.obs["batch_id"].dtype) == "category":
-        adata.obs["batch_id"] = (
-            adata.obs["batch_id"].cat.remove_unused_categories()
+        id_results.columns = pd.MultiIndex.from_tuples(
+            id_results.columns,
+            names=["Distribution", "Category", "Sub-Category", "Metric"]
         )
+        return id_results
 
-    # Preprocess the dataset in the same way as the training data
-    adata = prepare_adata(adata, batch_key="batch_id")
-
-    X_oodd = adata.X
-    y_oodd = adata.obs[labels]
-
-    # Filter genes that are not in the training set and reorder the remaining genes to match the training set
-    ## Save mapping from gene name to index in training set for quick lookup
+    # Save mapping from gene name to index in training set for quick lookup
     train_gene_to_idx = {gene: i for i, gene in enumerate(X.columns)}
 
-    M_test = adata.shape[1]  # Number of genes in the loaded dataset
     M_train = len(X.columns)  # Number of genes in the training set
 
-    ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
-    P = sp.lil_matrix((M_test, M_train))
+    all_results = [id_results]
 
-    ## Fill the mapping matrix
-    for test_idx, gene in enumerate(adata.var_names):
-        if gene in train_gene_to_idx:
-            train_idx = train_gene_to_idx[gene]
-            P[test_idx, train_idx] = 1
+    # Iterate over OOD Datasets
+    for ds_name, ood_path in ood_dataset_paths.items():
+        logging.info(f"--- Processing OOD dataset: {ds_name} ({ood_path}) ---")
 
-    P = P.tocsr()  # More efficient for matrix multiplication
+        # Assume the dataset at the given path contains raw counts
+        complete_adata = ad.io.read_h5ad(ood_path)
+        adata = complete_adata[complete_adata.obs[labels].isin(train_classes)].copy()
 
-    ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
-    X_test = X_oodd @ P
+        # Prepare Adata for Doublet Detection
+        # 1. Remove NaN values from donor_id after filtering
+        adata = adata[adata.obs["donor_id"].notna()].copy()
+        
+        # 2. Filter empty cells and genes
+        sc.pp.filter_cells(adata, min_genes=1)
+        sc.pp.filter_genes(adata, min_cells=1)
 
-    # Convert to dense DataFrame with training feature names so sklearn feature checks remain consistent.
-    if sp.issparse(X_test):
-        X_test = X_test.toarray()
-    X_test = pd.DataFrame(X_test, index=adata.obs_names, columns=X.columns)
+        # 3. Exclude too small batches
+        min_cells_per_batch = 30
+        batch_counts = adata.obs["donor_id"].value_counts()
+        valid_batches = batch_counts[batch_counts >= min_cells_per_batch].index
+        adata = adata[adata.obs["donor_id"].isin(valid_batches)].copy()
 
-    # Print gene comparison and max value for debugging
-    matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
-    logging.info(f"Genes expected in training set: {len(X.columns)}")
-    logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
-    logging.info(f"Training data Max-Value: {np.max(X.values)}")
-    logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
+        # 3. Remove unused donor_ids
+        if str(adata.obs["donor_id"].dtype) == "category":
+            adata.obs["donor_id"] = (
+                adata.obs["donor_id"].cat.remove_unused_categories()
+            )
+
+        # Preprocess the dataset in the same way as the training data
+        adata = prepare_adata(adata, batch_key="donor_id")
+
+        X_oodd = adata.X
+        y_oodd = adata.obs[labels]
+
+        # Filter genes that are not in the training set and reorder the remaining genes to match the training set
+        M_test = adata.shape[1]  # Number of genes in the loaded dataset
+
+        ## Create a sparse mapping matrix of shape M_test x M_train where P[i, j] = 1 if gene i in the test set matches gene j in the training set, else 0
+        P = sp.lil_matrix((M_test, M_train))
+
+        ## Fill the mapping matrix
+        for test_idx, gene in enumerate(adata.var_names):
+            if gene in train_gene_to_idx:
+                train_idx = train_gene_to_idx[gene]
+                P[test_idx, train_idx] = 1
+
+        P = P.tocsr()  # More efficient for matrix multiplication
+
+        ## Filter, reorder and zero-pad genes missing from the training set with a single matrix multiplication
+        X_test = X_oodd @ P
+
+        # Convert to dense DataFrame with training feature names so sklearn feature checks remain consistent.
+        if sp.issparse(X_test):
+            X_test = X_test.toarray()
+        X_test = pd.DataFrame(X_test, index=adata.obs_names, columns=X.columns)
+
+        # Print gene comparison and max value for debugging
+        matched_genes = [gene for gene in adata.var_names if gene in train_gene_to_idx]
+        logging.info(f"Genes expected in training set: {len(X.columns)}")
+        logging.info(f"Genes actually matched in test set: {len(matched_genes)}")
+        logging.info(f"Training data Max-Value: {np.max(X.values)}")
+        logging.info(f"Test data Max-Value: {np.max(X_test.values)}")
 
 
-    # Scale Data
-    if scaler is not None:
-        X_test = scaler.transform(X_test)
+        # Scale Data
+        if scaler is not None:
+            X_test = scaler.transform(X_test)
 
-    ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name="Out-of-Distribution")
+        ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name=f"OOD_{ds_name}", batch_obs=adata.obs['donor_id'])
 
-    # Temporary test OOD Dataset
-    #run_full_ood_evaluation(model=model, X_ood=X_test, y_true_ood=y_oodd, output_prefix="results/results_new_labels")
+        all_results.append(ood_results)
 
-    combined_results = pd.concat([id_results, ood_results], axis=1)
+    combined_results = pd.concat(all_results, axis=1)
     combined_results.columns = pd.MultiIndex.from_tuples(
         combined_results.columns,
         names=["Distribution", "Category", "Sub-Category", "Metric"]

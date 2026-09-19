@@ -15,6 +15,7 @@ training/results/*.pkl
 # result csvs with only one line
 training/results/**/result_*.csv
 training/results/**/*/result_*.csv
+training/results/**/wrong_*/*
 # pycache
 __pycache__/*
 evaluation/__pycache__/*
@@ -36,7 +37,7 @@ docs/report/CLACELL.bib
 docs/papers/autoencoder_quellen.md
 # checkpoints
 */.ipynb_checkpoints/*
-training/results/*/.ipynb_checkpoints/*
+training/results/**/.ipynb_checkpoints/*
 training/results/*/*/.ipynb_checkpoints/*
 *.pkl
 pypi_token.md

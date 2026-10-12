@@ -54,7 +54,7 @@ os.environ["WANDB_MODE"] = "offline"
 hyperparameter_defaults = dict(
     seed=random.randint(0, 999999),
     dataset_name="CellTypist_HumanCellAtlas_Merged",
-    h5ad_path="/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad",
+    h5ad_path="/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types_fine_and_coarse.h5ad",
     batch_col="Donor",
     do_train=True,
     load_model="/home/woody/iwbn/iwbn133h/scGPT/save/scGPT_bc",
@@ -122,12 +122,16 @@ ori_batch_col = config.batch_col
 # My Preprocessing
 # ==============================================================================
 
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
+
 # Copied from preprocess_data.py
+adata.var["mt"] = adata.var_names.str.startswith(("MT-")).to_numpy()
 adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL")).to_numpy()
 adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]").to_numpy()
 
 # QC-Metrics
-sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
+sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], percent_top=None, inplace=True, log1p=True)
 sc.pp.filter_cells(adata, min_counts=10)
 sc.pp.filter_genes(adata, min_cells=3)
 
@@ -180,11 +184,13 @@ DSBN = True  # Domain-spec batchnorm
 explicit_zero_prob = True  # whether explicit bernoulli for zeros
 
 # Convert string labels in int labels
-unique_labels = adata.obs["cell_type_final"].unique()
+#unique_labels = adata.obs["scumi_clean_fine_grained"].unique()
+unique_labels = adata.obs["scumi_clean_coarse"].unique()
 label2id = {label: i for i, label in enumerate(unique_labels)}
 id2label = {i: label for label, i in label2id.items()}
 
-adata.obs["celltype"] = adata.obs["cell_type_final"].map(label2id)
+#adata.obs["celltype"] = adata.obs["scumi_clean_fine_grained"].map(label2id)
+adata.obs["celltype"] = adata.obs["scumi_clean_coarse"].map(label2id)
 
 # Global scGPT-Binning
 preprocessor = Preprocessor(
@@ -925,7 +931,8 @@ if best_model is None:
 #    columns=adata_test.var["gene_name"].tolist(),
 #)
 X_test_robustness = adata_test.to_df()
-y_test_robustness = adata_test.obs["cell_type_final"]
+#y_test_robustness = adata_test.obs["scumi_clean_fine_grained"]
+y_test_robustness = adata_test.obs["scumi_clean_coarse"]
 
 logger.info(
     f"Test data: {X_test_robustness.shape[0]} cells, "
@@ -1075,14 +1082,14 @@ scgpt_predictor = ScGPTPredictor(
 )
 
 # Tmp prints
-print("--- Label to ID Mapping ---")
-print(f"label2id: {label2id}")
-print(f"id2label: {id2label}")
+#print("--- Label to ID Mapping ---")
+#print(f"label2id: {label2id}")
+#print(f"id2label: {id2label}")
 
-print("--- Comparison of gene ordering in train and test ---")
-print(f"train: {genes[:20]}")
-print(f"adata test: {adata_test.var['gene_name'].tolist()[:20]}")
-print(f"df test: {list(X_test_robustness.columns[:20])}")
+#print("--- Comparison of gene ordering in train and test ---")
+#print(f"train: {genes[:20]}")
+#print(f"adata test: {adata_test.var['gene_name'].tolist()[:20]}")
+#print(f"df test: {list(X_test_robustness.columns[:20])}")
 
 print("--- Samples per class in train and valid split ---")
 print("Train split:")
@@ -1105,35 +1112,36 @@ print(f"Test Accuracy: {acc:.4f}")
 print(f"Macro F1: {f1_macro:.4f}")
 logger.info(f"Test Accuracy: {acc:.4f}, Macro F1: {f1_macro:.4f}")
 
-print("\n--- Confusion Matrix ---")
+#print("\n--- Confusion Matrix ---")
 #Order of the classes
-labels = list(label2id.keys())
-cm = confusion_matrix(
-    y_test_robustness,
-    y_pred,
-    labels=labels,
-)
-cm_df = pd.DataFrame(
-    cm,
-    index=labels,
-    columns=labels,
-)
-cm_df.to_csv("confusion_matrix.csv")
-print(cm_df)
+#labels = list(label2id.keys())
+#cm = confusion_matrix(
+#    y_test_robustness,
+#    y_pred,
+#    labels=labels,
+#)
+#cm_df = pd.DataFrame(
+#    cm,
+#    index=labels,
+#    columns=labels,
+#)
+#cm_df.to_csv("confusion_matrix.csv")
+#print(cm_df)
 
-print("\n--- Normalized Confusion Matrix ---")
-cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-cm_norm_df = pd.DataFrame(
-    cm_norm,
-    index=labels,
-    columns=labels,
-)
-cm_norm_df.to_csv("confusion_matrix_normalized.csv")
-print(cm_norm_df.round(3))
+#print("\n--- Normalized Confusion Matrix ---")
+#cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+#cm_norm_df = pd.DataFrame(
+#    cm_norm,
+#    index=labels,
+#    columns=labels,
+#)
+#cm_norm_df.to_csv("confusion_matrix_normalized.csv")
+#print(cm_norm_df.round(3))
 
 # --- Robustness Evaluation ---
 print("\n--- Robustness Evaluation ---")
-with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+#with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+with open("pegasus_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
     feature_importance = pickle.load(f)
 
 # For fair comparison filter only genes from feoature_importance that are in test dataset
@@ -1158,17 +1166,26 @@ elif isinstance(feature_importance, pd.DataFrame):
     print(f"Feature Importance (DataFrame) filtered. Remaining genes: {len(feature_importance)}")
 
 
+ood_datasets = {
+    'HIHA_Pediatric': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Children_10k.h5ad',
+    'HIHA_Young_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Young_Adult_10k.h5ad',
+    'HIHA_Older_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Older_Adult_10k.h5ad',
+    'AIDA': '/home/woody/iwbn/iwbn133h/data/AIDA/aida_sampled_10k.h5ad',
+}
 robustness_results = test_robustness(
     scgpt_predictor,
     X_test_robustness,
     y_test_robustness,
-    #labels="scumi-annotation",
-    labels="scumi_clean",
-    ood_dataset_path='/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
-    feature_importances=feature_importance,
+    adata_test.obs['Donor'],
+    #"scumi_clean",
+    #'scumi_clean_fine_grained',
+    'scumi_clean_coarse',
+    ood_datasets,
+    feature_importance,
     log_to_console=True,
     log_to_file=False,
 )
+
 
 # %%
 #artifact = wandb.Artifact(f"best_model", type="model")

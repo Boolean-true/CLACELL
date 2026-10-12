@@ -21,11 +21,15 @@ import os
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 #from test_robustness import test_robustness
 from test_robustness_higher_dropout import test_robustness
+from preprocess_data import prepare_adata
 
 
 # Load training data
-#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned.h5ad')
-adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types_fine_and_coarse.h5ad')
+
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
 
 # Preprocessing
 adata = prepare_adata(adata, batch_key="Donor")
@@ -51,28 +55,43 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-#y_train = adata_train.obs['scumi-annotation']
-#y_train = adata_train.obs['scumi_clean']
-y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['scumi_clean_fine_grained']
+y_train = adata_train.obs['scumi_clean_coarse']
 
 X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-#y_test = adata_test.obs['scumi-annotation']
-#y_test = adata_test.obs['scumi_clean']
-y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['scumi_clean_fine_grained']
+y_test = adata_test.obs['scumi_clean_coarse']
 
 
+# Fine Grained Labels
+#hyperparameters = {
+#        0: {'C': 0.0906861433557691, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        1: {'C': 0.09288709143022592, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        2: {'C': 0.09692113862635544, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        3: {'C': 0.10069378426954918, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+#        4: {'C': 0.08485396165301456, 'dual': False, 'penalty': 'l1', 'tol': 0.00997035086880933},
+#        5: {'C': 0.08537657339370813, 'dual': False, 'penalty': 'l1', 'tol': 0.002012752998383993},
+#        6: {'C': 0.10020232091695823, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+#        7: {'C': 0.10636149647593267, 'dual': False, 'penalty': 'l1', 'tol': 0.004173106597163165},
+#        8: {'C': 0.1085439746568341, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+#        9: {'C': 0.09486917229815525, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+#}
+
+# Coarse Labels
 hyperparameters = {
-        0: {'C': 0.033645854251403165, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        1: {'C': 0.033030662821415015, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        2: {'C': 0.03429948310767735, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        3: {'C': 0.03229953973971724, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        4: {'C': 0.03353399534711077, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        5: {'C': 0.029918305898337064, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        6: {'C': 0.03937640873013549, 'dual': False, 'penalty': 'l1', 'tol': 0.009468662828490342},
-        7: {'C': 0.03786441645406222, 'dual': False, 'penalty': 'l1', 'tol': 0.005523576086634508},
-        8: {'C': 0.029642629364570676, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
-        9: {'C': 0.03174924998189852, 'dual': False, 'penalty': 'l1', 'tol': 0.0011375557337571533},
+        0: {'C': 0.010977780582086776, 'dual': False, 'penalty': 'l1', 'tol': 0.00010010712738881053},
+        1: {'C': 0.025618980727391886, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+        2: {'C': 0.011444436636809784, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        3: {'C': 0.021545243722682673, 'dual': False, 'penalty': 'l1', 'tol': 0.0038813602267717207},
+        4: {'C': 0.012470748604647445, 'dual': False, 'penalty': 'l1', 'tol': 0.00015724967334636406},
+        5: {'C': 0.013410698875433037, 'dual': False, 'penalty': 'l1', 'tol': 0.004456870802687212},
+        6: {'C': 0.009630028027001473, 'dual': False, 'penalty': 'l1', 'tol': 0.009796640813652195},
+        7: {'C': 0.016423620795606005, 'dual': False, 'penalty': 'l1', 'tol': 0.0059725006652330765},
+        8: {'C': 0.025241868633648107, 'dual': False, 'penalty': 'l1', 'tol': 0.00983193350362439},
+        9: {'C': 0.019655114014251324, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
 }
 
 all_runs_data = []
@@ -148,17 +167,25 @@ for i in range(start_run, end_run + 1):
 
 
     # Compute model score and robustness
-    with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+    with open("pegasus_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
         feature_importance = pickle.load(f)
 
     #feature_importance = feature_importance.sort_values('Importance', ascending=False)
+    ood_datasets = {
+        'HIHA_Pediatric': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Children_10k.h5ad',
+        'HIHA_Young_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Young_Adult_10k.h5ad',
+        'HIHA_Older_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Older_Adult_10k.h5ad',
+        'AIDA': '/home/woody/iwbn/iwbn133h/data/AIDA/aida_sampled_10k.h5ad',
+    }
     robustness_results = test_robustness(
         best_model,
         X_test,
         y_test,
-        #"scumi-annotation",
-        "scumi_clean",
-        '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
+        adata_test.obs['Donor'],
+        #"scumi_clean",
+        #'scumi_clean_fine_grained',
+        'scumi_clean_coarse',
+        ood_datasets,
         feature_importance,
         log_to_console=True,
         log_to_file=False,
@@ -182,7 +209,7 @@ for i in range(start_run, end_run + 1):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    df_run.to_csv(f'results/custom_ensemble_linsvc_higher_dropout_stacking/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/custom_ensemble_linsvc_stacking/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
 current_count = len(all_runs_data)
@@ -196,7 +223,7 @@ if current_count < num_runs:
     )
 
     for i in range(needed_samples):
-        file_path = f"results/custom_ensemble_linsvc_higher_dropout_stacking/result_{i}.csv"
+        file_path = f"results/custom_ensemble_linsvc_stacking/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -230,4 +257,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/custom_ensemble_linsvc_higher_dropout_stacking/combined_result.csv', index=True)
+final_df.to_csv('results/custom_ensemble_linsvc_stacking/combined_result.csv', index=True)

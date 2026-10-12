@@ -17,7 +17,11 @@ from scipy.sparse import csr_matrix
 
 
 # Load training data
-adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types_fine_and_coarse.h5ad')
+
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
 
 # Preprocessing
 adata = prepare_adata(adata, batch_key="Donor")
@@ -43,22 +47,22 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-#y_train = adata_train.obs['scumi-annotation']
-#y_train = adata_train.obs['scumi_clean']
-y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['scumi_clean_fine_grained']
+y_train = adata_train.obs['scumi_clean_coarse']
 
 X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-#y_test = adata_test.obs['scumi-annotation']
-#y_test = adata_test.obs['scumi_clean']
-y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['scumi_clean_fine_grained']
+y_test = adata_test.obs['scumi_clean_coarse']
 
 scaler = StandardScaler(with_mean=False).set_output(transform="pandas")
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
 # Convert train data in sparse matrix for faster computation
-X_train_scaled = csr_matrix(X_train_scaled.values)
+X_train = csr_matrix(X_train.values)
 
 
 # Model training
@@ -85,7 +89,7 @@ opt = BayesSearchCV(
 )
 
 print("Start BayesSearch with Early Stopping...")
-opt.fit(X_train_scaled, y_train, callback=my_stopper)
+opt.fit(X_train, y_train, callback=my_stopper)
 
 print(f"\nSearch terminated after {len(opt.cv_results_['mean_test_score'])} Iterations.")
 print(f"Best hyperparameters: {opt.best_params_}")
@@ -107,7 +111,7 @@ print(f"Test-Split Accuracy:  {opt.score(X_test, y_test):.4f}")
 
 
 best_model = opt.best_estimator_
-y_pred = best_model.predict(X_test_scaled)
+y_pred = best_model.predict(X_test)
 
 # Finale Evaluation
 print("\n--- EVALUATION AUF DEN TESTDATEN ---")
@@ -117,17 +121,25 @@ print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
 
 
 # Compute model score and robustness
-with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+with open("pegasus_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
     feature_importance = pickle.load(f)
 
 #feature_importance = feature_importance.sort_values('Importance', ascending=False)
+ood_datasets = {
+    'HIHA_Pediatric': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Children_10k.h5ad',
+    'HIHA_Young_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Young_Adult_10k.h5ad',
+    'HIHA_Older_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Older_Adult_10k.h5ad',
+    'AIDA': '/home/woody/iwbn/iwbn133h/data/AIDA/aida_sampled_10k.h5ad',
+}
 robustness_results = test_robustness(
     best_model,
     X_test,
     y_test,
-    #"scumi-annotation",
-    "scumi_clean",
-    '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
+    adata_test.obs['Donor'],
+    #"scumi_clean",
+    #'scumi_clean_fine_grained',
+    'scumi_clean_coarse',
+    ood_datasets,
     feature_importance,
     scaler=scaler,
     log_to_console=True,

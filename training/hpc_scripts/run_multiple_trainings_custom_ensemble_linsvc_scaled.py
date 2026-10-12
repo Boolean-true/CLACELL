@@ -24,8 +24,11 @@ from preprocess_data import prepare_adata
 
 
 # Load training data
-#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned.h5ad')
-adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types_fine_and_coarse.h5ad')
+
+# Use raw data instead of already preprocessed data
+adata.X = adata.layers['counts'].copy()
 
 # Preprocessing
 adata = prepare_adata(adata, batch_key="Donor")
@@ -51,32 +54,47 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-#y_train = adata_train.obs['scumi-annotation']
-#y_train = adata_train.obs['scumi_clean']
-y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['cell_type_final']
+#y_train = adata_train.obs['scumi_clean_fine_grained']
+y_train = adata_train.obs['scumi_clean_coarse']
 
 X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-#y_test = adata_test.obs['scumi-annotation']
-#y_test = adata_test.obs['scumi_clean']
-y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['cell_type_final']
+#y_test = adata_test.obs['scumi_clean_fine_grained']
+y_test = adata_test.obs['scumi_clean_coarse']
 
 scaler = StandardScaler(with_mean=False).set_output(transform="pandas")
 X_train= scaler.fit_transform(X_train)
 X_test= scaler.transform(X_test)
 
 
+# Fine Grained Labels
+#hyperparameters = {
+#        0: {'C': 0.04611620103482248, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        1: {'C': 0.04372931832058682, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        2: {'C': 0.042707909649633904, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        3: {'C': 0.04843025885844685, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        4: {'C': 0.04167172839969373, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        5: {'C': 0.053229150464409174, 'dual': False, 'penalty': 'l1', 'tol': 0.00016540948332290865},
+#        6: {'C': 0.05025089084387682, 'dual': False, 'penalty': 'l1', 'tol': 0.00017584861207250226},
+#        7: {'C': 0.04573120217527317, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#        8: {'C': 0.042011623307210276, 'dual': False, 'penalty': 'l1', 'tol': 0.0010491186419435677},
+#        9: {'C': 0.04452836937274104, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+#}
+
+# Coarse Labels
 hyperparameters = {
-        0: {'C': 0.013820818887741821, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        1: {'C': 0.013478498292660736, 'dual': False, 'penalty': 'l1', 'tol': 0.00010334323345713077},
-        2: {'C': 0.01223982403775, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        3: {'C': 0.010641513998079248, 'dual': False, 'penalty': 'l1', 'tol': 0.00010200719043281375},
-        4: {'C': 0.010916730716284797, 'dual': False, 'penalty': 'l1', 'tol': 0.00019936009797795568},
-        5: {'C': 0.010291101199976498, 'dual': False, 'penalty': 'l1', 'tol': 0.0025511234416539636},
-        6: {'C': 0.010810819806769366, 'dual': False, 'penalty': 'l1', 'tol': 0.009706409950671936},
-        7: {'C': 0.01367566197039949, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
-        8: {'C': 0.013466613220840746, 'dual': False, 'penalty': 'l1', 'tol': 0.00010159777038437947},
-        9: {'C': 0.013113133735054485, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        0: {'C': 0.007786644078786108, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+        1: {'C': 0.01089695313070446, 'dual': False, 'penalty': 'l1', 'tol': 0.0005799740547581351},
+        2: {'C': 0.011268440296667518, 'dual': False, 'penalty': 'l1', 'tol': 0.00014504381691458757},
+        3: {'C': 0.011211078550400794, 'dual': False, 'penalty': 'l1', 'tol': 0.01},
+        4: {'C': 0.006417825491673328, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        5: {'C': 0.0098189648935638, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        6: {'C': 0.010321868681850553, 'dual': False, 'penalty': 'l1', 'tol': 0.0001},
+        7: {'C': 0.007163262954033572, 'dual': False, 'penalty': 'l1', 'tol': 0.0005257645992379052},
+        8: {'C': 0.007012962812352628, 'dual': False, 'penalty': 'l1', 'tol': 0.00036722779420218614},
+        9: {'C': 0.006978871428037051, 'dual': False, 'penalty': 'l1', 'tol': 0.0018207421544155068},
 }
 
 all_runs_data = []
@@ -149,17 +167,25 @@ for i in range(start_run, end_run + 1):
 
 
     # Compute model score and robustness
-    with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+    with open("pegasus_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
         feature_importance = pickle.load(f)
 
     #feature_importance = feature_importance.sort_values('Importance', ascending=False)
+    ood_datasets = {
+        'HIHA_Pediatric': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Children_10k.h5ad',
+        'HIHA_Young_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Young_Adult_10k.h5ad',
+        'HIHA_Older_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Older_Adult_10k.h5ad',
+        'AIDA': '/home/woody/iwbn/iwbn133h/data/AIDA/aida_sampled_10k.h5ad',
+    }
     robustness_results = test_robustness(
         best_model,
         X_test,
         y_test,
-        #"scumi-annotation",
-        "scumi_clean",
-        '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_full_annotated_fine_grained_cleaned.h5ad',
+        adata_test.obs['Donor'],
+        #"scumi_clean",
+        #'scumi_clean_fine_grained',
+        'scumi_clean_coarse',
+        ood_datasets,
         feature_importance,
         scaler=scaler,
         log_to_console=True,

@@ -154,9 +154,9 @@ def compute_baseline_score(model, X, y, batch_obs=None):
 
     if batch_obs is not None:
         # Convert batch_ops in a numpy array for clean masking
-        batch_obs_array = np.asarray(batch_obs)
-        y_array = np.asarray(y)
-        y_pred_array = np.asarray(y_pred)
+        batch_obs_array = np.asarray(batch_obs).ravel()
+        y_array = np.asarray(y).ravel()
+        y_pred_array = np.asarray(y_pred).ravel()
 
         unique_batches = np.unique(batch_obs_array)
         batch_f1_scores = []
@@ -201,7 +201,7 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
     results = []
     for _ in range(n_executions):
         y_pred = _predict_labels(model, X)
-        results.append(y_pred)
+        results.append(np.asarray(y_pred).ravel())
 
     # Check if the predictions are consistent across executions
     num_samples = len(y)
@@ -223,31 +223,39 @@ def compute_robustness_multiple_executions(model, X, y, n_executions=5):
 # feature_importances should be a pandas dataframe with columns "feature" and "importance" sorted by importance in descending order. The "feature" column can contain feature names that are not present in the dataset.
 def compute_robustness_feature_importance_dropout(model, X, y, feature_importances):
     # 1. Compute feature column in feature_importances
-    feature_col = None
-    for column in feature_importances.columns:
-        if str(column).lower() == "feature":
-            feature_col = column
-            break
+    if isinstance(feature_importances, pd.DataFrame):
+        feature_col = None
+        for column in feature_importances.columns:
+            if str(column).lower() == "feature":
+                feature_col = column
+                break
 
-    if feature_col is None:
-        if len(feature_importances.columns) >= 1:
-            feature_col = feature_importances.columns[0]
-            logging.warning(
-                f"Warning: Could not find a column named 'feature'; using '{feature_col}' as feature column."
-            )
-        else:
-            logging.error("feature_importances dataframe has no columns; skipping dropout test.")
-            return [], []
+        if feature_col is None:
+            if len(feature_importances.columns) >= 1:
+                feature_col = feature_importances.columns[0]
+                logging.warning(
+                    f"Warning: Could not find a column named 'feature'; using '{feature_col}' as feature column."
+                )
+            else:
+                logging.error("feature_importances dataframe has no columns; skipping dropout test.")
+                return [], []
+
+        ordered_features = feature_importances[feature_col].tolist()
+    elif isinstance(feature_importances, (list, tuple, np.ndarray, pd.Series)):
+        ordered_features = list(feature_importances)
+    else:
+        logging.error("feature_importances has an unsupported format; skipping dropout test.")
+        return [], []
 
     # 2. Compute active genes (not 0 for every gene)
     if hasattr(X, "columns"):
-        active_cols = X.columns[(X != 0).any(axis=0)]
+        active_cols = set(X.columns[(X != 0).any(axis=0)])
     else:
         logging.error("X does not have columns attribute. DataFrame input required.")
         return [], []
 
     # 3. Filter feature_importances on the active genes
-    fi_filtered = feature_importances[feature_importances[feature_col].isin(active_cols)].copy()
+    fi_filtered = [feat for feat in ordered_features if feat in active_cols]
 
     if len(fi_filtered) == 0:
         logging.warning("No matching active features found between X and feature_importances; skipping test.")
@@ -261,7 +269,7 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
     for pct in [0.001, 0.005, 0.01, 0.02]:
         # Compute n_drop according to active genes
         n_drop = max(1, int(n_available_features * pct))
-        top_features = fi_filtered[feature_col].iloc[:n_drop].tolist()
+        top_features = fi_filtered[:n_drop]
 
         # Prepare a copy of X with selected features zeroed
         X_dropped = X.copy()
@@ -273,11 +281,11 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
         y_pred = _predict_labels(model, X_dropped)
         acc = accuracy_score(y, y_pred)
         f1 = f1_score(y, y_pred, average='macro', zero_division=0)
-        
+
         acc_scores.append(acc)
         f1_scores.append(f1)
         logging.info(
-            f"Feature importance dropout ({pct*100:.1f}% features dropped) -> Accuracy: {acc:.4f}, Macro F1: {f1:.4f}"
+            f"Feature importance dropout ({pct*100:.1f}% features dropped, n={n_drop}/{n_available_features}) -> Accuracy: {acc:.4f}, Macro F1: {f1:.4f}"
         )
 
     return acc_scores, f1_scores
@@ -400,8 +408,14 @@ def test_robustness(
     for ds_name, ood_path in ood_dataset_paths.items():
         logging.info(f"--- Processing OOD dataset: {ds_name} ({ood_path}) ---")
 
-        # Assume the dataset at the given path contains raw counts
-        complete_adata = ad.io.read_h5ad(ood_path)
+        complete_adata = ad.read_h5ad(ood_path)
+        # Use raw counts
+        complete_adata = complete_adata.raw.to_adata()
+        # As the AIDA Dataset has Ensembl-IDS, use gene symbols
+        if ds_name == "AIDA":
+            complete_adata.var_names = complete_adata.var['feature_name']
+            complete_adata.var_names_make_unique()
+        # Filter for only classes that are in the training dataset
         adata = complete_adata[complete_adata.obs[labels].isin(train_classes)].copy()
 
         # Prepare Adata for Doublet Detection
@@ -413,16 +427,16 @@ def test_robustness(
         sc.pp.filter_genes(adata, min_cells=1)
 
         # 3. Exclude too small batches
-        min_cells_per_batch = 30
-        batch_counts = adata.obs["donor_id"].value_counts()
-        valid_batches = batch_counts[batch_counts >= min_cells_per_batch].index
-        adata = adata[adata.obs["donor_id"].isin(valid_batches)].copy()
+        #min_cells_per_batch = 30
+        #batch_counts = adata.obs["donor_id"].value_counts()
+        #valid_batches = batch_counts[batch_counts >= min_cells_per_batch].index
+        #adata = adata[adata.obs["donor_id"].isin(valid_batches)].copy()
 
-        # 3. Remove unused donor_ids
-        if str(adata.obs["donor_id"].dtype) == "category":
-            adata.obs["donor_id"] = (
-                adata.obs["donor_id"].cat.remove_unused_categories()
-            )
+        # 4. Remove unused donor_ids
+        #if str(adata.obs["donor_id"].dtype) == "category":
+        #    adata.obs["donor_id"] = (
+        #        adata.obs["donor_id"].cat.remove_unused_categories()
+        #    )
 
         # Preprocess the dataset in the same way as the training data
         adata = prepare_adata(adata, batch_key="donor_id")

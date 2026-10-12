@@ -13,7 +13,8 @@ import joblib
 import pandas as pd
 import os
 from sklearn.metrics import classification_report, accuracy_score, f1_score
-from test_robustness import test_robustness
+from test_robustness_higher_dropout import test_robustness
+from preprocess_data import prepare_adata
 import scipy.sparse as sp
 import logging
 from pathlib import Path
@@ -21,64 +22,20 @@ from datetime import datetime
 
 
 # Load training data
-adata = ad.read_h5ad('/home/hpc/iwbn/iwbn133h/data/CellTypistDataset/CountAdded_PIP_global_object_for_cellxgene_annotated.h5ad')
-
-# Filter blood data
-adata = adata[adata.obs['Organ'] == 'BLD'].copy()
-print(adata)
+#adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types.h5ad')
+adata = ad.read_h5ad('/home/woody/iwbn/iwbn133h/data/CellTypist_HumanCellAtlas_Merged_cleaned_refined_cell_types_fine_and_coarse.h5ad')
 
 # Use raw data instead of already preprocessed data
 adata.X = adata.layers['counts'].copy()
 
-
 # Preprocessing
-
-# mitochondrial genes, "MT-" for human, "Mt-" for mouse
-adata.var["mt"] = adata.var_names.str.startswith("MT-")
-# ribosomal genes
-adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
-# hemoglobin genes
-adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
-
-sc.pp.calculate_qc_metrics(adata, qc_vars=["mt", "ribo", "hb"], inplace=True, log1p=True)
-
-# Remove mitochondrial, ribosomal and hemoglobin
-adata = adata[:, ~adata.var["mt"]].copy()
-adata = adata[:, ~adata.var["ribo"]].copy()
-adata = adata[:, ~adata.var["hb"]].copy()
-
-# Doublet Detection
-sc.pp.scrublet(adata, batch_key="Donor")
-adata = adata[adata.obs['predicted_doublet'] == False].copy()
-
-
-# Normalization
-
-# Saving count data
-adata.layers["counts"] = adata.X.copy()
-
-# Normalizing to median total counts
-sc.pp.normalize_total(adata, target_sum=1e4)
-# Logarithmize the data
-sc.pp.log1p(adata)
-
-# Filtering Highly variable genes
-print('Before filtering highly variable genes ---')
-print(adata)
-
-sc.pp.highly_variable_genes(adata, n_top_genes=10000)
-
-# Apply filter
-adata = adata[:, adata.var['highly_variable']].copy()
-
-print('After filtering highly variable genes ---')
-print(adata)
+adata = prepare_adata(adata, batch_key="Donor")
 
 # Create train test split
 
 # All Donors: ['621B', '637C', 'A35', 'A36', 'D496', 'D503']
-donor_train = ['637C', 'A35', 'A36', 'D503']
-donor_test = ['621B', 'D496']
+donor_train = ['637C', 'A35', 'A36', 'D503', '2', '3', '4', '6']
+donor_test = ['621B', 'D496', '7', '8']
 
 adata_train = adata[
     adata.obs["Donor"].isin(donor_train)
@@ -95,11 +52,13 @@ print(adata_test.obs['Donor'].unique())
 # Prepare Data for training
 X_train = adata_train.to_df()
 gene_names_train = adata_train.var_names
-y_train = adata_train.obs['scumi-annotation']
+#y_train = adata_train.obs['cell_type_final']
+y_train = adata_train.obs['scumi_clean_fine_grained']
 
 X_test = adata_test.to_df()
 gene_names_test = adata_test.var_names
-y_test = adata_test.obs['scumi-annotation']
+#y_test = adata_test.obs['cell_type_final']
+y_test = adata_test.obs['scumi_clean_fine_grained']
 
 train_donor = adata_train.obs['Donor']
 test_donor = adata_test.obs['Donor']
@@ -120,18 +79,26 @@ print(f"Macro F1: {f1_score(y_test, y_pred, average='macro')}")
 
 
 # Compute model score and robustness
-with open("master_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
+with open("pegasus_feature_importance_interleaved_marker_genes.pkl", "rb") as f:
     feature_importance = pickle.load(f)
 
 #feature_importance = feature_importance.sort_values('Importance', ascending=False)
+ood_datasets = {
+    'HIHA_Pediatric': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Children_10k.h5ad',
+    'HIHA_Young_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Young_Adult_10k.h5ad',
+    'HIHA_Older_Adult': '/home/woody/iwbn/iwbn133h/data/human_immune_health_atlas/human_immune_health_atlas_sampled_Older_Adult_10k.h5ad',
+    'AIDA': '/home/woody/iwbn/iwbn133h/data/AIDA/aida_sampled_10k.h5ad',
+}
 robustness_results = test_robustness(
     best_model,
     X_test,
     y_test,
-    "scumi-annotation",
-    '/home/hpc/iwbn/iwbn133h/data/humancellatlas/5f29c29a-51c6-435c-8ff0-2b2a9d05ebee/BL_standard_design_annotated.h5ad',
+    adata_test.obs['Donor'],
+    #"scumi_clean",
+    'scumi_clean_fine_grained',
+    ood_datasets,
     feature_importance,
-    #log_to_console=True,
-    #log_to_file=False,
+    log_to_console=True,
+    log_to_file=False,
 )
 

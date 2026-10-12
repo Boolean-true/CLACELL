@@ -8,7 +8,7 @@ import numpy as np
 
 all_runs_data = []
 num_runs = 10
-start_run = 2
+start_run = 0
 end_run = 9
 
 for i in range(start_run, end_run + 1):
@@ -40,7 +40,7 @@ for i in range(start_run, end_run + 1):
     metric = "Peak_RAM_GB"
     df_run[(dist, cat, sub_cat, metric)] = peak_ram_gb
 
-    df_run.to_csv(f'results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop_higher_dropout/result_{i}.csv', index=True)
+    df_run.to_csv(f'results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop/result_{i}.csv', index=True)
     all_runs_data.append(df_run)
 
 current_count = len(all_runs_data)
@@ -54,7 +54,7 @@ if current_count < num_runs:
     )
 
     for i in range(needed_samples):
-        file_path = f"results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop_higher_dropout/result_{i}.csv"
+        file_path = f"results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop/result_{i}.csv"
 
         if os.path.exists(file_path):
             old_df = pd.read_csv(file_path, header=[0, 1, 2, 3], index_col=0)
@@ -87,4 +87,4 @@ final_df = pd.concat([combined_df, stats_df], axis=0)
 print("=== Final result ===")
 print(final_df.head())
 
-final_df.to_csv('results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop_higher_dropout/combined_result.csv', index=True)
+final_df.to_csv('results/conditional_autoencoder_custom_ensemble_linsvc_gene_drop/combined_result.csv', index=True)

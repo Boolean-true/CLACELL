@@ -1,0 +1,152 @@
+@startuml spatial_breast_celltype_mapping
+left to right direction
+skinparam dpi 150
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 13
+skinparam nodesep 10
+skinparam ranksep 110
+skinparam ArrowThickness 1.3
+
+skinparam rectangle {
+  RoundCorner 16
+  BorderThickness 1.3
+  FontColor #1F2933
+}
+
+title
+  **Spatial Breast – Cell-Type Mapping**
+  Coarse cell types (links) → fine-grained cell types (rechts)
+end title
+
+' ---------- Coarse cell types ----------
+rectangle "Endothelial cell" as C_ENDO #E53935
+rectangle "Stromal cell" as C_STR #C2185B
+rectangle "Myeloid cell" as C_MYE #FB8C00
+rectangle "Plasma cell" as C_PLASMA #8D6E63
+rectangle "B cell" as C_B #43A047
+rectangle "Natural killer cell" as C_NK #00ACC1
+rectangle "T cell" as C_T #1E88E5
+rectangle "Epithelial cell" as C_EPI #7E57C2
+
+' ---------- Fine-grained cell types ----------
+rectangle "Endo Imm." as F_Endo_Imm #FFFFFF;line:E53935;text:B71C1C
+rectangle "Endo Ven." as F_Endo_Ven #FFFFFF;line:E53935;text:B71C1C
+rectangle "Endo Capil." as F_Endo_Capil #FFFFFF;line:E53935;text:B71C1C
+rectangle "Endo Arter." as F_Endo_Arter #FFFFFF;line:E53935;text:B71C1C
+rectangle "Endo Lymph." as F_Endo_Lymph #FFFFFF;line:E53935;text:B71C1C
+
+rectangle "CAFs (COL11A1+)" as F_CAF_COL11A1 #FFFFFF;line:C2185B;text:880E4F
+rectangle "CAFs (LAMP5)" as F_CAF_LAMP5 #FFFFFF;line:C2185B;text:880E4F
+rectangle "CAFs (PI16+)" as F_CAF_PI16 #FFFFFF;line:C2185B;text:880E4F
+rectangle "CAFs (DPT+)" as F_CAF_DPT #FFFFFF;line:C2185B;text:880E4F
+rectangle "CAFs (CA12+)" as F_CAF_CA12 #FFFFFF;line:C2185B;text:880E4F
+rectangle "PCs (ECM)" as F_PCs_ECM #FFFFFF;line:C2185B;text:880E4F
+rectangle "VSMC" as F_VSMC #FFFFFF;line:C2185B;text:880E4F
+rectangle "Myofibroblast" as F_Myofibroblast #FFFFFF;line:C2185B;text:880E4F
+rectangle "Prolif Stromal" as F_Prolif_Stromal #FFFFFF;line:C2185B;text:880E4F
+
+rectangle "Mac/Mono" as F_Mac_Mono #FFFFFF;line:FB8C00;text:E65100
+rectangle "cDC2" as F_cDC2 #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_RTM_LA" as F_Mac_RTM_LA #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_RTM_IFN" as F_Mac_RTM_IFN #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_LA" as F_Mac_LA #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_RTM_MT" as F_Mac_RTM_MT #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_IFN" as F_Mac_IFN #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_Anti." as F_Mac_Anti #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mac_ES" as F_Mac_ES #FFFFFF;line:FB8C00;text:E65100
+rectangle "pDC" as F_pDC #FFFFFF;line:FB8C00;text:E65100
+rectangle "mDC" as F_mDC #FFFFFF;line:FB8C00;text:E65100
+rectangle "cDC1" as F_cDC1 #FFFFFF;line:FB8C00;text:E65100
+rectangle "Mast" as F_Mast #FFFFFF;line:FB8C00;text:E65100
+
+rectangle "Plasma_IgG" as F_Plasma_IgG #FFFFFF;line:8D6E63;text:5D4037
+
+rectangle "B_ACB" as F_B_ACB #FFFFFF;line:43A047;text:2E7D32
+rectangle "B_Naive" as F_B_Naive #FFFFFF;line:43A047;text:2E7D32
+rectangle "B_Cell" as F_B_Cell #FFFFFF;line:43A047;text:2E7D32
+rectangle "B_IFIT" as F_B_IFIT #FFFFFF;line:43A047;text:2E7D32
+rectangle "B_GCB" as F_B_GCB #FFFFFF;line:43A047;text:2E7D32
+
+rectangle "NK" as F_NK #FFFFFF;line:00ACC1;text:00838F
+rectangle "NK_rNK" as F_NK_rNK #FFFFFF;line:00ACC1;text:00838F
+rectangle "NK_Cyto." as F_NK_Cyto #FFFFFF;line:00ACC1;text:00838F
+
+rectangle "CD8_Tem" as F_CD8_Tem #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD4_Tem" as F_CD4_Tem #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD4_Treg" as F_CD4_Treg #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD4_Naive" as F_CD4_Naive #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD8_Tex" as F_CD8_Tex #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD8_Isg" as F_CD8_Isg #FFFFFF;line:1E88E5;text:1565C0
+rectangle "T_Prolif." as F_T_Prolif #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD4_Tfh" as F_CD4_Tfh #FFFFFF;line:1E88E5;text:1565C0
+rectangle "CD4_Th" as F_CD4_Th #FFFFFF;line:1E88E5;text:1565C0
+
+rectangle "Epithelial cell" as F_EPI #FFFFFF;line:7E57C2;text:4A2A85
+
+' ---------- Mapping (Reihenfolge umgekehrt, da ELK von unten nach oben stapelt) ----------
+C_ENDO -[#E53935]-> F_Endo_Imm
+C_ENDO -[#E53935]-> F_Endo_Ven
+C_ENDO -[#E53935]-> F_Endo_Capil
+C_ENDO -[#E53935]-> F_Endo_Arter
+C_ENDO -[#E53935]-> F_Endo_Lymph
+
+C_STR -[#C2185B]-> F_CAF_COL11A1
+C_STR -[#C2185B]-> F_CAF_LAMP5
+C_STR -[#C2185B]-> F_CAF_PI16
+C_STR -[#C2185B]-> F_CAF_DPT
+C_STR -[#C2185B]-> F_CAF_CA12
+C_STR -[#C2185B]-> F_PCs_ECM
+C_STR -[#C2185B]-> F_VSMC
+C_STR -[#C2185B]-> F_Myofibroblast
+C_STR -[#C2185B]-> F_Prolif_Stromal
+
+C_MYE -[#FB8C00]-> F_Mac_Mono
+C_MYE -[#FB8C00]-> F_cDC2
+C_MYE -[#FB8C00]-> F_Mac_RTM_LA
+C_MYE -[#FB8C00]-> F_Mac_RTM_IFN
+C_MYE -[#FB8C00]-> F_Mac_LA
+C_MYE -[#FB8C00]-> F_Mac_RTM_MT
+C_MYE -[#FB8C00]-> F_Mac_IFN
+C_MYE -[#FB8C00]-> F_Mac_Anti
+C_MYE -[#FB8C00]-> F_Mac_ES
+C_MYE -[#FB8C00]-> F_pDC
+C_MYE -[#FB8C00]-> F_mDC
+C_MYE -[#FB8C00]-> F_cDC1
+C_MYE -[#FB8C00]-> F_Mast
+
+C_PLASMA -[#8D6E63]-> F_Plasma_IgG
+
+C_B -[#43A047]-> F_B_ACB
+C_B -[#43A047]-> F_B_Naive
+C_B -[#43A047]-> F_B_Cell
+C_B -[#43A047]-> F_B_IFIT
+C_B -[#43A047]-> F_B_GCB
+
+C_NK -[#00ACC1]-> F_NK
+C_NK -[#00ACC1]-> F_NK_rNK
+C_NK -[#00ACC1]-> F_NK_Cyto
+
+C_T -[#1E88E5]-> F_CD8_Tem
+C_T -[#1E88E5]-> F_CD4_Tem
+C_T -[#1E88E5]-> F_CD4_Treg
+C_T -[#1E88E5]-> F_CD4_Naive
+C_T -[#1E88E5]-> F_CD8_Tex
+C_T -[#1E88E5]-> F_CD8_Isg
+C_T -[#1E88E5]-> F_T_Prolif
+C_T -[#1E88E5]-> F_CD4_Tfh
+C_T -[#1E88E5]-> F_CD4_Th
+
+C_EPI -[#7E57C2]-> F_EPI
+
+legend right
+  **Hinweise**
+  * Pfeil: Coarse → Fine-grained
+  * 17 epitheliale Subcluster (epi_0 … epi_low_ent)
+    werden zu **einem** Eintrag zusammengefasst:
+    coarse = fine = "Epithelial cell"
+  * "Plasma cell" hat ebenfalls nur einen Fine-Type
+end legend
+
+@enduml

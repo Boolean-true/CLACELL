@@ -656,6 +656,22 @@ Submitted batch job 12542541
 Submitted batch job 12542636
 Full set of Donors: Submitted batch job 12542819
 
+Hierarchical CE RF Stacking: Submitted batch job 12681033
+Submitted batch job 12686777
+Submitted batch job 12691025
+
+Hierarchical CE RF Stacking Entropy Rejection: Submitted batch job 12695458
+
+Hierarchical CE RF Stacking PyOD: Submitted batch job 12695975
+Hierarchical CE RF Stacking PyOD Entropy: Submitted batch job 12699725
+
+Hierarchical CE RF Stacking Ensemble Disagreement Rejection: Submitted batch job 12696824
+0.9 Quantile: Submitted batch job 12700423
+
+Hierarchical Catboost: Submitted batch job 12726472
+Submitted batch job 12728551
+Submitted batch job 12731469
+
 ##### Tonsil
 
 Downsample to spatial: Submitted batch job 1540082 on cluster tinyfat
@@ -933,3 +949,41 @@ X- CE bei Coarse
 
 - beste Modelle sowie Referenzmodelle auf Spatial laufen lassen
 
+
+
+## Weiteres Vorgehen (Gespräch am 13.10.)
+
+- mein vorgehen mit der klasse um alles zu trainieren (dreiteilig) sieht gut aus
+- anne hat sich daten angeschaut
+    - der breast datensatz besteht aus unterschiedlichen einzeldatensätzen, wenn ich dann mit dem donor split welche entferne, kann ich nicht mehr gut vorhersagen. Daher malignant cells rauslassen. evtl schauen ob ich die donor liste für train und test anpasse (weniger datensatzvarianz?)
+    - auf coarse ergebnisse anschauen ob malignant cells gehen und dann entscheiden ob man es entfernt
+    - schauen wie viele zellen pro zelltypen vorhanden sind und anhand dessen weitere batches inkludieren
+    - ovary ist alles aus einer studie, daher kein sampling bias
+- outlier management implementieren (rejection class)
+    - pyod
+    - selber informieren!
+    - wenn paul off the shelf eine empfehlung hat, schickt Anne sie mir, ansonsten ein Meeting mit Paul
+- spatial datensätze annotieren
+    - marker annotator validieren
+    - oder fine grained labels (author annotation) zu coarse labeln mergen. Obergruppierung ist möglicherweise im paper, ansonsten evtl in meta daten. oder in die figure vom paper schauen
+- welche outlier classes (recected classes) gibt es bei dem breast datensatz?
+    - evtl fibroblast
+- Dokument mit Todos als Überblick
+- hierarchical auf spatial evaluieren
+- anne lädt mich in ein neues overleaf projekt ein. erstmal nicht den ganzen report reinpasten, wieder von scratch anfangen (bis auf z.B. Einleitung)
+- ich kann am 28.10. gerne mit zum talk kommen (10 Uhr)
+
+
+### TODOs
+
+- Weiter machen mit Package Option alle Classifier zu trainieren (dreiteilig)
+    - ML Algorithmen
+    - CE, AE, CAE auf bestem ML Algorithmus
+    - Hierarchical auf bestem vorherigen Algorithmus
+- outlier management
+    X- PyOD
+    X- Statistische Methodem (Unsicherheit des Modells)
+- bei spatial datensätzen zwei annotationsebenen erschaffen
+    X- Breast
+X- Hierarchischen Classifier auf Sparse evaluieren
+- Todos genau festlegen

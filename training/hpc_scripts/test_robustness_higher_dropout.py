@@ -178,11 +178,11 @@ def compute_baseline_score(model, X, y, batch_obs=None):
 
 # Computes the robustness of the model by randomly dropping 10% of the features and evaluating the score again.
 # This is done 10 times and the average score is reported.
-def compute_robustness_random_dropout(model, X, y, drop_pct=0.10):
+def compute_robustness_random_dropout(model, X, y, drop_pct=0.10, seed=None):
     acc_scores = []
     f1_scores = []
+    rng = np.random.default_rng(seed=seed)
     for _ in range(10):
-        rng = np.random.default_rng()
         dropped = _drop_features(X, drop_pct, rng)
         y_pred = _predict_labels(model, dropped)
         acc_scores.append(accuracy_score(y, y_pred))
@@ -292,12 +292,12 @@ def compute_robustness_feature_importance_dropout(model, X, y, feature_importanc
 
 
 # Computes the score and robustness of the given model on the given dataset (X, y) and feature importance
-def compute_model_score_and_robustness(model, X, y, feature_importances=None, dist_name="In-Distribution", batch_obs=None):
+def compute_model_score_and_robustness(model, X, y, feature_importances=None, dist_name="In-Distribution", batch_obs=None, seed=None):
     # Baseline
     baseline_accuracy, baseline_report, batch_metrics = compute_baseline_score(model, X, y, batch_obs=batch_obs)
 
     # Random Robustness Dropouts
-    rd_10_acc, rd_10_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.10)
+    rd_10_acc, rd_10_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.10, seed=seed)
     #rd_50_acc, rd_50_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.50)
     #rd_90_acc, rd_90_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.90)
     #rd_925_acc, rd_925_f1 = compute_robustness_random_dropout(model, X, y, drop_pct=0.925)
@@ -369,6 +369,7 @@ def test_robustness(
     log_to_console=True,
     log_to_file=False,
     scaler=None,
+    seed=None,
 ):
     # Setup Logger
     _setup_logger(log_to_console, log_to_file)
@@ -381,7 +382,7 @@ def test_robustness(
             return
 
     id_results = compute_model_score_and_robustness(
-        model, X, y, feature_importances=feature_importances, dist_name="In-Distribution", batch_obs=id_donor_col
+        model, X, y, feature_importances=feature_importances, dist_name="In-Distribution", batch_obs=id_donor_col, seed=seed
     )
 
     train_classes = set(y.unique())
@@ -478,7 +479,7 @@ def test_robustness(
         if scaler is not None:
             X_test = scaler.transform(X_test)
 
-        ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name=f"OOD_{ds_name}", batch_obs=adata.obs['donor_id'])
+        ood_results = compute_model_score_and_robustness(model, X_test, y_oodd, feature_importances, dist_name=f"OOD_{ds_name}", batch_obs=adata.obs['donor_id'], seed=seed)
 
         all_results.append(ood_results)
 

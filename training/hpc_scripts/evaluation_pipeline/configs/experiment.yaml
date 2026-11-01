@@ -1,0 +1,385 @@
+# =============================================================================
+# CLACELL non-blood evaluation pipeline
+# =============================================================================
+# Pilot: tonsil, autoencoder_linsvc + custom_ensemble_rf_stacking, 10 seeds.
+# After the pilot only this file has to be extended:
+#   - experiment.dataset
+#   - experiment.models
+#   - experiment.seeds
+# Everything else (dataset catalogue, model catalogue) is already prepared.
+# =============================================================================
+
+experiment:
+  name: clacell_nonblood
+  dataset: tonsil
+
+  # --- active models (pilot selection) -------------------------------------
+  models:
+    - autoencoder_linsvc
+    - custom_ensemble_rf_stacking
+
+  # --- active runs ---------------------------------------------------------
+  # Production setting: 10 runs. For a very quick smoke test, temporarily use
+  # seeds: [0, 1]; the fixed tuning parameters are reused for all seeds.
+  seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  # Seed used for all hyperparameter searches (fixed once per dataset/node).
+  tuning_seed: 42
+  # Run i uses eval_seed_base + i for the robustness evaluation. The same
+  # value is used for every model so that models are evaluated on the same
+  # perturbation draws where the robustness script allows it.
+  eval_seed_base: 1000
+
+  cache_root: /home/woody/iwbn/iwbn133h/clacell_cache
+  output_root: /home/woody/iwbn/iwbn133h/clacell_runs
+
+  # Maximum number of array tasks running at the same time.
+  max_parallel: 4
+
+  hierarchy:
+    enabled: true
+    # A coarse label needs at least this many fine classes to get a fine model.
+    min_fine_classes: 2
+
+  resources:
+    prepare:   {cpus: 32, mem_gb: 200, time: "24:00:00"}
+    features:  {cpus: 16, mem_gb: 64,  time: "12:00:00"}
+    # The tonsil custom ensemble is expensive; start with 24h and reduce after
+    # the pilot measurements if the tasks finish much earlier.
+    tune:      {cpus: 16, mem_gb: 200, time: "24:00:00"}
+    run:       {cpus: 16, mem_gb: 200, time: "24:00:00"}
+    aggregate: {cpus: 4,  mem_gb: 16,  time: "01:00:00"}
+
+  # Reference models are flat baselines: one model on coarse labels and a
+  # separate model on fine labels. They are not wrapped in the hierarchy.
+  reference_levels: [coarse, fine]
+
+  # Set to true if prepare should also export a raw-count h5ad for the scGPT
+  # GPU cluster. scGPT itself is not trained or evaluated by this CPU pipeline.
+  export_scgpt: false
+
+
+# =============================================================================
+# Dataset catalogue
+# =============================================================================
+datasets:
+  # ---------------------------------------------------------------------------
+  # PILOT DATASET
+  # ---------------------------------------------------------------------------
+  tonsil:
+    path: /home/woody/iwbn/iwbn133h/data/10x-gex/tonsil/tonsil_spatial_2.h5ad
+    counts_layer: counts
+    batch_key: donor_id
+
+    labels:
+      coarse: annotation_level_1
+      fine: annotation_20230508
+
+    # Natural discovery/validation split of the tonsil atlas.
+    donors:
+      train:
+        - BCLL-2-T
+        - BCLL-6-T
+        - BCLL-8-T
+        - BCLL-9-T
+        - BCLL-10-T
+        - BCLL-11-T
+        - BCLL-12-T
+        - BCLL-13-T
+        - BCLL-14-T
+        - BCLL-15-T
+      test:
+        - BCLL-20-T
+        - BCLL-21-T
+        - BCLL-22-T
+        - BCLL-24-T
+        - BCLL-25-T
+        - BCLL-26-T
+        - BCLL-28-T
+
+    exclude:
+      coarse: []
+      fine: []
+
+    preprocess:
+      min_counts: 10
+      min_cells: 3
+      remove_mt_ribo_hb: true
+      scrublet: true
+      target_sum: 10000
+      hvg: true
+      hvg_n_top_genes: null   # null = scanpy default
+
+    feature_importance:
+      # Both rankings are computed once per seed by the features stage. The
+      # custom ensemble uses the opposite ranking internally:
+      #   custom_ensemble_linsvc_stacking -> randomforest ranking
+      #   custom_ensemble_rf_stacking     -> linearsvc ranking
+      compute: [randomforest, linearsvc]
+      label_level: fine
+      # Ranking passed to test_robustness for the feature-importance dropout.
+      # Use "linearsvc", "randomforest", or "model" (model-specific ranking).
+      robustness: linearsvc
+
+  # ---------------------------------------------------------------------------
+  # OTHER NON-BLOOD DATASETS (values can be adjusted when the data is ready)
+  # ---------------------------------------------------------------------------
+  breast:
+    path: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db_spatial_fine_and_coarse_annotated.h5ad
+    # null = raw counts are in .X; set to a layer name if they are stored there.
+    counts_layer: null
+    batch_key: donor_id
+
+    labels:
+      coarse: scumi_clean_coarse
+      fine: scumi_clean_fine_grained
+
+    donors:
+      train:
+        - pal_Patient 0177
+        - wu_natgen_CID4471
+        - TBB129
+        - BC392_Tumor
+      test:
+        - pal_Patient 0176
+        - TBB338
+        - wu_natgen_CID44971
+        - BC393_Tumor
+
+    exclude:
+      coarse: []
+      fine: []
+
+    preprocess:
+      min_counts: 10
+      min_cells: 3
+      remove_mt_ribo_hb: true
+      scrublet: true
+      target_sum: 10000
+      hvg: true
+      hvg_n_top_genes: null
+
+    feature_importance:
+      compute: [randomforest, linearsvc]
+      label_level: fine
+      robustness: linearsvc
+
+  ovary:
+    path: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd_spatial.h5ad
+    counts_layer: null
+    batch_key: donor_id
+
+    # TODO: ovary has only author_cell_type (10 classes). A fine-grained
+    # annotation column still has to be added before this dataset can run
+    # hierarchically. Set labels.fine to that column once available.
+    labels:
+      coarse: author_cell_type
+      fine: null
+
+    donors:
+      train:
+        - SPECTRUM-OV-068
+        - SPECTRUM-OV-051
+      test:
+        - SPECTRUM-OV-026
+        - SPECTRUM-OV-070
+        - SPECTRUM-OV-067
+
+    exclude:
+      coarse: [Other]
+      fine: []
+
+    preprocess:
+      min_counts: 10
+      min_cells: 3
+      remove_mt_ribo_hb: true
+      scrublet: true
+      target_sum: 10000
+      hvg: true
+      hvg_n_top_genes: null
+
+    feature_importance:
+      compute: [randomforest, linearsvc]
+      label_level: coarse
+      robustness: linearsvc
+
+  pancreas:
+    # Placeholder: fill in path, labels and donor split when the dataset is ready.
+    path: /home/woody/iwbn/iwbn133h/data/10x-gex/pancreas/pancreas_annotated.h5ad
+    counts_layer: null
+    batch_key: donor_id
+
+    labels:
+      coarse: scumi_clean_coarse
+      fine: scumi_clean_fine_grained
+
+    donors:
+      train: []
+      test: []
+
+    exclude:
+      coarse: []
+      fine: []
+
+    preprocess:
+      min_counts: 10
+      min_cells: 3
+      remove_mt_ribo_hb: true
+      scrublet: true
+      target_sum: 10000
+      hvg: true
+      hvg_n_top_genes: null
+
+    feature_importance:
+      compute: [randomforest, linearsvc]
+      label_level: fine
+      robustness: linearsvc
+
+
+# =============================================================================
+# Model catalogue
+# =============================================================================
+models:
+  # ---------------------------------------------------------------------------
+  # Autoencoders (CPU)
+  # ---------------------------------------------------------------------------
+  autoencoder_linsvc:
+    family: autoencoder
+    head: linsvc
+    hierarchy: true
+    tune:
+      search: random
+      n_iter: 50
+      cv: 5
+    params:
+      latent_dim: 128
+      noise_factor: 0.3
+      epochs: 150
+      batch_size: 128
+      lr: 0.001
+      weight_decay: 0.0001
+      patience: 5
+      delta_loss: 0.0002
+
+  autoencoder_rf:
+    family: autoencoder
+    head: rf
+    hierarchy: true
+    tune:
+      search: random
+      n_iter: 50
+      cv: 5
+    params:
+      latent_dim: 128
+      noise_factor: 0.3
+      epochs: 150
+      batch_size: 128
+      lr: 0.001
+      weight_decay: 0.0001
+      patience: 5
+      delta_loss: 0.0002
+
+  conditional_autoencoder_linsvc:
+    family: conditional_autoencoder
+    head: linsvc
+    hierarchy: true
+    tune:
+      search: random
+      n_iter: 50
+      cv: 5
+    params:
+      latent_dim: 128
+      noise_factor: 0.3
+      epochs: 150
+      batch_size: 128
+      lr: 0.001
+      weight_decay: 0.0001
+      patience: 5
+      delta_loss: 0.0002
+
+  conditional_autoencoder_rf:
+    family: conditional_autoencoder
+    head: rf
+    hierarchy: true
+    tune:
+      search: random
+      n_iter: 50
+      cv: 5
+    params:
+      latent_dim: 128
+      noise_factor: 0.3
+      epochs: 150
+      batch_size: 128
+      lr: 0.001
+      weight_decay: 0.0001
+      patience: 5
+      delta_loss: 0.0002
+
+  # ---------------------------------------------------------------------------
+  # Custom stacking ensembles
+  # ---------------------------------------------------------------------------
+  custom_ensemble_linsvc_stacking:
+    family: custom_ensemble
+    base: linearsvc
+    combine: stacking
+    # Per your requirement: LinearSVC ensemble uses the RandomForest ranking.
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: false
+
+  custom_ensemble_rf_stacking:
+    family: custom_ensemble
+    base: randomforest
+    combine: stacking
+    # Per your requirement: RandomForest ensemble uses the LinearSVC ranking.
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: false
+
+  # ---------------------------------------------------------------------------
+  # Reference models (flat: coarse and fine are trained independently)
+  # ---------------------------------------------------------------------------
+  singler:
+    family: reference
+    adapter: singler
+    hierarchy: false
+    tune: null
+    params:
+      aggregate_ref: true
+
+  celltypist:
+    family: reference
+    adapter: celltypist
+    hierarchy: false
+    tune:
+      n_iter: 30
+      cv: 5
+    params: {}
+
+  scgpt:
+    family: reference
+    adapter: scgpt_external
+    hierarchy: false
+    tune: null
+    params:
+      # scGPT is trained on the GPU cluster. Do NOT put 'scgpt' into
+      # experiment.models on the CPU pipeline; use experiment.export_scgpt
+      # instead. The model entry documents the external adapter.
+      export_input: true
+      external_script: finetune_integration_adjusted.py

@@ -1,0 +1,7 @@
+# Extra dependency not necessarily present in the existing CLACELL environment.
+# Everything else (numpy, pandas, scipy, scikit-learn, scanpy, anndata, torch,
+# scikit-optimize, celltypist) is already used by the existing training scripts.
+PyYAML>=6.0
+
+# Optional reference model (install only if you enable the SingleR reference):
+# singler

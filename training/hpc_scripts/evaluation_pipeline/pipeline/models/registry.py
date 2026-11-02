@@ -9,12 +9,7 @@ import pandas as pd
 from ..features import sorted_genes
 from ..tasks import features_dir
 from ..logging_utils import PipelineError
-from .autoencoder import build_autoencoder, tune_autoencoder
 from .base import ConstantClassifier, ModelAdapter
-from .conditional_autoencoder import (
-    build_conditional_autoencoder,
-    tune_conditional_autoencoder,
-)
 from .custom_ensemble import build_custom_ensemble_adapter, tune_base_estimator
 from .references import (
     CellTypistAdapter,
@@ -162,6 +157,8 @@ def fit_model(
     batch_key = dataset["batch_key"]
 
     if family == "autoencoder":
+        from .autoencoder import build_autoencoder
+
         if len(X) < 2:
             raise PipelineError(
                 f"Autoencoder model '{model_name}' node '{node}' has only {len(X)} cells; "
@@ -179,6 +176,8 @@ def fit_model(
         )
 
     if family == "conditional_autoencoder":
+        from .conditional_autoencoder import build_conditional_autoencoder
+
         if len(X) < 2:
             raise PipelineError(
                 f"Conditional autoencoder model '{model_name}' node '{node}' has only "
@@ -225,7 +224,7 @@ def fit_model(
         params_cfg = dict(model_cfg.get("params", {}))
         min_class = int(y.value_counts().min())
         params_cfg["stacking_cv"] = max(2, min(int(params_cfg.get("stacking_cv", 5)), min_class))
-        params_cfg["calibration_cv"] = 5
+        params_cfg["calibration_cv"] = max(2, min(5, min_class))
         adapter = build_custom_ensemble_adapter(
             sorted_top_genes=genes,
             base=str(model_cfg.get("base", "randomforest")).lower(),
@@ -276,6 +275,9 @@ def tune_model_node(
     tune_cfg = model_cfg.get("tune") or {}
 
     if family in {"autoencoder", "conditional_autoencoder"}:
+        from .autoencoder import tune_autoencoder
+        from .conditional_autoencoder import tune_conditional_autoencoder
+
         if len(X) < 2:
             return {}, {
                 "skipped": True,

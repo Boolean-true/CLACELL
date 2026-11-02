@@ -61,7 +61,7 @@ class ScRNACVAEClassifier(ModelAdapter):
     def _transform_to_latent(self, X):
         if hasattr(X, "toarray"):
             X = X.toarray()
-        X = np.asarray(X, dtype=np.float32) #TODO: Warum ist das jetzt da? Im Original war das nicht da.
+        X = np.asarray(X, dtype=np.float32)
         if self.scaler is not None:
             X = self.scaler.transform(X)
         tensor = torch.tensor(X, dtype=torch.float32).to(self.device)

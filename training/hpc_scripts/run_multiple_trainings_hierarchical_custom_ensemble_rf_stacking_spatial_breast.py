@@ -215,7 +215,7 @@ num_runs = 10
 start_run = 0
 end_run = 9
 
-base_dir = 'results/hierarchical_custom_ensemble_rf_stacking_entropy_rejection_spatial_breast'
+base_dir = 'results/hierarchical_custom_ensemble_rf_stacking_spatial_breast'
 coarse_dir = base_dir + '_coarse'
 fine_dir = base_dir + '_fine_grained'
 

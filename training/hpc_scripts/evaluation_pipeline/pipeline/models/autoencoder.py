@@ -73,7 +73,7 @@ class ScRNADAEClassifier(ModelAdapter):
     def _transform_to_latent(self, X):
         if hasattr(X, "toarray"):
             X = X.toarray()
-        X = np.asarray(X, dtype=np.float32) #TODO: Warum ist das jetzt da? Im Original war das nicht da.
+        X = np.asarray(X, dtype=np.float32)
         if self.scaler is not None:
             X = self.scaler.transform(X)
         tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
@@ -105,20 +105,12 @@ def _make_head(head: str, params: dict | None = None):
 
 def _head_search_space(head: str):
     if head == "linsvc":
-        return [
-            {
-                "C": loguniform(1e-3, 2.0),
-                "penalty": ["l1"],
-                "dual": [False],
-                "tol": loguniform(1e-3, 1e-1),
-            },
-            {
-                "C": loguniform(1e-3, 2.0),
-                "penalty": ["l2"],
-                "dual": [True, False],
-                "tol": loguniform(1e-3, 1e-1),
-            },
-        ]
+        return {
+            "C": loguniform(1e-3, 2.0),
+            "penalty": ["l2"],
+            "dual": [True, False],
+            "tol": loguniform(1e-3, 1e-1),
+        }
     if head == "rf":
         return {
             "n_estimators": randint(100, 250),
@@ -292,26 +284,3 @@ def build_autoencoder(
     model = ScRNADAEClassifier(dae=dae, classifier=classifier, scaler=scaler)
     model.epochs_ = epochs
     return model
-
-
-def collect_epochs(model: Any) -> float:
-    """Sum epochs over a flat model or a fitted hierarchical cascade."""
-    total = 0
-    seen = 0
-    if hasattr(model, "coarse_classifier"):
-        inner = getattr(model, "coarse_classifier", None)
-        epoch = getattr(inner, "epochs_", None) if inner is not None else None
-        if epoch is not None:
-            total += int(epoch)
-            seen += 1
-        for inner in getattr(model, "fine_classifiers", {}).values():
-            epoch = getattr(inner, "epochs_", None)
-            if epoch is not None:
-                total += int(epoch)
-                seen += 1
-    else:
-        epoch = getattr(model, "epochs_", None)
-        if epoch is not None:
-            total += int(epoch)
-            seen += 1
-    return float(total) if seen else float("nan")

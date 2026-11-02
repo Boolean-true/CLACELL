@@ -1,7 +1,8 @@
 # =============================================================================
 # CLACELL non-blood evaluation pipeline
 # =============================================================================
-# Pilot: tonsil, autoencoder_linsvc + custom_ensemble_rf_stacking, 10 seeds.
+# Pilot: breast, custom_ensemble_rf_stacking, 10 seeds, exact settings from
+# run_multiple_trainings_hierarchical_custom_ensemble_rf_stacking_spatial_breast.py
 # After the pilot only this file has to be extended:
 #   - experiment.dataset
 #   - experiment.models
@@ -11,19 +12,22 @@
 
 experiment:
   name: clacell_nonblood
-  dataset: tonsil
+  dataset: breast
 
   # --- active models (pilot selection) -------------------------------------
   models:
-    - autoencoder_linsvc
     - custom_ensemble_rf_stacking
+    - autoencoder_linsvc
 
   # --- active runs ---------------------------------------------------------
-  # Production setting: 10 runs. For a very quick smoke test, temporarily use
-  # seeds: [0, 1]; the fixed tuning parameters are reused for all seeds.
+  # The old breast script runs 10 runs; keep the same run indices.
   seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-  # Seed used for all hyperparameter searches (fixed once per dataset/node).
+  # Exact comparison with the old hierarchical breast script: tune once per
+  # run/seed and hierarchy node, not once for all seeds.
+  tuning_per_seed: true
+
+  # Seed used for all hyperparameter searches when tuning_per_seed is false.
   tuning_seed: 42
   # Run i uses eval_seed_base + i for the robustness evaluation. The same
   # value is used for every model so that models are evaluated on the same
@@ -44,10 +48,10 @@ experiment:
   resources:
     prepare:   {cpus: 32, mem_gb: 200, time: "24:00:00"}
     features:  {cpus: 16, mem_gb: 64,  time: "12:00:00"}
-    # The tonsil custom ensemble is expensive; start with 24h and reduce after
-    # the pilot measurements if the tasks finish much earlier.
-    tune:      {cpus: 16, mem_gb: 200, time: "24:00:00"}
-    run:       {cpus: 16, mem_gb: 200, time: "24:00:00"}
+    # Match the old breast script: 32 CPUs / 200G / 24h. Reduce after the
+    # pilot measurements if the tasks finish much earlier.
+    tune:      {cpus: 32, mem_gb: 200, time: "24:00:00"}
+    run:       {cpus: 32, mem_gb: 200, time: "24:00:00"}
     aggregate: {cpus: 4,  mem_gb: 16,  time: "01:00:00"}
 
   # Reference models are flat baselines: one model on coarse labels and a
@@ -163,6 +167,8 @@ datasets:
       compute: [randomforest, linearsvc]
       label_level: fine
       robustness: linearsvc
+      # test_robustness in the old script uses this fixed marker-gene ranking.
+      robustness_file: pegasus_feature_importance_interleaved_marker_genes.pkl
 
   ovary:
     path: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd_spatial.h5ad

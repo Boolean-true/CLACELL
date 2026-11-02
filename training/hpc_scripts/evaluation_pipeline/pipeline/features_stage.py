@@ -37,6 +37,18 @@ def _peak_ram_gb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    try:
+        if value is None:
+            return default
+        value = float(value)
+        if value != value:  # NaN
+            return default
+        return value
+    except (TypeError, ValueError):
+        return default
+
+
 def _canonical_method(method: str) -> str:
     method = str(method).lower()
     if method in {"randomforest", "rf"}:
@@ -57,7 +69,7 @@ def _method_done(directory: Path, method: str, expected_key: str | None) -> tupl
     meta = read_json(meta_path, default={})
     if expected_key is not None and meta.get("features_key") != expected_key:
         return False, 0.0
-    return True, float(meta.get("time_min", 0.0))
+    return True, _safe_float(meta.get("time_min"), 0.0)
 
 
 def run_features(config_path: str, task_id: int) -> None:
@@ -78,6 +90,16 @@ def run_features(config_path: str, task_id: int) -> None:
     old_success = read_json(out_dir / "_SUCCESS.json", default={})
     if old_success and old_success.get("features_key") != expected_key:
         clear_success(out_dir)
+
+    # A resumed task reuses methods from earlier invocations. Keep their wall
+    # time so total_wall_time_min stays cumulative instead of shrinking to the
+    # duration of the cache-hit restart.
+    old_meta = read_json(out_dir / "features_meta.json", default={})
+    previous_wall_min = 0.0
+    if old_meta.get("features_key") == expected_key:
+        previous_wall_min = max(
+            0.0, _safe_float(old_meta.get("total_wall_time_min"), 0.0)
+        )
 
     start = time.time()
     cache = load_cache(config)
@@ -129,7 +151,15 @@ def run_features(config_path: str, task_id: int) -> None:
         )
         atomic_write_text(out_dir / f"_SUCCESS_{method}", "ok\n")
 
-    wall_min = (time.time() - start) / 60.0
+    invocation_wall_min = (time.time() - start) / 60.0
+    feature_selection_time_min = sum(times.values())
+    # If the previous metadata was lost (for example a kill between the method
+    # writes and the features_meta write), the sum of the persisted method
+    # times is the best available lower bound for the cumulative wall time.
+    total_wall_min = max(
+        previous_wall_min + invocation_wall_min,
+        feature_selection_time_min,
+    )
     meta = {
         "features_key": expected_key,
         "dataset": dataset["name"],
@@ -137,8 +167,9 @@ def run_features(config_path: str, task_id: int) -> None:
         "label_level": label_level,
         "methods": methods,
         "method_times_min": {key: round(value, 4) for key, value in times.items()},
-        "feature_selection_time_min": round(sum(times.values()), 4),
-        "total_wall_time_min": round(wall_min, 4),
+        "feature_selection_time_min": round(feature_selection_time_min, 4),
+        "total_wall_time_min": round(total_wall_min, 4),
+        "last_invocation_wall_time_min": round(invocation_wall_min, 4),
         "n_train_cells": int(len(cache["X_train"])),
         "n_genes": int(cache["X_train"].shape[1]),
         "peak_ram_gb": round(_peak_ram_gb(), 3),
@@ -149,9 +180,11 @@ def run_features(config_path: str, task_id: int) -> None:
         {"features_key": expected_key, "seed": seed, "methods": methods},
     )
     logging.info(
-        "Features finished for seed=%s: %s (compute %.2f min, wall %.2f min)",
+        "Features finished for seed=%s: %s (compute %.2f min, cumulative wall %.2f min, "
+        "this invocation %.2f min)",
         seed,
         methods,
         meta["feature_selection_time_min"],
-        wall_min,
+        total_wall_min,
+        invocation_wall_min,
     )

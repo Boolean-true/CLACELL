@@ -111,6 +111,7 @@ def resolve_config(config: dict[str, Any], source: Path | None = None) -> dict[s
     for key in ("name", "tuning_seed", "eval_seed_base", "max_parallel", "reference_levels"):
         if exp.get(key) is None:
             raise ConfigError(f"experiment.{key} is not set.")
+    exp.setdefault("tuning_per_seed", False)
     invalid_levels = [level for level in exp["reference_levels"] if level not in {"coarse", "fine"}]
     if invalid_levels:
         raise ConfigError(

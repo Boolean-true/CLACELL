@@ -21,9 +21,8 @@ SUMMARY_METRICS = [
     ("All", "Technical_Metrics", "Resource_Usage", "Hyperparameter_Tuning_Time_Min"),
     ("All", "Technical_Metrics", "Resource_Usage", "Training_Time_Min"),
     ("All", "Technical_Metrics", "Resource_Usage", "Inference_Evaluation_Time_Min"),
+    ("All", "Technical_Metrics", "Resource_Usage", "Run_With_Setup_Time_Min"),
     ("All", "Technical_Metrics", "Resource_Usage", "Total_Pipeline_Time_Min"),
-    ("All", "Technical_Metrics", "Resource_Usage", "Run_Task_Time_Min"),
-    ("All", "Technical_Metrics", "Resource_Usage", "End_To_End_Time_Min"),
     ("All", "Technical_Metrics", "Resource_Usage", "Peak_RAM_GB"),
 ]
 

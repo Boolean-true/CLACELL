@@ -41,10 +41,18 @@ def _peak_ram_gb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
 
 
-def _to_float32_frame(adata: ad.AnnData) -> pd.DataFrame:
+def _safe_float(value, default: float = 0.0) -> float:
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return default
+    return default if value != value else value  # NaN -> default
+
+
+def _to_frame(adata: ad.AnnData) -> pd.DataFrame:
     matrix = adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X
     return pd.DataFrame(
-        np.asarray(matrix, dtype=np.float32),
+        np.asarray(matrix),
         index=adata.obs_names.astype(str),
         columns=adata.var_names.astype(str),
     )
@@ -90,28 +98,23 @@ def _validate_dataset(dataset: dict) -> None:
             )
 
 
-#TODO: Nch vergleichen mit meinem preprocessing
 def _preprocess(adata: ad.AnnData, dataset: dict, n_jobs: int) -> ad.AnnData:
     """Same steps as preprocess_data.prepare_adata, with config options."""
     cfg = dataset["preprocess"]
     batch_key = dataset["batch_key"]
 
-    percent_top = None if adata.n_vars < 500 else [50, 100, 200, 500]
     if cfg.get("remove_mt_ribo_hb", True):
-        adata.var["mt"] = adata.var_names.str.startswith(("MT-", "Mt-")).to_numpy()
-        adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL")).to_numpy()
-        adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]", regex=True).to_numpy()
+        adata.var["mt"] = adata.var_names.str.startswith("MT-")
+        adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))
+        adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")
         sc.pp.calculate_qc_metrics(
             adata,
             qc_vars=["mt", "ribo", "hb"],
-            percent_top=percent_top,
             inplace=True,
             log1p=True,
         )
     else:
-        sc.pp.calculate_qc_metrics(
-            adata, percent_top=percent_top, inplace=True, log1p=True
-        )
+        sc.pp.calculate_qc_metrics(adata, inplace=True, log1p=True)
 
     sc.pp.filter_cells(adata, min_counts=int(cfg.get("min_counts", 10)))
     sc.pp.filter_genes(adata, min_cells=int(cfg.get("min_cells", 3)))
@@ -123,7 +126,7 @@ def _preprocess(adata: ad.AnnData, dataset: dict, n_jobs: int) -> ad.AnnData:
 
     if cfg.get("scrublet", True):
         try:
-            sc.pp.scrublet(adata, batch_key=batch_key, random_state=0)
+            sc.pp.scrublet(adata, batch_key=batch_key)
         except Exception as exc:  # noqa: BLE001 - add batch context
             raise PipelineError(
                 f"Scrublet failed for dataset '{dataset['name']}' with batch_key='{batch_key}'. "
@@ -226,9 +229,32 @@ def run_prepare(config_path: str) -> None:
     if is_success(cache_dir) and old_meta.get("cache_key") == expected_key:
         logging.info("Cache hit for dataset '%s' at %s", dataset["name"], cache_dir)
         if config["experiment"].get("export_scgpt", False):
-            from .models.references import export_scgpt_input #TODO
+            from .models.references import export_scgpt_input, scgpt_export_path
 
-            export_scgpt_input(config)
+            export_path = scgpt_export_path(config)
+            if export_path.is_file():
+                export_scgpt_input(config)
+            else:
+                # The export is part of preprocessing. If it was enabled after
+                # the cache was built, charge its wall time to the cached
+                # preprocessing metadata instead of silently dropping it.
+                export_start = time.time()
+                export_scgpt_input(config)
+                export_min = (time.time() - export_start) / 60.0
+                old_meta["preprocessing_time_min"] = round(
+                    _safe_float(old_meta.get("preprocessing_time_min")) + export_min,
+                    4,
+                )
+                old_meta["scgpt_export_time_min"] = round(
+                    _safe_float(old_meta.get("scgpt_export_time_min")) + export_min,
+                    4,
+                )
+                atomic_write_json(meta_path, old_meta)
+                atomic_write_json(cache_dir / "_SUCCESS.json", old_meta)
+                logging.info(
+                    "scGPT export finished in %.2f min; updated cached preprocessing time.",
+                    export_min,
+                )
         return
     clear_success(cache_dir)
     for stale in cache_dir.glob(".prepared.*.h5ad"):
@@ -335,8 +361,8 @@ def run_prepare(config_path: str) -> None:
     hierarchy = _build_hierarchy(
         adata_train.obs, dataset, config["experiment"]["hierarchy"]
     )
-    X_train = _to_float32_frame(adata_train)
-    X_test = _to_float32_frame(adata_test)
+    X_train = _to_frame(adata_train)
+    X_test = _to_frame(adata_test)
     obs_train = adata_train.obs.copy()
     obs_test = adata_test.obs.copy()
     obs_train.index = obs_train.index.astype(str)
@@ -350,8 +376,8 @@ def run_prepare(config_path: str) -> None:
 
     # npy is faster to load than h5ad for every seed/model task; the metadata
     # needed to reconstruct the DataFrame lives in genes.json and obs_*.pkl.
-    np.save(cache_dir / "X_train.npy", X_train.to_numpy(dtype=np.float32, copy=False))
-    np.save(cache_dir / "X_test.npy", X_test.to_numpy(dtype=np.float32, copy=False))
+    np.save(cache_dir / "X_train.npy", X_train.to_numpy(copy=False))
+    np.save(cache_dir / "X_test.npy", X_test.to_numpy(copy=False))
     atomic_write_json(cache_dir / "genes.json", list(X_train.columns))
     atomic_write_pickle(cache_dir / "obs_train.pkl", obs_train)
     atomic_write_pickle(cache_dir / "obs_test.pkl", obs_test)
@@ -359,6 +385,17 @@ def run_prepare(config_path: str) -> None:
     if len(unseen_frame):
         atomic_write_csv(cache_dir / "unseen_test_classes.csv", unseen_frame, index=False)
 
+    if config["experiment"].get("export_scgpt", False):
+        from .models.references import export_scgpt_input
+
+        export_start = time.time()
+        export_scgpt_input(config)
+        scgpt_export_time_min = (time.time() - export_start) / 60.0
+    else:
+        scgpt_export_time_min = 0.0
+
+    # The scGPT export is part of preprocessing; measure it before the total so
+    # Preprocessing_Time_Min and Total_Pipeline_Time_Min include it.
     preprocessing_time_min = (time.time() - total_start) / 60.0
     meta = {
         "dataset": dataset["name"],
@@ -374,16 +411,12 @@ def run_prepare(config_path: str) -> None:
         "coarse_labels": hierarchy["coarse_labels"],
         "fine_label_column": fine_col,
         "preprocessing_time_min": round(preprocessing_time_min, 4),
+        "scgpt_export_time_min": round(scgpt_export_time_min, 4),
         "peak_ram_gb": round(_peak_ram_gb(), 3),
         "package_versions": _package_versions(),
     }
     atomic_write_json(meta_path, meta)
     mark_success(cache_dir, meta)
-
-    if config["experiment"].get("export_scgpt", False):
-        from .models.references import export_scgpt_input
-
-        export_scgpt_input(config)
 
     logging.info(
         "Prepare finished: train=%d test=%d genes=%d coarse=%d fine_nodes=%d in %.2f min",

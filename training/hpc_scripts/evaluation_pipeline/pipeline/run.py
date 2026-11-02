@@ -22,7 +22,7 @@ from .io import (
     read_json,
 )
 from .logging_utils import PipelineError, log_header
-from .models.autoencoder import collect_epochs
+from .models.base import collect_epochs
 from .models.registry import (
     make_factory,
     robustness_feature_importance,
@@ -76,10 +76,45 @@ def _safe_float(value, default=float("nan")) -> float:
         return default
 
 
-def _load_params(config: dict, model_name: str, node: str) -> dict:
+def _required_meta_float(meta: dict, key: str, *, source: Path, hint: str) -> float:
+    """Read a timing/RAM field without silently turning missing data into 0."""
+    value = _safe_float(meta.get(key), default=None)
+    if value is None:
+        raise PipelineError(f"Missing or invalid '{key}' in {source}. {hint}")
+    return value
+
+
+def _robustness_fi(config: dict, model_name: str, seed: int, fi_dir: Path) -> pd.DataFrame:
+    external = config["active_dataset"]["feature_importance"].get("robustness_file")
+    if external:
+        path = Path(str(external)).expanduser()
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if not path.is_file():
+            raise PipelineError(
+                f"Robustness feature-importance file not found: {path}. "
+                "Check datasets.<name>.feature_importance.robustness_file."
+            )
+        return pd.read_pickle(path)
+    method = robustness_feature_importance(config, model_name)
+    path = fi_dir / f"feature_importance_{method}.pkl"
+    if not path.is_file():
+        raise PipelineError(
+            f"Robustness feature importance '{method}' not found at {path}. "
+            "Run the features stage for this seed."
+        )
+    return pd.read_pickle(path)
+
+
+def _tuning_seed(config: dict, seed: int | None) -> int | None:
+    return seed if config["experiment"].get("tuning_per_seed") else None
+
+
+def _load_params(config: dict, model_name: str, node: str, seed: int | None) -> dict:
     model_cfg = model_config(config, model_name)
-    path = tuning_dir(config, model_name, node) / "best_params.json"
-    if model_cfg.get("tune") and not tuning_success(config, model_name, node):
+    tuning_seed = _tuning_seed(config, seed)
+    path = tuning_dir(config, model_name, node, tuning_seed) / "best_params.json"
+    if model_cfg.get("tune") and not tuning_success(config, model_name, node, tuning_seed):
         raise PipelineError(
             f"Tuning is missing, failed or stale for model='{model_name}' node='{node}'. "
             f"Expected success marker in {path.parent}. Re-run the tune stage."
@@ -94,11 +129,17 @@ def _load_params(config: dict, model_name: str, node: str) -> dict:
     return read_json(path, default={})
 
 
-def _tuning_meta(config: dict, model_name: str, node: str) -> dict:
-    path = tuning_dir(config, model_name, node) / "tuning_meta.json"
+def _tuning_meta(
+    config: dict, model_name: str, node: str, seed: int | None
+) -> dict | None:
+    path = (
+        tuning_dir(config, model_name, node, _tuning_seed(config, seed))
+        / "tuning_meta.json"
+    )
     if not path.is_file():
-        return {}
-    return read_json(path, default={})
+        return None
+    meta = read_json(path, default=None)
+    return meta if isinstance(meta, dict) and meta else None
 
 
 def _level_tuning_summary(
@@ -106,8 +147,10 @@ def _level_tuning_summary(
     model_name: str,
     level: str,
     hierarchy: dict,
+    seed: int | None,
     hierarchical: bool = True,
 ) -> dict:
+    tuned = bool(model_config(config, model_name).get("tune"))
     if not hierarchical:
         nodes = [level]
     elif level == "coarse":
@@ -116,19 +159,42 @@ def _level_tuning_summary(
         nodes = [
             node for node in hierarchy.get("nodes", {}) if node.startswith("fine:")
         ]
-    metas = [_tuning_meta(config, model_name, node) for node in nodes]
-    metas = [meta for meta in metas if meta]
+    metas: list[tuple[str, dict]] = []
+    missing: list[str] = []
+    for node in nodes:
+        meta = _tuning_meta(config, model_name, node, seed)
+        if meta is None:
+            if tuned:
+                missing.append(node)
+        else:
+            metas.append((node, meta))
+    if missing:
+        raise PipelineError(
+            f"Tuning metadata missing for model='{model_name}' nodes={missing}. "
+            "The tuning success marker exists but tuning_meta.json is missing or empty. "
+            "Re-run the tune stage."
+        )
     if not metas:
         return {
             "time_min": 0.0,
             "peak_ram_gb": float("nan"),
             "avg_time_per_iteration_sec": float("nan"),
         }
-    time_min = sum(_safe_float(meta.get("tuning_time_min"), 0.0) for meta in metas)
-    peak = max(_safe_float(meta.get("peak_ram_gb"), 0.0) for meta in metas)
+    time_min = 0.0
+    for node, meta in metas:
+        value = _safe_float(meta.get("tuning_time_min"), default=None)
+        if value is None:
+            if tuned:
+                raise PipelineError(
+                    f"Missing or invalid 'tuning_time_min' in tuning_meta.json for "
+                    f"model='{model_name}' node='{node}'. Re-run the tune stage."
+                )
+            value = 0.0
+        time_min += value
+    peak = max(_safe_float(meta.get("peak_ram_gb"), 0.0) for _, meta in metas)
     avg_values = [
         _safe_float(meta.get("avg_time_per_iteration_sec"))
-        for meta in metas
+        for _, meta in metas
         if meta.get("avg_time_per_iteration_sec") is not None
     ]
     avg = float(np.nanmean(avg_values)) if avg_values else float("nan")
@@ -140,7 +206,9 @@ def _add_technical_metrics(
     *,
     preprocessing_time_min: float,
     feature_selection_time_min: float,
+    feature_task_time_min: float,
     tuning_time_min: float,
+    run_task_time_min: float,
     training_time_min: float,
     eval_time_min: float,
     peak_ram_gb: float,
@@ -153,18 +221,18 @@ def _add_technical_metrics(
     base = ("All", "Technical_Metrics", "Resource_Usage")
     frame[base + ("Preprocessing_Time_Min",)] = round(float(preprocessing_time_min), 2)
     frame[base + ("Feature_Selection_Time_Min",)] = round(float(feature_selection_time_min), 2)
+    frame[base + ("Feature_Task_Time_Min",)] = round(float(feature_task_time_min), 2)
     frame[base + ("Hyperparameter_Tuning_Time_Min",)] = round(float(tuning_time_min), 2)
     frame[base + ("Training_Time_Min",)] = round(float(training_time_min), 2)
     frame[base + ("Inference_Evaluation_Time_Min",)] = round(float(eval_time_min), 2)
-    frame[base + ("Total_Pipeline_Time_Min",)] = round(float(training_time_min + eval_time_min), 2)
-    frame[base + ("End_To_End_Time_Min",)] = round(
-        float(
-            preprocessing_time_min
-            + feature_selection_time_min
-            + tuning_time_min
-            + training_time_min
-            + eval_time_min
-        ),
+    # Attributed compute time, not wall-clock: the stages run as separate
+    # (partly parallel) Slurm jobs, so queue/startup time and parallelism are
+    # not represented in this sum. The run task itself includes cache/FI
+    # loading, training and evaluation.
+    run_with_setup = feature_task_time_min + tuning_time_min + run_task_time_min
+    frame[base + ("Run_With_Setup_Time_Min",)] = round(float(run_with_setup), 2)
+    frame[base + ("Total_Pipeline_Time_Min",)] = round(
+        float(preprocessing_time_min + run_with_setup),
         2,
     )
     frame[base + ("Peak_RAM_GB",)] = round(float(peak_ram_gb), 3)
@@ -245,6 +313,7 @@ def _run_hierarchical(
     seed_index: int,
     seed: int,
     n_jobs: int,
+    task_start: float,
 ) -> None:
     dataset = config["active_dataset"]
     coarse_col = dataset["labels"]["coarse"]
@@ -252,12 +321,12 @@ def _run_hierarchical(
     hierarchy = cache["hierarchy"]
     min_fine_classes = int(config["experiment"]["hierarchy"].get("min_fine_classes", 2))
 
-    coarse_params = _load_params(config, model_name, "coarse")
+    coarse_params = _load_params(config, model_name, "coarse", seed)
     fine_params = {}
     for node in hierarchy.get("nodes", {}):
         if node.startswith("fine:"):
             coarse_label = node.split(":", 1)[1]
-            fine_params[coarse_label] = _load_params(config, model_name, node)
+            fine_params[coarse_label] = _load_params(config, model_name, node, seed)
 
     coarse_factory = make_factory(config, model_name, "coarse", coarse_params, seed, n_jobs)
     fine_factories = {
@@ -280,15 +349,8 @@ def _run_hierarchical(
     )
     training_time_min = (time.time() - start) / 60.0
 
-    fi_method = robustness_feature_importance(config, model_name)
     fi_dir = features_dir(config, seed)
-    fi_path = fi_dir / f"feature_importance_{fi_method}.pkl"
-    if not fi_path.is_file():
-        raise PipelineError(
-            f"Robustness feature importance '{fi_method}' not found at {fi_path}. "
-            "Run the features stage for this seed."
-        )
-    feature_importance = pd.read_pickle(fi_path)
+    feature_importance = _robustness_fi(config, model_name, seed, fi_dir)
 
     X_test = cache["X_test"]
     donor_test = cache["obs_test"][dataset["batch_key"]].astype(str)
@@ -321,23 +383,49 @@ def _run_hierarchical(
     )
 
     peak_ram = _peak_ram_gb()
+    run_task_time_min = (time.time() - task_start) / 60.0
     prepare_meta = cache["prepare_meta"]
-    features_meta = read_json(fi_dir / "features_meta.json", default={})
-    preprocessing_time = _safe_float(prepare_meta.get("preprocessing_time_min"), 0.0)
-    feature_selection_time = _safe_float(features_meta.get("feature_selection_time_min"), 0.0)
-    preprocessing_peak = _safe_float(prepare_meta.get("peak_ram_gb"), 0.0)
+    prepare_meta_path = Path(config["cache_dir"]) / "prepare_meta.json"
+    features_meta_path = fi_dir / "features_meta.json"
+    features_meta = read_json(features_meta_path, default={})
+    preprocessing_time = _required_meta_float(
+        prepare_meta,
+        "preprocessing_time_min",
+        source=prepare_meta_path,
+        hint="Re-run the prepare stage.",
+    )
+    feature_selection_time = _required_meta_float(
+        features_meta,
+        "feature_selection_time_min",
+        source=features_meta_path,
+        hint="Re-run the features stage.",
+    )
+    feature_task_time = _required_meta_float(
+        features_meta,
+        "total_wall_time_min",
+        source=features_meta_path,
+        hint="Re-run the features stage.",
+    )
+    preprocessing_peak = _required_meta_float(
+        prepare_meta,
+        "peak_ram_gb",
+        source=prepare_meta_path,
+        hint="Re-run the prepare stage.",
+    )
     epochs = collect_epochs(model)
 
     for level, frame, eval_min in (
         ("coarse", coarse_frame, coarse_eval_min),
         ("fine", fine_frame, fine_eval_min),
     ):
-        tuning = _level_tuning_summary(config, model_name, level, hierarchy)
+        tuning = _level_tuning_summary(config, model_name, level, hierarchy, seed)
         frame = _add_technical_metrics(
             frame,
             preprocessing_time_min=preprocessing_time,
             feature_selection_time_min=feature_selection_time,
+            feature_task_time_min=feature_task_time,
             tuning_time_min=tuning["time_min"],
+            run_task_time_min=run_task_time_min,
             training_time_min=training_time_min,
             eval_time_min=eval_min,
             peak_ram_gb=peak_ram,
@@ -356,8 +444,10 @@ def _run_hierarchical(
             "eval_seed": int(config["experiment"]["eval_seed_base"]) + seed_index,
             "training_time_min": round(training_time_min, 4),
             "evaluation_time_min": round(eval_min, 4),
+            "run_task_time_min": round(run_task_time_min, 4),
             "preprocessing_time_min": preprocessing_time,
             "feature_selection_time_min": feature_selection_time,
+            "feature_task_time_min": feature_task_time,
             "tuning_time_min": tuning["time_min"],
             "peak_ram_gb": round(peak_ram, 3),
             "autoencoder_epochs": epochs,
@@ -384,6 +474,7 @@ def _run_flat(
     seed_index: int,
     seed: int,
     n_jobs: int,
+    task_start: float,
 ) -> None:
     dataset = config["active_dataset"]
     coarse_col = dataset["labels"]["coarse"]
@@ -391,31 +482,48 @@ def _run_flat(
     levels = [level for level in config["experiment"].get("reference_levels", ["coarse", "fine"]) if level != "fine" or fine_col]
     hierarchy = cache["hierarchy"]
     prepare_meta = cache["prepare_meta"]
-    fi_method = robustness_feature_importance(config, model_name)
     fi_dir = features_dir(config, seed)
-    fi_path = fi_dir / f"feature_importance_{fi_method}.pkl"
-    if not fi_path.is_file():
-        raise PipelineError(
-            f"Robustness feature importance '{fi_method}' not found at {fi_path}. "
-            "Run the features stage for this seed."
-        )
-    feature_importance = pd.read_pickle(fi_path)
+    feature_importance = _robustness_fi(config, model_name, seed, fi_dir)
 
-    features_meta = read_json(fi_dir / "features_meta.json", default={})
-    preprocessing_time = _safe_float(prepare_meta.get("preprocessing_time_min"), 0.0)
-    feature_selection_time = _safe_float(features_meta.get("feature_selection_time_min"), 0.0)
-    preprocessing_peak = _safe_float(prepare_meta.get("peak_ram_gb"), 0.0)
+    prepare_meta_path = Path(config["cache_dir"]) / "prepare_meta.json"
+    features_meta_path = fi_dir / "features_meta.json"
+    features_meta = read_json(features_meta_path, default={})
+    preprocessing_time = _required_meta_float(
+        prepare_meta,
+        "preprocessing_time_min",
+        source=prepare_meta_path,
+        hint="Re-run the prepare stage.",
+    )
+    feature_selection_time = _required_meta_float(
+        features_meta,
+        "feature_selection_time_min",
+        source=features_meta_path,
+        hint="Re-run the features stage.",
+    )
+    feature_task_time = _required_meta_float(
+        features_meta,
+        "total_wall_time_min",
+        source=features_meta_path,
+        hint="Re-run the features stage.",
+    )
+    preprocessing_peak = _required_meta_float(
+        prepare_meta,
+        "peak_ram_gb",
+        source=prepare_meta_path,
+        hint="Re-run the prepare stage.",
+    )
 
     X_test = cache["X_test"]
     donor_test = cache["obs_test"][dataset["batch_key"]].astype(str)
     epochs_total = 0.0
     epoch_seen = False
+    level_results: list[dict] = []
 
     for level in levels:
         label_col = coarse_col if level == "coarse" else fine_col
         y_train = cache["obs_train"][label_col].astype(str)
         y_test = cache["obs_test"][label_col].astype(str)
-        params = _load_params(config, model_name, level)
+        params = _load_params(config, model_name, level, seed)
         factory = make_factory(config, model_name, level, params, seed, n_jobs)
         model = factory()
         logging.info("Fitting flat model=%s level=%s seed=%s", model_name, level, seed)
@@ -439,19 +547,42 @@ def _run_flat(
             eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
         )
         tuning = _level_tuning_summary(
-            config, model_name, level, hierarchy, hierarchical=False
+            config, model_name, level, hierarchy, seed, hierarchical=False
         )
+        level_results.append(
+            {
+                "level": level,
+                "frame": frame,
+                "eval_min": eval_min,
+                "training_time_min": training_time_min,
+                "tuning": tuning,
+                "params": params,
+                "autoencoder_epochs": epochs_total if epoch_seen else float("nan"),
+            }
+        )
+
+    # A flat run task fits every level in the same Slurm job. Attribute the
+    # complete task wall time to every level row instead of giving the coarse
+    # row only its partial time and the fine row the cumulative time.
+    run_task_time_min = (time.time() - task_start) / 60.0
+    peak_ram = _peak_ram_gb()
+
+    for result in level_results:
+        level = result["level"]
+        tuning = result["tuning"]
         frame = _add_technical_metrics(
-            frame,
+            result["frame"],
             preprocessing_time_min=preprocessing_time,
             feature_selection_time_min=feature_selection_time,
+            feature_task_time_min=feature_task_time,
             tuning_time_min=tuning["time_min"],
-            training_time_min=training_time_min,
-            eval_time_min=eval_min,
-            peak_ram_gb=_peak_ram_gb(),
+            run_task_time_min=run_task_time_min,
+            training_time_min=result["training_time_min"],
+            eval_time_min=result["eval_min"],
+            peak_ram_gb=peak_ram,
             preprocessing_peak_ram_gb=preprocessing_peak,
             tuning_peak_ram_gb=tuning["peak_ram_gb"],
-            autoencoder_epochs=epochs_total if epoch_seen else float("nan"),
+            autoencoder_epochs=result["autoencoder_epochs"],
             avg_time_per_iteration_sec=tuning["avg_time_per_iteration_sec"],
         )
         meta = {
@@ -462,12 +593,14 @@ def _run_flat(
             "seed_index": seed_index,
             "seed": seed,
             "eval_seed": int(config["experiment"]["eval_seed_base"]) + seed_index,
-            "training_time_min": round(training_time_min, 4),
-            "evaluation_time_min": round(eval_min, 4),
+            "training_time_min": round(result["training_time_min"], 4),
+            "evaluation_time_min": round(result["eval_min"], 4),
+            "run_task_time_min": round(run_task_time_min, 4),
             "preprocessing_time_min": preprocessing_time,
             "feature_selection_time_min": feature_selection_time,
+            "feature_task_time_min": feature_task_time,
             "tuning_time_min": tuning["time_min"],
-            "params": params,
+            "params": result["params"],
         }
         _write_level(config, model_name, level, seed_index, frame, meta)
 
@@ -498,6 +631,7 @@ def run_run(config_path: str, task_id: int) -> None:
         clear_success(directory)
         ensure_dir(directory)
 
+    task_start = time.time()
     cache = load_cache(config)
     if not features_success(config, seed):
         raise PipelineError(
@@ -507,6 +641,6 @@ def run_run(config_path: str, task_id: int) -> None:
     model_cfg = model_config(config, model_name)
     n_jobs = cpu_count(config, "run")
     if bool(model_cfg.get("hierarchy")):
-        _run_hierarchical(config, cache, model_name, seed_index, seed, n_jobs)
+        _run_hierarchical(config, cache, model_name, seed_index, seed, n_jobs, task_start)
     else:
-        _run_flat(config, cache, model_name, seed_index, seed, n_jobs)
+        _run_flat(config, cache, model_name, seed_index, seed, n_jobs, task_start)

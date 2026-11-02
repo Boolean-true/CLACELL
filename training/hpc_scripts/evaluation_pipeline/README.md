@@ -32,17 +32,16 @@ evaluation_pipeline/
 
 ## One-time configuration on the HPC
 
-The submit scripts activate a Python environment. Override the default path if
-needed:
+The submit scripts use the same environment as
+`submit_hierarchical_custom_ensemble_rf_spatial_breast_run_multiple_stacking.sh`:
 
 ```bash
-export PIPELINE_VENV=/home/hpc/iwbn/iwbn133h/test_bayes/bin/activate #TODO
+source /apps/python/3.12-conda/etc/profile.d/conda.sh
+conda activate test_clacell
 ```
 
-If your environment does not export `PIPELINE_VENV` to the job (because the
-templates use `--export=NONE`), edit the default fallback in the five
-`submit_*.sh` files. They default to
-`/home/hpc/iwbn/iwbn133h/test_bayes/bin/activate`. #TODO
+If the environment name changes, edit those two lines in the five
+`submit_*.sh` files.
 
 The pipeline itself needs `PyYAML` (`pip install pyyaml` if it is missing). The
 SingleR reference additionally needs the `singler` package; it is imported
@@ -52,9 +51,12 @@ lazily and only when that model is enabled. See `requirements.txt`.
 
 The config is already set to:
 
-- dataset: `tonsil`
+- dataset: `breast`
 - models: `autoencoder_linsvc`, `custom_ensemble_rf_stacking`
-- seeds: `0..9` (10 runs; reduce to `[0, 1]` for a quick smoke test)
+- seeds: `0..9` (10 runs, matching the old breast script)
+- `tuning_per_seed: true` (one tuning job per run/seed, matching the old script)
+- fixed marker-gene ranking for `test_robustness` via
+  `feature_importance.robustness_file`, as in the old script
 
 Run:
 
@@ -112,7 +114,7 @@ The cache is reused across all later model/seed jobs. It contains:
 ```
 <cache_root>/<dataset>/
   prepared.h5ad
-  X_train.npy / X_test.npy          # float32, cells x genes
+  X_train.npy / X_test.npy          # preprocessing dtype, cells x genes
   genes.json
   obs_train.pkl / obs_test.pkl      # donor, coarse, fine, ...
   hierarchy.json
@@ -122,12 +124,18 @@ The cache is reused across all later model/seed jobs. It contains:
 
 A cache hit is detected via `_SUCCESS` plus a hash of the dataset config, raw
 file fingerprint, preprocessing options and hierarchy options. If you change
-the config or the raw file, prepare rebuilds the cache.
+the config or the raw file, prepare rebuilds the cache. `prepare_meta.json` is
+required for a valid cache; if it is missing, the downstream stages fail
+instead of silently using 0.0 as preprocessing time. When
+`experiment.export_scgpt` is enabled, the export runs inside prepare and its
+wall time is included in `preprocessing_time_min` (also when an existing cache
+had to be completed with the export). Caches written by older versions may not
+contain the export time; rerun prepare once if you need that value corrected.
 
 ### features (array: one task per seed)
 
-Computes both rankings on the training split with the **run seed** and persists
-them permanently:
+Computes the configured ranking(s) on the training split with the **run seed**
+and persists them permanently:
 
 ```
 <cache_root>/<dataset>/features/seed_<seed>/
@@ -142,8 +150,12 @@ them permanently:
 All models with the same seed read exactly these two rankings; no model
 recomputes them. Per-method markers make this resumable: if a job is interrupted
 after the RandomForest ranking, a later job reuses it and only computes the
-missing LinearSVC ranking. The ranking passed to `test_robustness` is controlled
-by `feature_importance.robustness` (default `linearsvc`).
+missing LinearSVC ranking. `features_meta.json` stores both
+`feature_selection_time_min` (sum of the actual per-method compute times) and
+`total_wall_time_min` (cumulative wall time of the features task across resumed
+invocations, so a cache-hit restart does not shrink the reported time). The
+ranking passed to `test_robustness` is controlled by
+`feature_importance.robustness` (default `linearsvc`).
 
 ### tune (array: one task per model × node)
 
@@ -153,17 +165,21 @@ Hyperparameters are searched **once** per dataset, model and hierarchy node:
 - `fine:<coarse_label>` node: only the cells of that coarse label.
 
 The result is `best_params.json` plus `tuning_meta.json` (tuning wall time, CV,
-`Avg_Time_per_Iteration_Sec`, peak RAM). The 10 runs only load these fixed
-parameters; they do not tune again.
+`Avg_Time_per_Iteration_Sec`, peak RAM). With `experiment.tuning_per_seed:
+true` there is one tuning task per model × node × seed, matching the old breast
+script. With `false` the parameters are tuned once and reused for all seeds.
+The run stage only loads the parameters; it does not tune.
 
 For the custom ensembles the internal gene ranking is the one you specified:
 
 - `custom_ensemble_linsvc_stacking` uses the **RandomForest** ranking.
 - `custom_ensemble_rf_stacking` uses the **LinearSVC** ranking.
 
-Both rankings are persisted per seed by the features stage. The pipeline assumes
-that fine labels form a consistent hierarchy; ensure that each fine label has
-exactly one intended coarse parent in your annotation.
+The configured rankings are persisted per seed by the features stage. The
+pipeline assumes that fine labels form a consistent hierarchy; ensure that each
+fine label has exactly one intended coarse parent in your annotation. For the
+breast pilot, `feature_importance.robustness_file` points to the same Pegasus
+marker-gene pickle as the old script; adjust the path if needed.
 
 ### run (array: one task per model × seed)
 
@@ -184,8 +200,8 @@ into the hierarchy.
 Each run writes:
 
 ```
-<output_root>/<experiment>/<dataset>/results/<model>/coarse/result_<i>.csv #TODO
-<output_root>/<experiment>/<dataset>/results/<model>/fine/result_<i>.csv #TODO
+<output_root>/<experiment>/<dataset>/results/<model>/coarse/result_<i>.csv
+<output_root>/<experiment>/<dataset>/results/<model>/fine/result_<i>.csv
 ```
 
 and a `_SUCCESS_run_<i>` marker per level. If a job hits the walltime, only the
@@ -199,33 +215,44 @@ plus `aggregate/summary.csv` and `aggregate/run_status.csv`.
 
 ## Technical metrics
 
+The time metrics are **attributed compute times**, not wall-clock times of the
+whole experiment. The stages run as separate Slurm jobs and can run in parallel
+(`--array ...%N`), so queue time, job startup and parallelism are not included.
+For comparing the compute cost of methods this is the intended metric; for
+"when did the experiment finish" use the Slurm accounting data instead.
+
 The existing metrics are preserved:
 
 - `Training_Time_Min`
 - `Inference_Evaluation_Time_Min`
-- `Total_Pipeline_Time_Min` (training + evaluation, old meaning)
-- `Run_Task_Time_Min` (cache load + feature-ranking load + training +
-  evaluation of the whole run task)
+- `Total_Pipeline_Time_Min` (attributed sum of preprocessing + features task
+  incl. FI computation + tuning + cache/FI loading + training + evaluation)
+- `Run_With_Setup_Time_Min` (the same without dataset-wide preprocessing)
 - `Peak_RAM_GB`
 - `Autoencoder_Epochs`
 - `Avg_Time_per_Iteration_Sec`
 
-New stage metrics are added to the same 4-level MultiIndex:
+Additional metrics are added to the same 4-level MultiIndex:
 
 - `Preprocessing_Time_Min` (once per dataset, copied into every run row)
 - `Feature_Selection_Time_Min` (sum of the actual per-method FI compute times)
-- `Feature_Task_Time_Min` (full features task including cache loading/writing)
+- `Feature_Task_Time_Min` (full features task including cache loading/writing;
+  cumulative across resumed feature jobs)
 - `Hyperparameter_Tuning_Time_Min` (coarse node for coarse rows; sum of fine
   nodes for fine rows)
 - `Preprocessing_Peak_RAM_GB`
 - `Tuning_Peak_RAM_GB`
-- `End_To_End_Time_Min` (preprocessing + full features task + tuning + full run
-  task). `Total_Pipeline_Time_Min` keeps its old meaning (training +
-  evaluation).
+
+For flat models (`singler`, `celltypist`) one run task fits and evaluates both
+levels. `Run_With_Setup_Time_Min` and `Total_Pipeline_Time_Min` therefore use
+the complete task wall time for both the coarse and the fine row; they are not
+per-level times. `Training_Time_Min` and `Inference_Evaluation_Time_Min` remain
+level-specific.
 
 Even when prepare/features/tune are served from cache, the persisted timings are
 read from `prepare_meta.json`, `features_meta.json` and `tuning_meta.json` and
-attached to every run CSV.
+attached to every run CSV. If a required timing field is missing, the run stage
+fails with a clear error instead of silently writing 0.0.
 
 `test_robustness_higher_dropout.py` is called with
 `seed=eval_seed_base + run_index`; the random dropout therefore uses a
@@ -261,7 +288,7 @@ experiment:
 Then run the same stages. Existing prepare/features/tune results are reused; only the
 new model/node/seed tasks are executed.
 
-To switch datasets, change `experiment.dataset` to `breast`, `ovary` or
+To switch datasets, change `experiment.dataset` to `tonsil`, `ovary` or
 `pancreas` and fill the corresponding catalogue entry if needed. Each dataset
 has its own cache and result tree.
 

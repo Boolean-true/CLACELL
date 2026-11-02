@@ -195,7 +195,7 @@ def build_custom_ensemble(
         estimators=estimators,
         final_estimator=LogisticRegression(max_iter=1000),
         cv=int(params_cfg.get("stacking_cv", 5)),
-        n_jobs=min(4, max(1, int(n_jobs))),
+        n_jobs=n_jobs,
         passthrough=bool(params_cfg.get("passthrough", False)),
     )
 

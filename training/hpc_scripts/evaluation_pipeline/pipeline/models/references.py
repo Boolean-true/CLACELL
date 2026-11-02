@@ -149,11 +149,11 @@ class CellTypistAdapter(ModelAdapter):
         self.estimator = CellTypistWrapper(**dict(params or {}), genes=genes)
 
     def fit(self, X, y, meta=None):
-        self.estimator.fit(X.to_numpy(dtype=np.float32, copy=False), y)
+        self.estimator.fit(X.to_numpy(copy=False), y)
         return self
 
     def predict(self, X, meta=None):
-        return self.estimator.predict(X.to_numpy(dtype=np.float32, copy=False))
+        return self.estimator.predict(X.to_numpy(copy=False))
 
     @property
     def classes_(self):
@@ -169,7 +169,7 @@ def tune_celltypist(
 ) -> tuple[dict, dict]:
     """Same wrapper, search space and BayesSearchCV setup as the old script."""
     genes = X.columns.astype(str).tolist()
-    X_values = X.to_numpy(dtype=np.float32, copy=False)
+    X_values = X.to_numpy(copy=False)
     param_distributions = [
         {
             "C": Real(1e-2, 2.0, prior="log-uniform"),
@@ -248,6 +248,12 @@ class ScGPTExternalAdapter(ModelAdapter):
         )
 
 
+def scgpt_export_path(config: dict) -> Path:
+    """Path of the raw-count h5ad exported for the external scGPT run."""
+    dataset = config["active_dataset"]
+    return Path(config["cache_dir"]) / "scgpt" / f"{dataset['name']}_scgpt_input.h5ad"
+
+
 def export_scgpt_input(config: dict) -> Path:
     """Export raw counts + standard label columns for finetune_integration_adjusted.py.
 
@@ -263,9 +269,8 @@ def export_scgpt_input(config: dict) -> Path:
         pass
 
     dataset = config["active_dataset"]
-    dataset_name = dataset["name"]
-    out_dir = ensure_dir(Path(config["cache_dir"]) / "scgpt")
-    out_path = out_dir / f"{dataset_name}_scgpt_input.h5ad"
+    out_path = scgpt_export_path(config)
+    out_dir = ensure_dir(out_path.parent)
     manifest_path = out_dir / "scgpt_export.json"
     fine_col = dataset["labels"].get("fine")
     manifest = {

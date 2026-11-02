@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -33,3 +35,26 @@ class ConstantClassifier(ModelAdapter):
         proba = np.zeros((len(X), 1), dtype=float)
         proba[:, 0] = 1.0
         return proba
+
+
+def collect_epochs(model: Any) -> float:
+    """Sum epochs over a flat model or a fitted hierarchical cascade."""
+    total = 0
+    seen = 0
+    if hasattr(model, "coarse_classifier"):
+        inner = getattr(model, "coarse_classifier", None)
+        epoch = getattr(inner, "epochs_", None) if inner is not None else None
+        if epoch is not None:
+            total += int(epoch)
+            seen += 1
+        for inner in getattr(model, "fine_classifiers", {}).values():
+            epoch = getattr(inner, "epochs_", None)
+            if epoch is not None:
+                total += int(epoch)
+                seen += 1
+    else:
+        epoch = getattr(model, "epochs_", None)
+        if epoch is not None:
+            total += int(epoch)
+            seen += 1
+    return float(total) if seen else float("nan")

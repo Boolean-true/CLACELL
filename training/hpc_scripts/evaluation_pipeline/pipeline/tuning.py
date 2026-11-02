@@ -37,9 +37,18 @@ def run_tune(config_path: str, task_id: int) -> None:
     dataset = config["active_dataset"]
     model_name = str(task["model"])
     node = str(task["node"])
-    out_dir = tuning_dir(config, model_name, node)
-    log_header("tune", dataset=dataset["name"], model=model_name, node=node, task_id=task_id)
-    if tuning_success(config, model_name, node):
+    seed_value = task.get("seed")
+    seed = None if pd.isna(seed_value) or int(seed_value) < 0 else int(seed_value)
+    out_dir = tuning_dir(config, model_name, node, seed)
+    log_header(
+        "tune",
+        dataset=dataset["name"],
+        model=model_name,
+        node=node,
+        seed=seed,
+        task_id=task_id,
+    )
+    if tuning_success(config, model_name, node, seed):
         logging.info("Tuning cache hit: %s", out_dir)
         return
     start = time.time()
@@ -50,13 +59,14 @@ def run_tune(config_path: str, task_id: int) -> None:
     X, y, meta = node_data(config, cache, node)
     model_cfg = config["active_models"][model_name]
     tune_cfg = model_cfg.get("tune") or {}
-    seed = int(config["experiment"]["tuning_seed"])
+    search_seed = seed if seed is not None else int(config["experiment"]["tuning_seed"])
     n_jobs = cpu_count(config, "tune")
 
     logging.info(
-        "Tuning model=%s node=%s: %d cells, %d classes, min class=%d",
+        "Tuning model=%s node=%s seed=%s: %d cells, %d classes, min class=%d",
         model_name,
         node,
+        seed,
         len(X),
         y.nunique(),
         int(y.value_counts().min()),
@@ -68,7 +78,7 @@ def run_tune(config_path: str, task_id: int) -> None:
         X=X,
         y=y,
         meta=meta,
-        seed=seed,
+        seed=search_seed,
         n_jobs=n_jobs,
     )
     elapsed = (time.time() - start) / 60.0
@@ -83,8 +93,9 @@ def run_tune(config_path: str, task_id: int) -> None:
     meta_info["model"] = model_name
     meta_info["node"] = node
     meta_info["seed"] = seed
+    meta_info["search_seed"] = search_seed
     meta_info["cache_key"] = current_cache_key(config)
-    meta_info["tuning_key"] = tuning_key(config, model_name, node)
+    meta_info["tuning_key"] = tuning_key(config, model_name, node, seed)
     meta_info["n_train_cells"] = int(len(X))
     meta_info["n_classes"] = int(y.nunique())
     meta_info["min_train_class_count"] = int(y.value_counts().min())
@@ -99,7 +110,7 @@ def run_tune(config_path: str, task_id: int) -> None:
             "node": node,
             "dataset": dataset["name"],
             "cache_key": current_cache_key(config),
-            "tuning_key": tuning_key(config, model_name, node),
+            "tuning_key": tuning_key(config, model_name, node, seed),
             "best_params": best_params,
             "tuning_time_min": round(elapsed, 4),
         },

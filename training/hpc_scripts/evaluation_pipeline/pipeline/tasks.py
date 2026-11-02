@@ -21,8 +21,11 @@ def manifests_dir(config: dict) -> Path:
     return Path(config["output_dir"]) / "manifests"
 
 
-def tuning_dir(config: dict, model: str, node: str) -> Path:
-    return Path(config["output_dir"]) / "tuning" / model / node_slug(node)
+def tuning_dir(config: dict, model: str, node: str, seed: int | None = None) -> Path:
+    base = Path(config["output_dir"]) / "tuning" / model / node_slug(node)
+    if seed is not None and config["experiment"].get("tuning_per_seed"):
+        base = base / f"seed_{int(seed)}"
+    return base
 
 
 def results_dir(config: dict, model: str, level: str) -> Path:
@@ -37,6 +40,7 @@ def cache_ready(config: dict) -> bool:
     cache_dir = Path(config["cache_dir"])
     required = [
         cache_dir / "_SUCCESS",
+        cache_dir / "prepare_meta.json",
         cache_dir / "hierarchy.json",
         cache_dir / "X_train.npy",
         cache_dir / "X_test.npy",
@@ -151,17 +155,33 @@ def generate_manifests(config: dict) -> dict:
                 if bool(model_cfg.get("hierarchy"))
                 else ["coarse"] + (["fine"] if has_fine else [])
             )
-            for node in nodes:
-                tune_rows.append(
-                    {
-                        "task_id": tune_id,
-                        "dataset": dataset["name"],
-                        "model": model_name,
-                        "node": node,
-                    }
-                ) #TODO: Werden dann bei hierarchischen classifiern die trainings für fine grained
-                # als eigene isolierte task behandelt? es sollte schon alles von einem classifier zusammengehören
-                tune_id += 1
+            if config["experiment"].get("tuning_per_seed"):
+                for seed_index, seed in enumerate(config["experiment"]["seeds"]):
+                    for node in nodes:
+                        tune_rows.append(
+                            {
+                                "task_id": tune_id,
+                                "dataset": dataset["name"],
+                                "model": model_name,
+                                "node": node,
+                                "seed_index": seed_index,
+                                "seed": int(seed),
+                            }
+                        )
+                        tune_id += 1
+            else:
+                for node in nodes:
+                    tune_rows.append(
+                        {
+                            "task_id": tune_id,
+                            "dataset": dataset["name"],
+                            "model": model_name,
+                            "node": node,
+                            "seed_index": -1,
+                            "seed": -1,
+                        }
+                    )
+                    tune_id += 1
         for seed_index, seed in enumerate(config["experiment"]["seeds"]):
             run_rows.append(
                 {
@@ -254,7 +274,14 @@ def features_success(config: dict, seed: int) -> bool:
     if success.get("features_key") != expected:
         return False
     methods = success.get("methods", [])
-    if not methods or not (directory / "features_meta.json").is_file():
+    meta_path = directory / "features_meta.json"
+    if not methods or not meta_path.is_file():
+        return False
+    meta = read_json(meta_path, default={})
+    if any(
+        meta.get(key) is None
+        for key in ("feature_selection_time_min", "total_wall_time_min")
+    ):
         return False
     return all(
         (directory / f"feature_importance_{method}.pkl").is_file()
@@ -262,7 +289,7 @@ def features_success(config: dict, seed: int) -> bool:
     )
 
 
-def tuning_key(config: dict, model: str, node: str) -> str | None:
+def tuning_key(config: dict, model: str, node: str, seed: int | None = None) -> str | None:
     cache = current_cache_key(config)
     if cache is None:
         return None
@@ -271,20 +298,24 @@ def tuning_key(config: dict, model: str, node: str) -> str | None:
         "cache_key": cache,
         "model": config["active_models"][model],
         "node": node,
+        "seed": int(seed) if seed is not None else None,
         "tuning_seed": int(config["experiment"]["tuning_seed"]),
     }
     return cache_key(payload)
 
 
-def tuning_success(config: dict, model: str, node: str) -> bool:
-    expected = tuning_key(config, model, node)
+def tuning_success(config: dict, model: str, node: str, seed: int | None = None) -> bool:
+    expected = tuning_key(config, model, node, seed)
     if expected is None:
         return False
-    directory = tuning_dir(config, model, node)
+    directory = tuning_dir(config, model, node, seed)
     if not is_success(directory):
         return False
     success = read_json(directory / "_SUCCESS.json", default={})
-    return success.get("tuning_key") == expected
+    if success.get("tuning_key") != expected:
+        return False
+    meta = read_json(directory / "tuning_meta.json", default={})
+    return meta.get("tuning_time_min") is not None
 
 
 def levels_for_model(config: dict, model: str) -> list[str]:
@@ -294,7 +325,7 @@ def levels_for_model(config: dict, model: str) -> list[str]:
     levels = list(config["experiment"].get("reference_levels", ["coarse", "fine"]))
     if not config["active_dataset"]["labels"].get("fine"):
         levels = [level for level in levels if level != "fine"]
-    return levels #TODO: warum so kompliziert und nicht einfach levels aus zeile 294 (levels = list(...)) zurückgeben? Was bringen zeile 295+296?
+    return levels
 
 
 def run_key(config: dict, model: str, seed_index: int) -> str | None:
@@ -310,11 +341,13 @@ def run_key(config: dict, model: str, seed_index: int) -> str | None:
         ]
     else:
         nodes = levels_for_model(config, model)
+    seed = int(config["experiment"]["seeds"][seed_index])
     tuning_params = {
-        node: read_json(tuning_dir(config, model, node) / "best_params.json", default=None)
+        node: read_json(
+            tuning_dir(config, model, node, seed) / "best_params.json", default=None
+        )
         for node in nodes
     }
-    seed = int(config["experiment"]["seeds"][seed_index])
     payload = {
         "pipeline_version": PIPELINE_VERSION,
         "cache_key": cache,
@@ -357,7 +390,9 @@ def status(config: dict) -> dict:
             features_missing.append(int(row["task_id"]))
     tune_done, tune_missing = 0, []
     for _, row in tune.iterrows():
-        if tuning_success(config, row["model"], row["node"]):
+        seed_value = row.get("seed")
+        seed = None if pd.isna(seed_value) or int(seed_value) < 0 else int(seed_value)
+        if tuning_success(config, row["model"], row["node"], seed):
             tune_done += 1
         else:
             tune_missing.append(int(row["task_id"]))

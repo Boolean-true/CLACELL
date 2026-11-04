@@ -340,7 +340,7 @@ def _run_hierarchical(
         name=model_name,
     )
     logging.info("Fitting hierarchical model=%s seed=%s", model_name, seed)
-    start = time.time()
+    start = time.time() #TODO: Sollte das nicht oberhalb der coarse_factory sein?
     model.fit(
         X=cache["X_train"],
         y_coarse=cache["obs_train"][coarse_col].astype(str),
@@ -382,8 +382,8 @@ def _run_hierarchical(
         eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
     )
 
-    peak_ram = _peak_ram_gb()
     run_task_time_min = (time.time() - task_start) / 60.0
+    peak_ram = _peak_ram_gb()
     prepare_meta = cache["prepare_meta"]
     prepare_meta_path = Path(config["cache_dir"]) / "prepare_meta.json"
     features_meta_path = fi_dir / "features_meta.json"

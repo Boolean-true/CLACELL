@@ -278,7 +278,7 @@ def tune_model_node(
         from .autoencoder import tune_autoencoder
         from .conditional_autoencoder import tune_conditional_autoencoder
 
-        if len(X) < 2:
+        if len(X) < 2: #TODO: Das kann ich mir doch sparen, oder? Meine Datensätze haben immer mehr als 2 Zellen
             return {}, {
                 "skipped": True,
                 "skip_reason": f"only {len(X)} training cell(s); BatchNorm needs at least 2.",

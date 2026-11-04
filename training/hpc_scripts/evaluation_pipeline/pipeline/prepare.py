@@ -12,6 +12,7 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 import scanpy as sc
+from scipy import sparse
 
 # anndata >=0.11 refuses to write pandas nullable string arrays by default.
 try:  # pragma: no cover - depends on anndata version
@@ -34,7 +35,7 @@ from .io import (
 )
 from .logging_utils import PipelineError, log_header
 
-PREPARE_VERSION = "0.3.0"
+PREPARE_VERSION = "0.4.0"
 
 
 def _peak_ram_gb() -> float:
@@ -98,8 +99,49 @@ def _validate_dataset(dataset: dict) -> None:
             )
 
 
-def _preprocess(adata: ad.AnnData, dataset: dict, n_jobs: int) -> ad.AnnData:
-    """Same steps as preprocess_data.prepare_adata, with config options."""
+def _align_genes(adata: ad.AnnData, genes: list[str]) -> ad.AnnData:
+    """Subset to ``genes`` and add missing genes as all-zero columns."""
+    missing = [gene for gene in genes if gene not in adata.var_names]
+    if not missing:
+        return adata[:, genes].copy()
+
+    logging.info("Some genes are missing in the test split, filling them with zero")
+
+    present = [gene for gene in genes if gene in adata.var_names]
+    subset = adata[:, present].copy()
+    if sparse.issparse(subset.X):
+        zero_X = sparse.csr_matrix((subset.n_obs, len(missing)), dtype=subset.X.dtype)
+    else:
+        zero_X = np.zeros((subset.n_obs, len(missing)), dtype=subset.X.dtype)
+    
+    # Prepare layers for zero-Anndata if subset contains 'counts'
+    layers_dict = {}
+    if "counts" in subset.layers:
+        if sparse.issparse(subset.layers["counts"]):
+            layers_dict["counts"] = sparse.csr_matrix((subset.n_obs, len(missing)), dtype=subset.layers["counts"].dtype)
+        else:
+            layers_dict["counts"] = np.zeros((subset.n_obs, len(missing)), dtype=subset.layers["counts"].dtype)
+    
+    zero_adata = ad.AnnData(X=zero_X, obs=subset.obs.copy(), layers=layers_dict)
+    zero_adata.var_names = missing
+
+    combined = ad.concat([subset, zero_adata], axis=1, join="outer", merge="first")
+    return combined[:, genes].copy()
+
+
+def _preprocess(
+    adata: ad.AnnData,
+    dataset: dict,
+    n_jobs: int,
+    train: bool = True,
+    genes: list[str] | None = None,
+) -> ad.AnnData:
+    """Same steps as preprocess_data.prepare_adata, with config options.
+
+    Gene filtering and HVG selection are fit on the training split only. For
+    the test split (``train=False``) the already fitted ``genes`` are applied
+    in the training order; genes missing in the test split are filled with 0.
+    """
     cfg = dataset["preprocess"]
     batch_key = dataset["batch_key"]
 
@@ -117,7 +159,8 @@ def _preprocess(adata: ad.AnnData, dataset: dict, n_jobs: int) -> ad.AnnData:
         sc.pp.calculate_qc_metrics(adata, inplace=True, log1p=True)
 
     sc.pp.filter_cells(adata, min_counts=int(cfg.get("min_counts", 10)))
-    sc.pp.filter_genes(adata, min_cells=int(cfg.get("min_cells", 3)))
+    if train:
+        sc.pp.filter_genes(adata, min_cells=int(cfg.get("min_cells", 3)))
 
     if cfg.get("remove_mt_ribo_hb", True):
         adata = adata[:, ~adata.var["mt"]].copy()
@@ -139,13 +182,18 @@ def _preprocess(adata: ad.AnnData, dataset: dict, n_jobs: int) -> ad.AnnData:
     sc.pp.normalize_total(adata, target_sum=float(cfg.get("target_sum", 10000)))
     sc.pp.log1p(adata)
 
-    if cfg.get("hvg", True):
-        n_top = cfg.get("hvg_n_top_genes")
-        if n_top is None:
-            sc.pp.highly_variable_genes(adata)
-        else:
-            sc.pp.highly_variable_genes(adata, n_top_genes=int(n_top))
-        adata = adata[:, adata.var["highly_variable"]].copy()
+    if train:
+        if cfg.get("hvg", True):
+            n_top = cfg.get("hvg_n_top_genes")
+            if n_top is None:
+                sc.pp.highly_variable_genes(adata)
+            else:
+                sc.pp.highly_variable_genes(adata, n_top_genes=int(n_top))
+            adata = adata[:, adata.var["highly_variable"]].copy()
+    else:
+        if genes is None:
+            raise PipelineError("genes must be provided when train=False.")
+        adata = _align_genes(adata, genes)
 
     return adata
 
@@ -300,15 +348,6 @@ def run_prepare(config_path: str) -> None:
     n_after_label_filter = adata.n_obs
     logging.info("Kept %d/%d cells after label filtering.", adata.n_obs, n_before)
 
-    n_jobs = cpu_count(config, "prepare")
-    adata = _preprocess(adata, dataset, n_jobs)
-    logging.info("After preprocessing: %d cells x %d genes", adata.n_obs, adata.n_vars)
-    if adata.n_obs == 0:
-        raise PipelineError(
-            f"No cells left after preprocessing for dataset '{dataset['name']}'. "
-            "Check min_counts/min_cells/label filters."
-        )
-
     batch_key = dataset["batch_key"]
     if batch_key not in adata.obs:
         raise PipelineError(
@@ -333,6 +372,24 @@ def run_prepare(config_path: str) -> None:
         )
     adata_train = adata[train_mask].copy()
     adata_test = adata[test_mask].copy()
+
+    n_jobs = cpu_count(config, "prepare")
+    adata_train = _preprocess(adata_train, dataset, n_jobs, train=True)
+    genes = adata_train.var_names.astype(str).tolist()
+    adata_test = _preprocess(adata_test, dataset, n_jobs, train=False, genes=genes)
+    n_after_qc = int(adata_train.n_obs + adata_test.n_obs)
+    logging.info(
+        "After preprocessing: train=%d cells, test=%d cells, %d genes",
+        adata_train.n_obs,
+        adata_test.n_obs,
+        len(genes),
+    )
+    if adata_train.n_obs == 0 or adata_test.n_obs == 0:
+        raise PipelineError(
+            f"No cells left after preprocessing for dataset '{dataset['name']}' "
+            f"(train={adata_train.n_obs}, test={adata_test.n_obs}). "
+            "Check min_counts/min_cells/label filters."
+        )
 
     train_coarse = set(adata_train.obs[coarse_col].astype(str).unique())
     keep = adata_test.obs[coarse_col].astype(str).isin(train_coarse)
@@ -363,16 +420,21 @@ def run_prepare(config_path: str) -> None:
     )
     X_train = _to_frame(adata_train)
     X_test = _to_frame(adata_test)
+    if list(X_train.columns) != list(X_test.columns):
+        raise PipelineError(
+            "Train and test preprocessing produced different gene columns."
+        )
     obs_train = adata_train.obs.copy()
     obs_test = adata_test.obs.copy()
     obs_train.index = obs_train.index.astype(str)
     obs_test.index = obs_test.index.astype(str)
 
-    prepared_path = cache_dir / "prepared.h5ad"
-    tmp_h5ad = cache_dir / f".prepared.{os.getpid()}.h5ad"
-    _make_h5ad_writable(adata)
-    adata.write_h5ad(tmp_h5ad)
-    os.replace(tmp_h5ad, prepared_path)
+    for split, split_adata in (("train", adata_train), ("test", adata_test)):
+        prepared_path = cache_dir / f"prepared_{split}.h5ad"
+        tmp_h5ad = cache_dir / f".prepared_{split}.{os.getpid()}.h5ad"
+        _make_h5ad_writable(split_adata)
+        split_adata.write_h5ad(tmp_h5ad)
+        os.replace(tmp_h5ad, prepared_path)
 
     # npy is faster to load than h5ad for every seed/model task; the metadata
     # needed to reconstruct the DataFrame lives in genes.json and obs_*.pkl.
@@ -404,7 +466,7 @@ def run_prepare(config_path: str) -> None:
         "raw_fingerprint": prepare_payload["raw"],
         "n_cells_raw": int(n_before),
         "n_cells_after_label_filter": int(n_after_label_filter),
-        "n_cells_after_qc": int(adata.n_obs),
+        "n_cells_after_qc": n_after_qc,
         "n_cells_train": int(len(X_train)),
         "n_cells_test": int(len(X_test)),
         "n_genes": int(X_train.shape[1]),

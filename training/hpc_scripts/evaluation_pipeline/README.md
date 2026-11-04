@@ -104,7 +104,11 @@ shows done/missing features, tuning and run tasks.
 
 1. Loads the raw `.h5ad`.
 2. Applies label filters and the configured donor split.
-3. Runs QC, optional Scrublet, normalization, log1p and HVG selection.
+3. Runs QC, optional Scrublet, normalization and log1p. Gene filtering and
+   HVG selection are fit on the training split only and then applied to the
+   test split, so the test data cannot influence the training features. Genes
+   missing from the test split are filled with zeros, and the test matrix uses
+   the same gene order as the training matrix.
 4. Builds `hierarchy.json` (coarse labels, fine classes per coarse group,
    leaf nodes).
 5. Writes the cache and `_SUCCESS`.
@@ -113,7 +117,7 @@ The cache is reused across all later model/seed jobs. It contains:
 
 ```
 <cache_root>/<dataset>/
-  prepared.h5ad
+  prepared_train.h5ad / prepared_test.h5ad
   X_train.npy / X_test.npy          # preprocessing dtype, cells x genes
   genes.json
   obs_train.pkl / obs_test.pkl      # donor, coarse, fine, ...
@@ -226,7 +230,8 @@ The existing metrics are preserved:
 - `Training_Time_Min`
 - `Inference_Evaluation_Time_Min`
 - `Total_Pipeline_Time_Min` (attributed sum of preprocessing + features task
-  incl. FI computation + tuning + cache/FI loading + training + evaluation)
+  incl. FI computation + tuning + cache/FI loading + training + evaluation;
+  autoencoders exclude the features task, see below)
 - `Run_With_Setup_Time_Min` (the same without dataset-wide preprocessing)
 - `Peak_RAM_GB`
 - `Autoencoder_Epochs`
@@ -238,16 +243,42 @@ Additional metrics are added to the same 4-level MultiIndex:
 - `Feature_Selection_Time_Min` (sum of the actual per-method FI compute times)
 - `Feature_Task_Time_Min` (full features task including cache loading/writing;
   cumulative across resumed feature jobs)
-- `Hyperparameter_Tuning_Time_Min` (coarse node for coarse rows; sum of fine
-  nodes for fine rows)
+- `Hyperparameter_Tuning_Time_Min` (hierarchical models: coarse node plus all
+  fine nodes, identical in both level rows; flat models: the node of the
+  respective level)
 - `Preprocessing_Peak_RAM_GB`
-- `Tuning_Peak_RAM_GB`
+- `Tuning_Peak_RAM_GB` (max over the tuning nodes attributed to the row)
+
+The autoencoder and conditional-autoencoder families do not use the RF/LinearSVC
+feature rankings for feature selection. For these models the two feature-time
+columns are omitted and `Run_With_Setup_Time_Min` / `Total_Pipeline_Time_Min`
+exclude the features task, so they are not charged for a stage they do not
+consume.
+
+For hierarchical models the shared costs describe the complete cascade and are
+therefore identical in the coarse and the fine row:
+
+- `Training_Time_Min` = coarse fit + all fine fits.
+- `Hyperparameter_Tuning_Time_Min` = coarse node + all fine nodes.
+- `Tuning_Peak_RAM_GB` = max over coarse and all fine nodes.
+- `Avg_Time_per_Iteration_Sec` = mean over coarse and all fine nodes.
+- `Run_With_Setup_Time_Min` / `Total_Pipeline_Time_Min` = complete run task
+  (both fits and both evaluations) plus the complete tuning cost.
+
+Only `Inference_Evaluation_Time_Min` stays level-specific: the coarse row times
+the coarse evaluation, the fine row times the fine evaluation. The fine
+evaluation routes every perturbed test matrix through the coarse model again,
+so it also contains coarse inference time. `Run_With_Setup_Time_Min` and
+`Total_Pipeline_Time_Min` still include both evaluations; a single row is
+therefore larger than the sum of its displayed training, tuning and evaluation
+columns by the other level's evaluation time (plus feature/setup overhead). The
+coarse and fine rows must not be added together.
 
 For flat models (`singler`, `celltypist`) one run task fits and evaluates both
 levels. `Run_With_Setup_Time_Min` and `Total_Pipeline_Time_Min` therefore use
 the complete task wall time for both the coarse and the fine row; they are not
-per-level times. `Training_Time_Min` and `Inference_Evaluation_Time_Min` remain
-level-specific.
+per-level times. `Training_Time_Min`, `Hyperparameter_Tuning_Time_Min` and
+`Inference_Evaluation_Time_Min` remain level-specific.
 
 Even when prepare/features/tune are served from cache, the persisted timings are
 read from `prepare_meta.json`, `features_meta.json` and `tuning_meta.json` and

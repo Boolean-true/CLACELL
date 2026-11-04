@@ -32,6 +32,7 @@ from .tasks import (
     features_dir,
     features_success,
     get_task,
+    hierarchy_nodes,
     levels_for_model,
     load_cache,
     results_dir,
@@ -82,6 +83,14 @@ def _required_meta_float(meta: dict, key: str, *, source: Path, hint: str) -> fl
     if value is None:
         raise PipelineError(f"Missing or invalid '{key}' in {source}. {hint}")
     return value
+
+
+def _charges_feature_importance_time(config: dict, model_name: str) -> bool:
+    """Whether the feature-ranking compute time belongs to this model's cost.
+    Only Custom Ensemble uses the feature importance.
+    """
+    family = str(model_config(config, model_name).get("family", "")).lower()
+    return family == "custom_ensemble"
 
 
 def _robustness_fi(config: dict, model_name: str, seed: int, fi_dir: Path) -> pd.DataFrame:
@@ -142,23 +151,13 @@ def _tuning_meta(
     return meta if isinstance(meta, dict) and meta else None
 
 
-def _level_tuning_summary(
+def _tuning_summary(
     config: dict,
     model_name: str,
-    level: str,
-    hierarchy: dict,
+    nodes: list[str],
     seed: int | None,
-    hierarchical: bool = True,
 ) -> dict:
     tuned = bool(model_config(config, model_name).get("tune"))
-    if not hierarchical:
-        nodes = [level]
-    elif level == "coarse":
-        nodes = ["coarse"]
-    else:
-        nodes = [
-            node for node in hierarchy.get("nodes", {}) if node.startswith("fine:")
-        ]
     metas: list[tuple[str, dict]] = []
     missing: list[str] = []
     for node in nodes:
@@ -216,12 +215,18 @@ def _add_technical_metrics(
     tuning_peak_ram_gb: float,
     autoencoder_epochs: float,
     avg_time_per_iteration_sec: float,
+    uses_feature_importance: bool = True,
 ) -> pd.DataFrame:
     frame = frame.copy()
     base = ("All", "Technical_Metrics", "Resource_Usage")
     frame[base + ("Preprocessing_Time_Min",)] = round(float(preprocessing_time_min), 2)
-    frame[base + ("Feature_Selection_Time_Min",)] = round(float(feature_selection_time_min), 2)
-    frame[base + ("Feature_Task_Time_Min",)] = round(float(feature_task_time_min), 2)
+    if uses_feature_importance:
+        frame[base + ("Feature_Selection_Time_Min",)] = round(float(feature_selection_time_min), 2)
+        frame[base + ("Feature_Task_Time_Min",)] = round(float(feature_task_time_min), 2)
+        attributed_feature_time = feature_task_time_min
+    else:
+        # Autoencoders do not use the feature rankings
+        attributed_feature_time = 0.0
     frame[base + ("Hyperparameter_Tuning_Time_Min",)] = round(float(tuning_time_min), 2)
     frame[base + ("Training_Time_Min",)] = round(float(training_time_min), 2)
     frame[base + ("Inference_Evaluation_Time_Min",)] = round(float(eval_time_min), 2)
@@ -229,7 +234,7 @@ def _add_technical_metrics(
     # (partly parallel) Slurm jobs, so queue/startup time and parallelism are
     # not represented in this sum. The run task itself includes cache/FI
     # loading, training and evaluation.
-    run_with_setup = feature_task_time_min + tuning_time_min + run_task_time_min
+    run_with_setup = attributed_feature_time + tuning_time_min + run_task_time_min
     frame[base + ("Run_With_Setup_Time_Min",)] = round(float(run_with_setup), 2)
     frame[base + ("Total_Pipeline_Time_Min",)] = round(
         float(preprocessing_time_min + run_with_setup),
@@ -320,6 +325,7 @@ def _run_hierarchical(
     fine_col = dataset["labels"]["fine"]
     hierarchy = cache["hierarchy"]
     min_fine_classes = int(config["experiment"]["hierarchy"].get("min_fine_classes", 2))
+    uses_feature_importance = _charges_feature_importance_time(config, model_name)
 
     coarse_params = _load_params(config, model_name, "coarse", seed)
     fine_params = {}
@@ -328,6 +334,7 @@ def _run_hierarchical(
             coarse_label = node.split(":", 1)[1]
             fine_params[coarse_label] = _load_params(config, model_name, node, seed)
 
+    start = time.time()
     coarse_factory = make_factory(config, model_name, "coarse", coarse_params, seed, n_jobs)
     fine_factories = {
         coarse_label: make_factory(config, model_name, f"fine:{coarse_label}", params, seed, n_jobs)
@@ -340,7 +347,6 @@ def _run_hierarchical(
         name=model_name,
     )
     logging.info("Fitting hierarchical model=%s seed=%s", model_name, seed)
-    start = time.time() #TODO: Sollte das nicht oberhalb der coarse_factory sein?
     model.fit(
         X=cache["X_train"],
         y_coarse=cache["obs_train"][coarse_col].astype(str),
@@ -414,11 +420,19 @@ def _run_hierarchical(
     )
     epochs = collect_epochs(model)
 
+    # Hierarchical training and tuning cover the whole cascade. Report the same
+    # combined cost in both level rows so neither row is missing a node.
+    tuning = _tuning_summary(
+        config,
+        model_name,
+        hierarchy_nodes(config, hierarchy),
+        seed,
+    )
+
     for level, frame, eval_min in (
         ("coarse", coarse_frame, coarse_eval_min),
         ("fine", fine_frame, fine_eval_min),
     ):
-        tuning = _level_tuning_summary(config, model_name, level, hierarchy, seed)
         frame = _add_technical_metrics(
             frame,
             preprocessing_time_min=preprocessing_time,
@@ -433,11 +447,13 @@ def _run_hierarchical(
             tuning_peak_ram_gb=tuning["peak_ram_gb"],
             autoencoder_epochs=epochs,
             avg_time_per_iteration_sec=tuning["avg_time_per_iteration_sec"],
+            uses_feature_importance=uses_feature_importance,
         )
         meta = {
             "dataset": dataset["name"],
             "model": model_name,
             "mode": "hierarchical",
+            "uses_feature_importance": uses_feature_importance,
             "level": level,
             "seed_index": seed_index,
             "seed": seed,
@@ -480,7 +496,7 @@ def _run_flat(
     coarse_col = dataset["labels"]["coarse"]
     fine_col = dataset["labels"].get("fine")
     levels = [level for level in config["experiment"].get("reference_levels", ["coarse", "fine"]) if level != "fine" or fine_col]
-    hierarchy = cache["hierarchy"]
+    uses_feature_importance = _charges_feature_importance_time(config, model_name)
     prepare_meta = cache["prepare_meta"]
     fi_dir = features_dir(config, seed)
     feature_importance = _robustness_fi(config, model_name, seed, fi_dir)
@@ -524,10 +540,10 @@ def _run_flat(
         y_train = cache["obs_train"][label_col].astype(str)
         y_test = cache["obs_test"][label_col].astype(str)
         params = _load_params(config, model_name, level, seed)
+        start = time.time()
         factory = make_factory(config, model_name, level, params, seed, n_jobs)
         model = factory()
         logging.info("Fitting flat model=%s level=%s seed=%s", model_name, level, seed)
-        start = time.time()
         model.fit(cache["X_train"], y_train, cache["obs_train"])
         training_time_min = (time.time() - start) / 60.0
         if getattr(model, "epochs_", None) is not None:
@@ -546,9 +562,7 @@ def _run_flat(
             level,
             eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
         )
-        tuning = _level_tuning_summary(
-            config, model_name, level, hierarchy, seed, hierarchical=False
-        )
+        tuning = _tuning_summary(config, model_name, [level], seed)
         level_results.append(
             {
                 "level": level,
@@ -584,11 +598,13 @@ def _run_flat(
             tuning_peak_ram_gb=tuning["peak_ram_gb"],
             autoencoder_epochs=result["autoencoder_epochs"],
             avg_time_per_iteration_sec=tuning["avg_time_per_iteration_sec"],
+            uses_feature_importance=uses_feature_importance,
         )
         meta = {
             "dataset": dataset["name"],
             "model": model_name,
             "mode": "flat",
+            "uses_feature_importance": uses_feature_importance,
             "level": level,
             "seed_index": seed_index,
             "seed": seed,

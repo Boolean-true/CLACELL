@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from . import __version__ as PIPELINE_VERSION
+from .config import needs_scaled_feature_importance
 from .io import atomic_write_json, cache_key, ensure_dir, is_success, read_json
 from .logging_utils import PipelineError
 
@@ -34,6 +35,11 @@ def results_dir(config: dict, model: str, level: str) -> Path:
 
 def features_dir(config: dict, seed: int) -> Path:
     return Path(config["cache_dir"]) / "features" / f"seed_{int(seed)}"
+
+
+def scaler_path(config: dict) -> Path:
+    """Dataset-wide scaler shared by all seeds and tuning runs."""
+    return Path(config["cache_dir"]) / "scaler.pkl"
 
 
 def cache_ready(config: dict) -> bool:
@@ -253,14 +259,15 @@ def features_key(config: dict, seed: int) -> str | None:
     if cache is None:
         return None
     dataset = config["active_dataset"]
-    return cache_key(
-        {
-            "pipeline_version": PIPELINE_VERSION,
-            "cache_key": cache,
-            "seed": int(seed),
-            "feature_importance": dataset["feature_importance"],
-        }
-    )
+    payload = {
+        "pipeline_version": PIPELINE_VERSION,
+        "cache_key": cache,
+        "seed": int(seed),
+        "feature_importance": dataset["feature_importance"],
+    }
+    if needs_scaled_feature_importance(config):
+        payload["scaled_feature_importance"] = True
+    return cache_key(payload)
 
 
 def features_success(config: dict, seed: int) -> bool:
@@ -283,10 +290,14 @@ def features_success(config: dict, seed: int) -> bool:
         for key in ("feature_selection_time_min", "total_wall_time_min")
     ):
         return False
-    return all(
+    if not all(
         (directory / f"feature_importance_{method}.pkl").is_file()
         for method in methods
-    )
+    ):
+        return False
+    if needs_scaled_feature_importance(config) and not scaler_path(config).is_file():
+        return False
+    return True
 
 
 def tuning_key(config: dict, model: str, node: str, seed: int | None = None) -> str | None:

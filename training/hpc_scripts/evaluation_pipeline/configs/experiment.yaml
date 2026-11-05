@@ -341,6 +341,83 @@ models:
       final_estimator: logistic
       passthrough: false
 
+  custom_ensemble_linsvc_stacking_passthrough:
+    family: custom_ensemble
+    base: linearsvc
+    combine: stacking
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: true
+
+  custom_ensemble_linsvc_voting:
+    family: custom_ensemble
+    base: linearsvc
+    combine: voting
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+
+  custom_ensemble_linsvc_stacking_scaled:
+    family: custom_ensemble
+    base: linearsvc
+    combine: stacking
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: false
+      scale: true
+
+  custom_ensemble_linsvc_stacking_passthrough_scaled:
+    family: custom_ensemble
+    base: linearsvc
+    combine: stacking
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: true
+      scale: true
+
+  custom_ensemble_linsvc_voting_scaled:
+    family: custom_ensemble
+    base: linearsvc
+    combine: voting
+    feature_importance: randomforest
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      scale: true
+
   custom_ensemble_rf_stacking:
     family: custom_ensemble
     base: randomforest
@@ -357,6 +434,83 @@ models:
       stacking_cv: 5
       final_estimator: logistic
       passthrough: false
+
+  custom_ensemble_rf_stacking_passthrough:
+    family: custom_ensemble
+    base: randomforest
+    combine: stacking
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: true
+
+  custom_ensemble_rf_voting:
+    family: custom_ensemble
+    base: randomforest
+    combine: voting
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+
+  custom_ensemble_rf_stacking_scaled:
+    family: custom_ensemble
+    base: randomforest
+    combine: stacking
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: false
+      scale: true
+
+  custom_ensemble_rf_stacking_passthrough_scaled:
+    family: custom_ensemble
+    base: randomforest
+    combine: stacking
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      stacking_cv: 5
+      final_estimator: logistic
+      passthrough: true
+      scale: true
+
+  custom_ensemble_rf_voting_scaled:
+    family: custom_ensemble
+    base: randomforest
+    combine: voting
+    feature_importance: linearsvc
+    hierarchy: true
+    tune:
+      search: bayes
+      n_iter: 30
+      cv: 5
+    params:
+      drop_fractions: [0.0075, 0.015, 0.025]
+      scale: true
 
   # ---------------------------------------------------------------------------
   # Reference models (flat: coarse and fine are trained independently)

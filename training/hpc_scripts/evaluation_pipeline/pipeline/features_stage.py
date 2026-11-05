@@ -5,6 +5,10 @@ Each feature task handles one seed and writes both rankings permanently under
 the computation resumable: if a job is interrupted after the RandomForest
 ranking, a later job reuses it and only computes the missing LinearSVC ranking.
 All models with the same seed read the exact same two files.
+
+The optional scaler is dataset-wide, not per seed: it is stored once at
+``<cache_root>/<dataset>/scaler.pkl`` and shared by all features, tuning and run
+tasks.
 """
 
 from __future__ import annotations
@@ -14,8 +18,9 @@ import resource
 import time
 from pathlib import Path
 
-from .config import cpu_count, load_config
+from .config import cpu_count, load_config, needs_scaled_feature_importance
 from .features import (
+    ensure_scaler,
     feature_importance_linearsvc,
     feature_importance_randomforest,
 )
@@ -30,7 +35,15 @@ from .io import (
     read_json,
 )
 from .logging_utils import PipelineError, log_header
-from .tasks import features_dir, features_key, features_success, get_task, load_cache
+from .tasks import (
+    current_cache_key,
+    features_dir,
+    features_key,
+    features_success,
+    get_task,
+    load_cache,
+    scaler_path,
+)
 
 
 def _peak_ram_gb() -> float:
@@ -122,34 +135,55 @@ def run_features(config_path: str, task_id: int) -> None:
     n_jobs = cpu_count(config, "features")
     times: dict[str, float] = {}
 
-    for method in methods:
-        done, stored_time = _method_done(out_dir, method, expected_key)
-        if done:
-            times[method] = stored_time
-            logging.info("Reusing existing %s ranking for seed=%s", method, seed)
-            continue
-        logging.info("Computing %s ranking for seed=%s", method, seed)
-        method_start = time.time()
-        if method == "randomforest":
-            frame, _ = feature_importance_randomforest(cache["X_train"], y, seed, n_jobs)
-        else:
-            frame, _ = feature_importance_linearsvc(cache["X_train"], y, seed)
-        elapsed = (time.time() - method_start) / 60.0
-        times[method] = elapsed
-        atomic_write_pickle(out_dir / f"feature_importance_{method}.pkl", frame)
-        atomic_write_csv(out_dir / f"feature_importance_{method}.csv", frame, index=False)
-        atomic_write_json(
-            out_dir / f"method_{method}.json",
-            {
-                "features_key": expected_key,
-                "seed": seed,
-                "method": method,
-                "label_level": label_level,
-                "time_min": round(elapsed, 4),
-                "peak_ram_gb": round(_peak_ram_gb(), 3),
-            },
+    ranking_inputs = [(cache["X_train"], False)]
+    scaler_file = None
+    if needs_scaled_feature_importance(config):
+        shared_scaler = scaler_path(config)
+        scaler = ensure_scaler(
+            shared_scaler,
+            cache["X_train"],
+            current_cache_key(config),
         )
-        atomic_write_text(out_dir / f"_SUCCESS_{method}", "ok\n")
+        scaler_file = str(shared_scaler)
+        ranking_inputs.append((scaler.transform(cache["X_train"]), True))
+
+    ranking_names = []
+    for X, scaled in ranking_inputs:
+        for method in methods:
+            ranking_name = f"{method}_scaled" if scaled else method
+            ranking_names.append(ranking_name)
+
+            done, stored_time = _method_done(out_dir, ranking_name, expected_key)
+            if done:
+                times[ranking_name] = stored_time
+                logging.info("Reusing existing %s ranking for seed=%s", ranking_name, seed)
+                continue
+            logging.info("Computing %s ranking for seed=%s", ranking_name, seed)
+            method_start = time.time()
+            if method == "randomforest":
+                frame, _ = feature_importance_randomforest(X, y, seed, n_jobs)
+            else:
+                frame, _ = feature_importance_linearsvc(X, y, seed)
+            elapsed = (time.time() - method_start) / 60.0
+            times[ranking_name] = elapsed
+            atomic_write_pickle(out_dir / f"feature_importance_{ranking_name}.pkl", frame)
+            atomic_write_csv(
+                out_dir / f"feature_importance_{ranking_name}.csv", frame, index=False
+            )
+            atomic_write_json(
+                out_dir / f"method_{ranking_name}.json",
+                {
+                    "features_key": expected_key,
+                    "seed": seed,
+                    "method": ranking_name,
+                    "base_method": method,
+                    "scaled": scaled,
+                    "label_level": label_level,
+                    "time_min": round(elapsed, 4),
+                    "peak_ram_gb": round(_peak_ram_gb(), 3),
+                },
+            )
+            atomic_write_text(out_dir / f"_SUCCESS_{ranking_name}", "ok\n")
 
     invocation_wall_min = (time.time() - start) / 60.0
     feature_selection_time_min = sum(times.values())
@@ -165,7 +199,8 @@ def run_features(config_path: str, task_id: int) -> None:
         "dataset": dataset["name"],
         "seed": seed,
         "label_level": label_level,
-        "methods": methods,
+        "methods": ranking_names,
+        "scaler_file": scaler_file,
         "method_times_min": {key: round(value, 4) for key, value in times.items()},
         "feature_selection_time_min": round(feature_selection_time_min, 4),
         "total_wall_time_min": round(total_wall_min, 4),
@@ -177,13 +212,18 @@ def run_features(config_path: str, task_id: int) -> None:
     atomic_write_json(out_dir / "features_meta.json", meta)
     mark_success(
         out_dir,
-        {"features_key": expected_key, "seed": seed, "methods": methods},
+        {
+            "features_key": expected_key,
+            "seed": seed,
+            "methods": ranking_names,
+            "scaler_file": scaler_file,
+        },
     )
     logging.info(
         "Features finished for seed=%s: %s (compute %.2f min, cumulative wall %.2f min, "
         "this invocation %.2f min)",
         seed,
-        methods,
+        ranking_names,
         meta["feature_selection_time_min"],
         total_wall_min,
         invocation_wall_min,

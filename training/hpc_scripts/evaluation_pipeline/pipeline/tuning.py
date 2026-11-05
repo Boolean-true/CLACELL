@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 import resource
 import time
-from pathlib import Path
 
 import pandas as pd
 
-from .config import cpu_count, load_config
+from .config import cpu_count, load_config, model_uses_scaled_features
+from .features import load_scaler
 from .io import atomic_write_json, clear_success, ensure_dir
 from .logging_utils import log_header
 from .models.registry import tune_model_node
@@ -18,6 +18,7 @@ from .tasks import (
     get_task,
     load_cache,
     node_data,
+    scaler_path,
     tuning_dir,
     tuning_key,
     tuning_success,
@@ -61,6 +62,10 @@ def run_tune(config_path: str, task_id: int) -> None:
     tune_cfg = model_cfg.get("tune") or {}
     search_seed = seed if seed is not None else int(config["experiment"]["tuning_seed"])
     n_jobs = cpu_count(config, "tune")
+
+    if model_uses_scaled_features(model_cfg):
+        scaler = load_scaler(scaler_path(config), current_cache_key(config))
+        X = scaler.transform(X)
 
     logging.info(
         "Tuning model=%s node=%s seed=%s: %d cells, %d classes, min class=%d",

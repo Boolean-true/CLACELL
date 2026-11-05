@@ -1,6 +1,4 @@
 """Custom stacking ensembles with gene-subset diversity."""
-#TODO: Wenn das nur zum stacking ensemble ist, dann die Datei entsprechend umbenennen.
-# Da werden ja noch weitere Custom Ensemble implementiert. Oder kommen die in dieselbe Datei?
 
 from __future__ import annotations
 
@@ -10,7 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier, StackingClassifier
+from sklearn.ensemble import RandomForestClassifier, StackingClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
@@ -23,18 +21,22 @@ from ..logging_utils import PipelineError
 from .base import ModelAdapter
 
 
-def _base_estimator(base: str, params: dict, seed: int, calibration_cv: int = 5):
+def _base_estimator(
+    base: str,
+    params: dict,
+    seed: int,
+    calibration_cv: int = 5,
+):
     params = dict(params or {})
+    params["class_weight"] = "balanced"
     if base in {"randomforest", "rf"}:
         return RandomForestClassifier(
-            class_weight="balanced",
             random_state=seed,
             n_jobs=1,
             **params,
         )
     if base in {"linearsvc", "linsvc"}:
-        # Same construction as the single-script stacking ensemble.
-        svc = LinearSVC(class_weight="balanced", random_state=seed, **params)
+        svc = LinearSVC(random_state=seed, **params)
         return CalibratedClassifierCV(svc, cv=calibration_cv, n_jobs=1)
     raise PipelineError(f"Unknown custom ensemble base '{base}'. Valid: randomforest, linearsvc.")
 
@@ -74,7 +76,13 @@ def _tune_rf(X, y, tune_cfg: dict, seed: int, n_jobs: int) -> tuple[dict, dict]:
     }
 
 
-def _tune_linsvc(X, y, tune_cfg: dict, seed: int, n_jobs: int) -> tuple[dict, dict]:
+def _tune_linsvc(
+    X,
+    y,
+    tune_cfg: dict,
+    seed: int,
+    n_jobs: int,
+) -> tuple[dict, dict]:
     search = BayesSearchCV(
         estimator=LinearSVC(class_weight="balanced", random_state=seed),
         search_spaces=[
@@ -169,6 +177,7 @@ def build_custom_ensemble(
         subsets.append(sorted_top_genes[n_drop:])
     subset_names = ["all"] + [str(fraction).replace(".", "_") for fraction in drop_fractions]
     calibration_cv = max(2, int(params_cfg.get("calibration_cv", 5)))
+    combine = str(params_cfg.get("combine", "stacking")).lower()
 
     estimators = []
     for name, features in zip(subset_names, subsets):
@@ -191,13 +200,25 @@ def build_custom_ensemble(
             )
         )
 
-    return StackingClassifier(
-        estimators=estimators,
-        final_estimator=LogisticRegression(max_iter=1000),
-        cv=int(params_cfg.get("stacking_cv", 5)),
-        n_jobs=n_jobs,
-        passthrough=bool(params_cfg.get("passthrough", False)),
-    )
+    if combine == "stacking":
+        ensemble = StackingClassifier(
+            estimators=estimators,
+            final_estimator=LogisticRegression(max_iter=1000),
+            cv=int(params_cfg.get("stacking_cv", 5)),
+            n_jobs=n_jobs,
+            passthrough=bool(params_cfg.get("passthrough", False)),
+        )
+    elif combine == "voting":
+        ensemble = VotingClassifier(
+            estimators=estimators,
+            voting="soft",
+        )
+    else:
+        raise PipelineError(
+            f"Unknown custom ensemble combine '{combine}'. Valid: stacking, voting."
+        )
+
+    return ensemble
 
 
 class _CustomEnsembleAdapter(ModelAdapter):

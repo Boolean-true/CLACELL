@@ -219,15 +219,22 @@ def fit_model(
                 label,
             )
             return ConstantClassifier(label)
-        ranking = internal_feature_importance(model_cfg)
-        genes = sorted_genes(features_dir(config, seed), ranking)
+        base = str(model_cfg.get("base", "randomforest")).lower()
         params_cfg = dict(model_cfg.get("params", {}))
+        params_cfg.setdefault("combine", model_cfg.get("combine") or "stacking")
+
+        ranking = internal_feature_importance(model_cfg)
+        if params_cfg.get("scale", False):
+            ranking = f"{ranking}_scaled"
+        genes = sorted_genes(features_dir(config, seed), ranking)
+
         min_class = int(y.value_counts().min())
         params_cfg["stacking_cv"] = max(2, min(int(params_cfg.get("stacking_cv", 5)), min_class))
         params_cfg["calibration_cv"] = max(2, min(5, min_class))
+
         adapter = build_custom_ensemble_adapter(
             sorted_top_genes=genes,
-            base=str(model_cfg.get("base", "randomforest")).lower(),
+            base=base,
             tuned_params=dict(node_params or {}),
             params_cfg=params_cfg,
             seed=seed,
@@ -278,15 +285,6 @@ def tune_model_node(
         from .autoencoder import tune_autoencoder
         from .conditional_autoencoder import tune_conditional_autoencoder
 
-        if len(X) < 2: #TODO: Das kann ich mir doch sparen, oder? Meine Datensätze haben immer mehr als 2 Zellen
-            return {}, {
-                "skipped": True,
-                "skip_reason": f"only {len(X)} training cell(s); BatchNorm needs at least 2.",
-                "cv": 0,
-                "n_iter": 0,
-                "best_score": float("nan"),
-                "avg_time_per_iteration_sec": float("nan"),
-            }
         head = str(model_cfg.get("head", "linsvc")).lower()
         params = dict(model_cfg.get("params", {}))
         if family == "autoencoder":
@@ -305,7 +303,7 @@ def tune_model_node(
         )
 
     if family == "custom_ensemble":
-        best_params, meta_info = tune_base_estimator(
+        return tune_base_estimator(
             X=X,
             y=y,
             base=str(model_cfg.get("base", "randomforest")).lower(),
@@ -313,7 +311,6 @@ def tune_model_node(
             seed=seed,
             n_jobs=n_jobs,
         )
-        return best_params, meta_info
 
     if family == "reference":
         adapter_name = str(model_cfg.get("adapter", "")).lower()

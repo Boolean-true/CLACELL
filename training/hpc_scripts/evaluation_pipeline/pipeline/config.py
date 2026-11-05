@@ -212,6 +212,22 @@ def model_config(config: dict, name: str) -> dict:
         ) from exc
 
 
+def model_uses_scaled_features(model: dict) -> bool:
+    """Whether this model is trained on the globally scaled feature matrix."""
+    return (
+        str(model.get("family", "")).lower() == "custom_ensemble"
+        and bool((model.get("params") or {}).get("scale", False))
+    )
+
+
+def needs_scaled_feature_importance(config: dict) -> bool:
+    """Whether any active custom ensemble is trained on scaled features."""
+    return any(
+        model_uses_scaled_features(model)
+        for model in config.get("active_models", {}).values()
+    )
+
+
 def cpu_count(config: dict, stage: str) -> int:
     env_key = f"SLURM_CPUS_PER_TASK"
     if os.environ.get(env_key):

@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 
 from . import bootstrap  # noqa: F401  (adds hpc_scripts/ and training/ to sys.path)
-from .config import cpu_count, load_config, model_config
+from .config import cpu_count, load_config, model_config, model_uses_scaled_features
+from .features import load_scaler
 from .hierarchy import HierarchicalCascadeClassifier
 from .io import (
     atomic_write_csv,
@@ -38,6 +39,7 @@ from .tasks import (
     results_dir,
     run_key,
     run_success,
+    scaler_path,
     tuning_dir,
     tuning_success,
 )
@@ -254,6 +256,26 @@ def _add_technical_metrics(
     return frame
 
 
+def _model_matrices(
+    config: dict,
+    cache: dict,
+    model_name: str,
+) -> tuple[pd.DataFrame, pd.DataFrame, object | None]:
+    """Return the matrices this model should train/predict on.
+
+    Scaled custom ensembles receive the globally scaled matrices. The same
+    scaler is passed to ``test_robustness`` so OOD data would be scaled too.
+    """
+    if model_uses_scaled_features(model_config(config, model_name)):
+        scaler = load_scaler(scaler_path(config), current_cache_key(config))
+        return (
+            scaler.transform(cache["X_train"]),
+            scaler.transform(cache["X_test"]),
+            scaler,
+        )
+    return cache["X_train"], cache["X_test"], None
+
+
 def _evaluate(
     wrapper,
     X_test: pd.DataFrame,
@@ -264,6 +286,7 @@ def _evaluate(
     model_name: str,
     level: str,
     eval_seed: int,
+    scaler=None,
 ) -> tuple[pd.DataFrame, float]:
     start = time.time()
     result = test_robustness(
@@ -277,6 +300,7 @@ def _evaluate(
         log_to_console=True,
         log_to_file=False,
         seed=int(eval_seed),
+        scaler=scaler,
     )
     elapsed = (time.time() - start) / 60.0
     if result is None:
@@ -326,6 +350,7 @@ def _run_hierarchical(
     hierarchy = cache["hierarchy"]
     min_fine_classes = int(config["experiment"]["hierarchy"].get("min_fine_classes", 2))
     uses_feature_importance = _charges_feature_importance_time(config, model_name)
+    X_train, X_test, scaler = _model_matrices(config, cache, model_name)
 
     coarse_params = _load_params(config, model_name, "coarse", seed)
     fine_params = {}
@@ -348,7 +373,7 @@ def _run_hierarchical(
     )
     logging.info("Fitting hierarchical model=%s seed=%s", model_name, seed)
     model.fit(
-        X=cache["X_train"],
+        X=X_train,
         y_coarse=cache["obs_train"][coarse_col].astype(str),
         y_fine=cache["obs_train"][fine_col].astype(str),
         sample_meta=cache["obs_train"],
@@ -358,7 +383,6 @@ def _run_hierarchical(
     fi_dir = features_dir(config, seed)
     feature_importance = _robustness_fi(config, model_name, seed, fi_dir)
 
-    X_test = cache["X_test"]
     donor_test = cache["obs_test"][dataset["batch_key"]].astype(str)
     y_test_coarse = cache["obs_test"][coarse_col].astype(str)
     y_test_fine = cache["obs_test"][fine_col].astype(str)
@@ -374,6 +398,7 @@ def _run_hierarchical(
         model_name,
         "coarse",
         eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
+        scaler=scaler,
     )
     logging.info("Evaluating fine level (model=%s seed=%s)", model_name, seed)
     fine_frame, fine_eval_min = _evaluate(
@@ -386,6 +411,7 @@ def _run_hierarchical(
         model_name,
         "fine",
         eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
+        scaler=scaler,
     )
 
     run_task_time_min = (time.time() - task_start) / 60.0
@@ -497,6 +523,7 @@ def _run_flat(
     fine_col = dataset["labels"].get("fine")
     levels = [level for level in config["experiment"].get("reference_levels", ["coarse", "fine"]) if level != "fine" or fine_col]
     uses_feature_importance = _charges_feature_importance_time(config, model_name)
+    X_train, X_test, scaler = _model_matrices(config, cache, model_name)
     prepare_meta = cache["prepare_meta"]
     fi_dir = features_dir(config, seed)
     feature_importance = _robustness_fi(config, model_name, seed, fi_dir)
@@ -529,7 +556,6 @@ def _run_flat(
         hint="Re-run the prepare stage.",
     )
 
-    X_test = cache["X_test"]
     donor_test = cache["obs_test"][dataset["batch_key"]].astype(str)
     epochs_total = 0.0
     epoch_seen = False
@@ -544,7 +570,7 @@ def _run_flat(
         factory = make_factory(config, model_name, level, params, seed, n_jobs)
         model = factory()
         logging.info("Fitting flat model=%s level=%s seed=%s", model_name, level, seed)
-        model.fit(cache["X_train"], y_train, cache["obs_train"])
+        model.fit(X_train, y_train, cache["obs_train"])
         training_time_min = (time.time() - start) / 60.0
         if getattr(model, "epochs_", None) is not None:
             epochs_total += float(model.epochs_)
@@ -561,6 +587,7 @@ def _run_flat(
             model_name,
             level,
             eval_seed=int(config["experiment"]["eval_seed_base"]) + seed_index,
+            scaler=scaler,
         )
         tuning = _tuning_summary(config, model_name, [level], seed)
         level_results.append(

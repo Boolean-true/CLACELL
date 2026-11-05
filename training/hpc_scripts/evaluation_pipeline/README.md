@@ -123,6 +123,7 @@ The cache is reused across all later model/seed jobs. It contains:
   obs_train.pkl / obs_test.pkl      # donor, coarse, fine, ...
   hierarchy.json
   prepare_meta.json                 # preprocessing time, RAM, cache key, versions
+  scaler.pkl                        # written by features, only if a scaled custom ensemble is active
   _SUCCESS
 ```
 
@@ -152,9 +153,15 @@ and persists them permanently:
 ```
 
 All models with the same seed read exactly these two rankings; no model
-recomputes them. Per-method markers make this resumable: if a job is interrupted
-after the RandomForest ranking, a later job reuses it and only computes the
-missing LinearSVC ranking. `features_meta.json` stores both
+recomputes them. If any active custom ensemble uses `params.scale: true`, the
+features stage additionally fits one **dataset-wide**
+`StandardScaler(with_mean=False)` on the full training matrix and stores it once
+at `<cache_root>/<dataset>/scaler.pkl`. All seeds and all tuning/run tasks use
+this same scaler; the per-seed features directories only contain the
+`feature_importance_<method>_scaled.pkl` rankings computed with it.
+Per-method markers make this resumable: if a job is interrupted after the
+RandomForest ranking, a later job reuses it and only computes the missing
+LinearSVC ranking. `features_meta.json` stores both
 `feature_selection_time_min` (sum of the actual per-method compute times) and
 `total_wall_time_min` (cumulative wall time of the features task across resumed
 invocations, so a cache-hit restart does not shrink the reported time). The
@@ -176,8 +183,16 @@ The run stage only loads the parameters; it does not tune.
 
 For the custom ensembles the internal gene ranking is the one you specified:
 
-- `custom_ensemble_linsvc_stacking` uses the **RandomForest** ranking.
-- `custom_ensemble_rf_stacking` uses the **LinearSVC** ranking.
+- `custom_ensemble_linsvc_*` uses the **RandomForest** ranking.
+- `custom_ensemble_rf_*` uses the **LinearSVC** ranking.
+
+`combine` selects `stacking` (optionally with `passthrough: true`) or soft
+`voting`. Set `params.scale: true` to use the single dataset-wide
+`StandardScaler(with_mean=False)` fitted on the full training split. It is
+stored once at `<cache_root>/<dataset>/scaler.pkl`, shared by every seed and by
+tuning, and applied once to `X_train`/`X_test` before the ensemble; the custom
+ensemble itself does not scale. The catalogue contains all combinations of base
+estimator, combine mode and scaling.
 
 The configured rankings are persisted per seed by the features stage. The
 pipeline assumes that fine labels form a consistent hierarchy; ensure that each

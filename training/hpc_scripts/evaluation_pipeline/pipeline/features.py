@@ -10,22 +10,87 @@ ranking internally:
 
 from __future__ import annotations
 
+import logging
+import pickle
 import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 
+from . import __version__ as PIPELINE_VERSION
+from .io import atomic_write_pickle
 from .logging_utils import PipelineError
 
 
+def fit_scaler(X) -> StandardScaler:
+    scaler = StandardScaler(with_mean=False).set_output(transform="pandas")
+    return scaler.fit(X)
+
+
+def load_scaler(
+    path: str | Path,
+    expected_cache_key: str | None = None,
+) -> StandardScaler:
+    path = Path(path)
+    if not path.is_file():
+        raise PipelineError(
+            f"Scaler not found at {path}. Run the features stage first."
+        )
+    with path.open("rb") as handle:
+        payload = pickle.load(handle)
+    if not isinstance(payload, dict) or "scaler" not in payload:
+        raise PipelineError(
+            f"Invalid scaler file at {path}. Re-run the features stage."
+        )
+    stored_version = payload.get("pipeline_version")
+    if stored_version != PIPELINE_VERSION:
+        raise PipelineError(
+            f"Scaler at {path} was written by pipeline version '{stored_version}', "
+            f"current is '{PIPELINE_VERSION}'. Re-run the features stage."
+        )
+    stored_key = payload.get("cache_key")
+    if expected_cache_key is not None and stored_key != expected_cache_key:
+        raise PipelineError(
+            f"Scaler at {path} belongs to cache '{stored_key}', expected "
+            f"'{expected_cache_key}'. Re-run the features stage."
+        )
+    return payload["scaler"]
+
+
+def ensure_scaler(path: str | Path, X, cache_key: str | None) -> StandardScaler:
+    """Reuse the dataset scaler if it is valid, otherwise fit and persist it."""
+    path = Path(path)
+    if path.is_file():
+        try:
+            return load_scaler(path, expected_cache_key=cache_key)
+        except Exception as exc:  # noqa: BLE001 - rebuild corrupt/stale cache file
+            logging.warning("Replacing unusable scaler at %s: %s", path, exc)
+    scaler = fit_scaler(X)
+    atomic_write_pickle(
+        path,
+        {
+            "pipeline_version": PIPELINE_VERSION,
+            "cache_key": cache_key,
+            "scaler": scaler,
+        },
+    )
+    return scaler
+
+
 def _as_frame(features, importance: np.ndarray) -> pd.DataFrame:
-    frame = pd.DataFrame({"feature": list(features), "importance": np.asarray(importance)})
-    frame = frame.sort_values("importance", ascending=False, kind="mergesort")
-    frame.reset_index(drop=True, inplace=True)
-    return frame
+    importance = np.asarray(importance)
+    order = np.argsort(importance)[::-1]
+    frame = pd.DataFrame(
+        {
+            "feature": np.asarray(features)[order],
+            "importance": importance[order],
+        }
+    )
+    return frame.reset_index(drop=True)
 
 
 def feature_importance_randomforest(

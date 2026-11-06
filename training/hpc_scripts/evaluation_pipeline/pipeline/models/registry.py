@@ -87,7 +87,7 @@ def internal_feature_importance(model_cfg: dict) -> str:
 
 def robustness_feature_importance(config: dict, model_name: str) -> str:
     dataset_cfg = config["active_dataset"]["feature_importance"]
-    method = str(dataset_cfg.get("robustness", "linearsvc")).lower()
+    method = str(dataset_cfg.get("robustness", "differential_expression")).lower()
     if method == "model":
         return internal_feature_importance(model_config(config, model_name))
     return method

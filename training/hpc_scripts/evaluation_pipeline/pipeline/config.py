@@ -39,7 +39,9 @@ DEFAULT_HIERARCHY = {
 DEFAULT_FEATURE_IMPORTANCE = {
     "compute": ["randomforest", "linearsvc"],
     "label_level": "fine",
-    "robustness": "linearsvc",
+    # Ranking used by test_robustness. "differential_expression" is computed by
+    # prepare from the training expression matrix (no external marker file).
+    "robustness": "differential_expression",
 }
 
 

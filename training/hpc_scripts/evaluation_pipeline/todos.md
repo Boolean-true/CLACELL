@@ -10,7 +10,6 @@
 - rejection classes implementieren
 - scgpt implementieren
 - alle cvs auf die werte aus den python files setzen und nicht dynamisch machen. macht aber keinen unterschied wenn ich immer mindestens 5 zellen pro zelltyp im train split habe
-!!- feature importance für robustness tests für die 4 datensätze berechnen und verwenden (nicht die von linsvc oder rf!) -> FI rein aus Differenzielle Genexpression erstellen für alle 4 Datensätze
 
 - output path (aktuell: <output_root>/<experiment>/<dataset>/results/<model>/coarse/result_<i>.csv) evtl anpassen
 - prüfen ob das DataFrame als Input für das CustomEnsemble passt

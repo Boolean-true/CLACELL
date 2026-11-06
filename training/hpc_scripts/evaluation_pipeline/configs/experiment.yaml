@@ -38,7 +38,7 @@ experiment:
   output_root: /home/woody/iwbn/iwbn133h/clacell_runs
 
   # Maximum number of array tasks running at the same time.
-  max_parallel: 4
+  max_parallel: 40
 
   hierarchy:
     enabled: true
@@ -120,10 +120,13 @@ datasets:
       #   custom_ensemble_linsvc_stacking -> randomforest ranking
       #   custom_ensemble_rf_stacking     -> linearsvc ranking
       compute: [randomforest, linearsvc]
+      # Label column used for the RF/LinearSVC rankings and for the
+      # differential-expression importance computed by prepare.
       label_level: fine
       # Ranking passed to test_robustness for the feature-importance dropout.
-      # Use "linearsvc", "randomforest", or "model" (model-specific ranking).
-      robustness: linearsvc
+      # "differential_expression" is computed by prepare from the training
+      # expression matrix. Alternatives: "linearsvc", "randomforest", "model".
+      robustness: differential_expression
 
   # ---------------------------------------------------------------------------
   # OTHER NON-BLOOD DATASETS (values can be adjusted when the data is ready)
@@ -166,18 +169,14 @@ datasets:
     feature_importance:
       compute: [randomforest, linearsvc]
       label_level: fine
-      robustness: linearsvc
-      # test_robustness in the old script uses this fixed marker-gene ranking.
-      robustness_file: pegasus_feature_importance_interleaved_marker_genes.pkl
+      # DE ranking computed by prepare; no fixed marker-gene file.
+      robustness: differential_expression
 
   ovary:
     path: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd_spatial.h5ad
     counts_layer: null
     batch_key: donor_id
 
-    # TODO: ovary has only author_cell_type (10 classes). A fine-grained
-    # annotation column still has to be added before this dataset can run
-    # hierarchically. Set labels.fine to that column once available.
     labels:
       coarse: author_cell_type
       fine: null
@@ -207,7 +206,7 @@ datasets:
     feature_importance:
       compute: [randomforest, linearsvc]
       label_level: coarse
-      robustness: linearsvc
+      robustness: differential_expression
 
   pancreas:
     # Placeholder: fill in path, labels and donor split when the dataset is ready.
@@ -239,7 +238,7 @@ datasets:
     feature_importance:
       compute: [randomforest, linearsvc]
       label_level: fine
-      robustness: linearsvc
+      robustness: differential_expression
 
 
 # =============================================================================

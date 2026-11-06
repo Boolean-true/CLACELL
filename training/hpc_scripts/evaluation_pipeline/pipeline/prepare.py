@@ -21,6 +21,7 @@ except AttributeError:
     pass
 
 from .config import cpu_count, load_config
+from .features import feature_importance_differential_expression
 from .io import (
     atomic_write_csv,
     atomic_write_json,
@@ -262,12 +263,14 @@ def run_prepare(config_path: str) -> None:
     log_header("prepare", dataset=dataset["name"], cache=cache_dir)
     ensure_dir(cache_dir)
 
+    fi_cfg = dataset["feature_importance"]
     prepare_payload = {
         "dataset": {
             key: value for key, value in dataset.items() if key != "feature_importance"
         },
         "preprocess": dataset["preprocess"],
         "hierarchy": config["experiment"]["hierarchy"],
+        "feature_importance_label_level": fi_cfg.get("label_level", "fine"),
         "raw": file_fingerprint(dataset["path"]),
         "prepare_version": PREPARE_VERSION,
     }
@@ -446,6 +449,20 @@ def run_prepare(config_path: str) -> None:
     atomic_write_json(cache_dir / "hierarchy.json", hierarchy)
     if len(unseen_frame):
         atomic_write_csv(cache_dir / "unseen_test_classes.csv", unseen_frame, index=False)
+
+    # Robustness ranking from differential expression on the preprocessed
+    # training data only (no test labels involved).
+    de_label_col = (
+        coarse_col
+        if fi_cfg.get("label_level", "fine") == "coarse"
+        else (fine_col or coarse_col)
+    )
+    logging.info("Computing DE feature importance grouped by '%s'", de_label_col)
+    de_genes = feature_importance_differential_expression(adata_train, de_label_col)
+    atomic_write_pickle(
+        cache_dir / "feature_importance_differential_expression.pkl", de_genes
+    )
+    logging.info("DE feature importance: %d genes", len(de_genes))
 
     if config["experiment"].get("export_scgpt", False):
         from .models.references import export_scgpt_input

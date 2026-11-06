@@ -95,19 +95,16 @@ def _charges_feature_importance_time(config: dict, model_name: str) -> bool:
     return family == "custom_ensemble"
 
 
-def _robustness_fi(config: dict, model_name: str, seed: int, fi_dir: Path) -> pd.DataFrame:
-    external = config["active_dataset"]["feature_importance"].get("robustness_file")
-    if external:
-        path = Path(str(external)).expanduser()
-        if not path.is_absolute():
-            path = Path.cwd() / path
+def _robustness_fi(config: dict, model_name: str, seed: int, fi_dir: Path) -> list | pd.DataFrame:
+    method = robustness_feature_importance(config, model_name)
+    if method == "differential_expression":
+        path = Path(config["cache_dir"]) / "feature_importance_differential_expression.pkl"
         if not path.is_file():
             raise PipelineError(
-                f"Robustness feature-importance file not found: {path}. "
-                "Check datasets.<name>.feature_importance.robustness_file."
+                f"Differential-expression robustness ranking not found at {path}. "
+                "Re-run the prepare stage."
             )
         return pd.read_pickle(path)
-    method = robustness_feature_importance(config, model_name)
     path = fi_dir / f"feature_importance_{method}.pkl"
     if not path.is_file():
         raise PipelineError(
@@ -282,7 +279,7 @@ def _evaluate(
     y_test: pd.Series,
     donor_test: pd.Series,
     label_col: str,
-    feature_importance: pd.DataFrame,
+    feature_importance: list | pd.DataFrame,
     model_name: str,
     level: str,
     eval_seed: int,

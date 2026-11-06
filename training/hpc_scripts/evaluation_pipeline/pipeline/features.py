@@ -1,11 +1,15 @@
 """Dataset-level feature rankings.
 
-Both rankings are computed once per seed and persisted. All models that use the
-same seed read the same two rankings. The custom ensembles use the opposite
-ranking internally:
+The RandomForest and LinearSVC rankings are computed once per seed and
+persisted. All models that use the same seed read the same two rankings. The
+custom ensembles use the opposite ranking internally:
 
 * custom_ensemble_linsvc_stacking -> RandomForest ranking
 * custom_ensemble_rf_stacking     -> LinearSVC ranking
+
+The robustness ranking is separate: ``feature_importance_differential_expression``
+is computed once per dataset by the prepare stage from the training expression
+matrix.
 """
 
 from __future__ import annotations
@@ -79,6 +83,28 @@ def ensure_scaler(path: str | Path, X, cache_key: str | None) -> StandardScaler:
         },
     )
     return scaler
+
+
+def feature_importance_differential_expression(
+    adata,
+    label_col: str,
+) -> list[str]:
+    """Interleaved Wilcoxon differential-expression ranking."""
+    import scanpy as sc
+
+    adata.obs[label_col] = adata.obs[label_col].astype(str)
+    sc.tl.rank_genes_groups(adata, groupby=label_col, method="wilcoxon", use_raw=False)
+    de_names_df = pd.DataFrame(adata.uns["rank_genes_groups"]["names"])
+
+    de_genes_ordered = []
+    seen = set()
+    for row_idx in range(de_names_df.shape[0]):
+        for cell_type in de_names_df.columns:
+            gene = de_names_df.iloc[row_idx][cell_type]
+            if gene not in seen:
+                seen.add(gene)
+                de_genes_ordered.append(gene)
+    return de_genes_ordered
 
 
 def _as_frame(features, importance: np.ndarray) -> pd.DataFrame:

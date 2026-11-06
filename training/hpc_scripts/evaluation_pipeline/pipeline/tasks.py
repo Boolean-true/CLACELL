@@ -53,6 +53,7 @@ def cache_ready(config: dict) -> bool:
         cache_dir / "obs_train.pkl",
         cache_dir / "obs_test.pkl",
         cache_dir / "genes.json",
+        cache_dir / "feature_importance_differential_expression.pkl",
     ]
     return all(path.exists() for path in required)
 

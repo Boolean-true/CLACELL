@@ -55,8 +55,8 @@ The config is already set to:
 - models: `autoencoder_linsvc`, `custom_ensemble_rf_stacking`
 - seeds: `0..9` (10 runs, matching the old breast script)
 - `tuning_per_seed: true` (one tuning job per run/seed, matching the old script)
-- fixed marker-gene ranking for `test_robustness` via
-  `feature_importance.robustness_file`, as in the old script
+- differential-expression ranking for `test_robustness`, computed once by the
+  prepare stage from the training expression matrix
 
 Run:
 
@@ -111,7 +111,12 @@ shows done/missing features, tuning and run tasks.
    the same gene order as the training matrix.
 4. Builds `hierarchy.json` (coarse labels, fine classes per coarse group,
    leaf nodes).
-5. Writes the cache and `_SUCCESS`.
+5. Computes the differential-expression feature importance for the robustness
+   dropout on the training split (`scanpy.tl.rank_genes_groups`, Wilcoxon). The
+   genes of every cell type are interleaved by rank, so all cell types
+   contribute their top genes early. Only gene expression is used; there is no
+   marker-gene file.
+6. Writes the cache and `_SUCCESS`.
 
 The cache is reused across all later model/seed jobs. It contains:
 
@@ -122,14 +127,17 @@ The cache is reused across all later model/seed jobs. It contains:
   genes.json
   obs_train.pkl / obs_test.pkl      # donor, coarse, fine, ...
   hierarchy.json
+  feature_importance_differential_expression.pkl
+                                    # robustness ranking from DE (prepare)
   prepare_meta.json                 # preprocessing time, RAM, cache key, versions
   scaler.pkl                        # written by features, only if a scaled custom ensemble is active
   _SUCCESS
 ```
 
 A cache hit is detected via `_SUCCESS` plus a hash of the dataset config, raw
-file fingerprint, preprocessing options and hierarchy options. If you change
-the config or the raw file, prepare rebuilds the cache. `prepare_meta.json` is
+file fingerprint, preprocessing options, hierarchy options and the DE
+`label_level`. If you change the config or the raw file, prepare rebuilds the
+cache. `prepare_meta.json` is
 required for a valid cache; if it is missing, the downstream stages fail
 instead of silently using 0.0 as preprocessing time. When
 `experiment.export_scgpt` is enabled, the export runs inside prepare and its
@@ -166,7 +174,9 @@ LinearSVC ranking. `features_meta.json` stores both
 `total_wall_time_min` (cumulative wall time of the features task across resumed
 invocations, so a cache-hit restart does not shrink the reported time). The
 ranking passed to `test_robustness` is controlled by
-`feature_importance.robustness` (default `linearsvc`).
+`feature_importance.robustness` (default `differential_expression`). That
+ranking is produced by prepare, not by this stage. The RF/LinearSVC rankings
+remain necessary for the custom ensembles' internal feature selection.
 
 ### tune (array: one task per model × node)
 
@@ -196,9 +206,13 @@ estimator, combine mode and scaling.
 
 The configured rankings are persisted per seed by the features stage. The
 pipeline assumes that fine labels form a consistent hierarchy; ensure that each
-fine label has exactly one intended coarse parent in your annotation. For the
-breast pilot, `feature_importance.robustness_file` points to the same Pegasus
-marker-gene pickle as the old script; adjust the path if needed.
+fine label has exactly one intended coarse parent in your annotation.
+`feature_importance.robustness` selects the ranking used by `test_robustness`:
+`differential_expression` (default), `linearsvc`, `randomforest` or `model`.
+The DE ranking is written once by prepare to
+`<cache_root>/<dataset>/feature_importance_differential_expression.pkl`;
+`feature_importance.label_level` selects the label column. There is no fixed
+marker-gene file anymore.
 
 ### run (array: one task per model × seed)
 
@@ -254,7 +268,8 @@ The existing metrics are preserved:
 
 Additional metrics are added to the same 4-level MultiIndex:
 
-- `Preprocessing_Time_Min` (once per dataset, copied into every run row)
+- `Preprocessing_Time_Min` (once per dataset, copied into every run row; also
+  contains the differential-expression ranking computed by prepare)
 - `Feature_Selection_Time_Min` (sum of the actual per-method FI compute times)
 - `Feature_Task_Time_Min` (full features task including cache loading/writing;
   cumulative across resumed feature jobs)
@@ -373,6 +388,8 @@ Common causes:
 
 - `Missing tuned parameters ...` → run the tune stage first.
 - `Preprocessing cache is missing ...` → run prepare first.
+- `Differential-expression robustness ranking not found ...` → re-run prepare
+  (the cache predates the DE ranking or is incomplete).
 - `Feature rankings for seed=... are missing ...` → run the features stage first.
 - `Donors missing from dataset ...` → the donor split does not match `obs`.
 - `min class count is 1` → tuning is skipped for that node and the default head

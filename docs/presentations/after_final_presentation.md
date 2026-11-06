@@ -667,6 +667,9 @@ Hierarchical CE RF Stacking PyOD Entropy: Submitted batch job 12699725
 
 Hierarchical CE RF Stacking Ensemble Disagreement Rejection: Submitted batch job 12696824
 0.9 Quantile: Submitted batch job 12700423
+0.95 Quantile + new donors: Submitted batch job 12750971
+Run 10+: Submitted batch job 12750973
+Run 20+: Submitted batch job 12750974
 
 Hierarchical Catboost: Submitted batch job 12726472
 Submitted batch job 12728551

@@ -16,7 +16,7 @@ from skopt.space import Categorical, Real
 
 from custom_stopper import CustomStopper
 
-from ..io import atomic_write_json, ensure_dir
+from ..io import atomic_write_json, ensure_dir, read_json
 from ..logging_utils import PipelineError
 from .base import ModelAdapter
 
@@ -249,75 +249,45 @@ class ScGPTExternalAdapter(ModelAdapter):
 
 
 def scgpt_export_path(config: dict) -> Path:
-    """Path of the raw-count h5ad exported for the external scGPT run."""
-    dataset = config["active_dataset"]
-    return Path(config["cache_dir"]) / "scgpt" / f"{dataset['name']}_scgpt_input.h5ad"
+    """Manifest describing the pipeline-prepared input for the external scGPT run."""
+    return Path(config["cache_dir"]) / "scgpt" / "scgpt_export.json"
 
 
-def export_scgpt_input(config: dict) -> Path:
-    """Export raw counts + standard label columns for finetune_integration_adjusted.py.
+def export_scgpt_input(config: dict, prepare_key: str | None = None) -> Path:
+    """Write the manifest for the external scGPT script.
 
-    The external script expects columns named 'Donor', 'scumi_clean_coarse' and
-    optionally 'scumi_clean_fine_grained'. We do not modify that script; we only
-    rename/copy the configured columns in the exported AnnData.
+    scGPT reads the existing prepared_train.h5ad / prepared_test.h5ad from the
+    cache. Only the dataset-specific column names have to be passed along.
     """
-    import anndata as ad
-
-    try:  # pragma: no cover - depends on anndata version
-        ad.settings.allow_write_nullable_strings = True
-    except AttributeError:
-        pass
-
     dataset = config["active_dataset"]
-    out_path = scgpt_export_path(config)
-    out_dir = ensure_dir(out_path.parent)
-    manifest_path = out_dir / "scgpt_export.json"
-    fine_col = dataset["labels"].get("fine")
+    cache_dir = Path(config["cache_dir"])
+    for split in ("train", "test"):
+        prepared_path = cache_dir / f"prepared_{split}.h5ad"
+        if not prepared_path.is_file():
+            raise PipelineError(
+                f"Preprocessed {split} data not found at {prepared_path}. "
+                "Run the prepare stage first."
+            )
+
+    if prepare_key is None:
+        prepare_key = read_json(cache_dir / "prepare_meta.json", default={}).get("cache_key")
     manifest = {
-        "h5ad_path": str(out_path),
-        "batch_col": "Donor",
-        "coarse_label_col": "scumi_clean_coarse",
-        "fine_label_col": "scumi_clean_fine_grained" if fine_col else None,
-        "donor_train": list(dataset["donors"]["train"]),
-        "donor_test": list(dataset["donors"]["test"]),
-        "feature_importance_dir": str(Path(config["cache_dir"]) / "features"),
-        "coarse_command": (
-            "SCGPT_LABEL_COL=scumi_clean_coarse python finetune_integration_adjusted.py"
-        ),
-        "fine_command": (
-            "SCGPT_LABEL_COL=scumi_clean_fine_grained python finetune_integration_adjusted.py"
-        ),
+        "train_h5ad": "prepared_train.h5ad",
+        "test_h5ad": "prepared_test.h5ad",
+        "batch_col": dataset["batch_key"],
+        "label_cols": {
+            "coarse": dataset["labels"]["coarse"],
+            "fine": dataset["labels"]["fine"],
+        },
+        "feature_importance": "feature_importance_differential_expression.pkl",
+        "prepare_cache_key": prepare_key,
         "note": (
-            "Run finetune_integration_adjusted.py on the GPU cluster with "
-            f"h5ad_path='{out_path}', batch_col='Donor' and the desired "
-            "SCGPT_LABEL_COL. The CPU pipeline only exports the input."
+            "Run evaluation_pipeline/submit_scgpt.sh on the GPU cluster with this "
+            "directory. Paths are relative to the dataset cache directory."
         ),
     }
-    if out_path.is_file():
-        atomic_write_json(manifest_path, manifest)
-        logging.info("scGPT input already exists: %s", out_path)
-        return out_path
-
-    logging.info("Exporting scGPT input from raw data: %s", dataset["path"])
-    adata = ad.read_h5ad(dataset["path"])
-    counts_layer = dataset.get("counts_layer")
-    if counts_layer:
-        if counts_layer not in adata.layers:
-            raise PipelineError(
-                f"counts_layer='{counts_layer}' not found while exporting scGPT input."
-            )
-        adata.X = adata.layers[counts_layer].copy()
-
-    batch_key = dataset["batch_key"]
-    coarse_col = dataset["labels"]["coarse"]
-    adata.obs["Donor"] = adata.obs[batch_key].astype(str)
-    adata.obs["scumi_clean_coarse"] = adata.obs[coarse_col].astype(str)
-    if fine_col:
-        adata.obs["scumi_clean_fine_grained"] = adata.obs[fine_col].astype(str)
-
-    tmp = out_path.with_suffix(".tmp.h5ad")
-    adata.write_h5ad(tmp)
-    tmp.replace(out_path)
-    atomic_write_json(manifest_path, manifest)
-    logging.info("scGPT input written to %s", out_path)
+    out_path = scgpt_export_path(config)
+    ensure_dir(out_path.parent)
+    atomic_write_json(out_path, manifest)
+    logging.info("scGPT input manifest written to %s", out_path)
     return out_path

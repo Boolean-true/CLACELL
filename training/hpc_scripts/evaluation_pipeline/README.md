@@ -140,10 +140,8 @@ file fingerprint, preprocessing options, hierarchy options and the DE
 cache. `prepare_meta.json` is
 required for a valid cache; if it is missing, the downstream stages fail
 instead of silently using 0.0 as preprocessing time. When
-`experiment.export_scgpt` is enabled, the export runs inside prepare and its
-wall time is included in `preprocessing_time_min` (also when an existing cache
-had to be completed with the export). Caches written by older versions may not
-contain the export time; rerun prepare once if you need that value corrected.
+`experiment.export_scgpt` is enabled, prepare also writes the
+`scgpt_export.json` manifest for the external scGPT run.
 
 ### features (array: one task per seed)
 
@@ -362,18 +360,17 @@ has its own cache and result tree.
   expression and predicts through `celltypist.annotate`.
 - `scgpt`: external GPU model. Set `experiment.export_scgpt: true` (or run
   `python evaluation_pipeline/run_task.py export-scgpt --config ...`) to write
-  `scgpt_input.h5ad` with raw counts and standard columns
-  (`Donor`, `scumi_clean_coarse`, `scumi_clean_fine_grained`). Then run
-  `finetune_integration_adjusted.py` on the GPU cluster with that file. The
-  script has only small, backwards-compatible hooks:
-  `SCGPT_LABEL_COL` (coarse or fine labels), `SCGPT_FEATURE_IMPORTANCE` (the
-  ranking produced by the features stage), and `SCGPT_RESULT_CSV` (writes the standard
-  robustness result CSV). The hard-coded OOD blood datasets were set to `None`
-  for the non-blood evaluation; restore them only for blood runs. Example:
-  `SCGPT_LABEL_COL=scumi_clean_fine_grained SCGPT_FEATURE_IMPORTANCE=<cache>/features/seed_0/feature_importance_linearsvc.pkl SCGPT_RESULT_CSV=scgpt_fine.csv python finetune_integration_adjusted.py`.
-  The `h5ad_path` and `donor_train`/`donor_test` in that script's
-  `hyperparameter_defaults` still have to be set for the target dataset; the
-  export manifest (`scgpt_export.json`) contains the donor lists.
+  `<cache>/<dataset>/scgpt/scgpt_export.json`. The manifest points to the same
+  `prepared_train.h5ad` / `prepared_test.h5ad` and the same DE robustness
+  ranking that the other models use. The script
+  reads the dataset-specific `batch_col` and `label_cols` from the manifest, so
+  it no longer preprocesses or renames anything itself.
+  Copy the `scgpt` directory plus `prepared_train.h5ad`, `prepared_test.h5ad`
+  and `feature_importance_differential_expression.pkl` to the GPU cluster
+  (relative layout must stay the same) and start
+  `evaluation_pipeline/submit_scgpt.sh <scgpt_export_dir> [coarse|fine] [num_runs]`.
+  The submit job sets `SCGPT_EXPORT_JSON`, `SCGPT_LABEL_LEVEL`, `SCGPT_SEED`
+  and `SCGPT_RESULT_CSV` per run and writes `results/<level>/result_<i>.csv`.
 
 ## Debugging
 

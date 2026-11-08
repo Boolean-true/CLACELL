@@ -43,14 +43,6 @@ def _peak_ram_gb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
 
 
-def _safe_float(value, default: float = 0.0) -> float:
-    try:
-        value = float(value)
-    except (TypeError, ValueError):
-        return default
-    return default if value != value else value  # NaN -> default
-
-
 def _to_frame(adata: ad.AnnData) -> pd.DataFrame:
     matrix = adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X
     return pd.DataFrame(
@@ -280,32 +272,9 @@ def run_prepare(config_path: str) -> None:
     if is_success(cache_dir) and old_meta.get("cache_key") == expected_key:
         logging.info("Cache hit for dataset '%s' at %s", dataset["name"], cache_dir)
         if config["experiment"].get("export_scgpt", False):
-            from .models.references import export_scgpt_input, scgpt_export_path
+            from .models.references import export_scgpt_input
 
-            export_path = scgpt_export_path(config)
-            if export_path.is_file():
-                export_scgpt_input(config)
-            else:
-                # The export is part of preprocessing. If it was enabled after
-                # the cache was built, charge its wall time to the cached
-                # preprocessing metadata instead of silently dropping it.
-                export_start = time.time()
-                export_scgpt_input(config)
-                export_min = (time.time() - export_start) / 60.0
-                old_meta["preprocessing_time_min"] = round(
-                    _safe_float(old_meta.get("preprocessing_time_min")) + export_min,
-                    4,
-                )
-                old_meta["scgpt_export_time_min"] = round(
-                    _safe_float(old_meta.get("scgpt_export_time_min")) + export_min,
-                    4,
-                )
-                atomic_write_json(meta_path, old_meta)
-                atomic_write_json(cache_dir / "_SUCCESS.json", old_meta)
-                logging.info(
-                    "scGPT export finished in %.2f min; updated cached preprocessing time.",
-                    export_min,
-                )
+            export_scgpt_input(config)
         return
     clear_success(cache_dir)
     for stale in cache_dir.glob(".prepared.*.h5ad"):
@@ -467,14 +436,8 @@ def run_prepare(config_path: str) -> None:
     if config["experiment"].get("export_scgpt", False):
         from .models.references import export_scgpt_input
 
-        export_start = time.time()
-        export_scgpt_input(config)
-        scgpt_export_time_min = (time.time() - export_start) / 60.0
-    else:
-        scgpt_export_time_min = 0.0
+        export_scgpt_input(config, expected_key)
 
-    # The scGPT export is part of preprocessing; measure it before the total so
-    # Preprocessing_Time_Min and Total_Pipeline_Time_Min include it.
     preprocessing_time_min = (time.time() - total_start) / 60.0
     meta = {
         "dataset": dataset["name"],
@@ -490,7 +453,6 @@ def run_prepare(config_path: str) -> None:
         "coarse_labels": hierarchy["coarse_labels"],
         "fine_label_column": fine_col,
         "preprocessing_time_min": round(preprocessing_time_min, 4),
-        "scgpt_export_time_min": round(scgpt_export_time_min, 4),
         "peak_ram_gb": round(_peak_ram_gb(), 3),
         "package_versions": _package_versions(),
     }

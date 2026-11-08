@@ -1,23 +1,38 @@
 # =============================================================================
 # CLACELL non-blood evaluation pipeline
 # =============================================================================
-# Pilot: breast, custom_ensemble_rf_stacking, 10 seeds, exact settings from
-# run_multiple_trainings_hierarchical_custom_ensemble_rf_stacking_spatial_breast.py
-# After the pilot only this file has to be extended:
-#   - experiment.dataset
-#   - experiment.models
-#   - experiment.seeds
-# Everything else (dataset catalogue, model catalogue) is already prepared.
+# Full run: breast, all CLACELL approaches + reference models, 10 seeds.
+# Exact settings follow run_multiple_trainings_hierarchical_custom_ensemble_rf_stacking_spatial_breast.py
+# (10 runs, tuning once per hierarchy node).
+# scGPT is exported for the external GPU cluster (experiment.export_scgpt) and
+# is NOT part of the CPU run/aggregate, because its adapter is external.
 # =============================================================================
 
 experiment:
   name: clacell_nonblood
   dataset: breast
 
-  # --- active models (pilot selection) -------------------------------------
   models:
+    # --- CLACELL approaches (hierarchical) ---------------------------------
+    - custom_ensemble_linsvc_stacking
+    - custom_ensemble_linsvc_stacking_passthrough
+    - custom_ensemble_linsvc_voting
+    - custom_ensemble_linsvc_stacking_scaled
+    - custom_ensemble_linsvc_stacking_passthrough_scaled
+    - custom_ensemble_linsvc_voting_scaled
     - custom_ensemble_rf_stacking
+    - custom_ensemble_rf_stacking_passthrough
+    - custom_ensemble_rf_voting
+    - custom_ensemble_rf_stacking_scaled
+    - custom_ensemble_rf_stacking_passthrough_scaled
+    - custom_ensemble_rf_voting_scaled
     - autoencoder_linsvc
+    - autoencoder_rf
+    - conditional_autoencoder_linsvc
+    - conditional_autoencoder_rf
+    # --- reference models (flat) -------------------------------------------
+    - singler
+    - celltypist
 
   # --- active runs ---------------------------------------------------------
   # The old breast script runs 10 runs; keep the same run indices.
@@ -25,7 +40,7 @@ experiment:
 
   # Exact comparison with the old hierarchical breast script: tune once per
   # run/seed and hierarchy node, not once for all seeds.
-  tuning_per_seed: true
+  tuning_per_seed: false
 
   # Seed used for all hyperparameter searches when tuning_per_seed is false.
   tuning_seed: 42
@@ -48,8 +63,8 @@ experiment:
   resources:
     prepare:   {cpus: 32, mem_gb: 200, time: "24:00:00"}
     features:  {cpus: 16, mem_gb: 64,  time: "12:00:00"}
-    # Match the old breast script: 32 CPUs / 200G / 24h. Reduce after the
-    # pilot measurements if the tasks finish much earlier.
+    # Match the old breast script: 32 CPUs / 200G / 24h. Reduce once the
+    # per-model timings are known if the tasks finish much earlier.
     tune:      {cpus: 32, mem_gb: 200, time: "24:00:00"}
     run:       {cpus: 32, mem_gb: 200, time: "24:00:00"}
     aggregate: {cpus: 4,  mem_gb: 16,  time: "01:00:00"}
@@ -58,9 +73,9 @@ experiment:
   # separate model on fine labels. They are not wrapped in the hierarchy.
   reference_levels: [coarse, fine]
 
-  # Set to true if prepare should also export a raw-count h5ad for the scGPT
+  # Set to true if prepare should also export a json manifest for the scGPT
   # GPU cluster. scGPT itself is not trained or evaluated by this CPU pipeline.
-  export_scgpt: false
+  export_scgpt: true
 
 
 # =============================================================================
@@ -128,11 +143,8 @@ datasets:
       # expression matrix. Alternatives: "linearsvc", "randomforest", "model".
       robustness: differential_expression
 
-  # ---------------------------------------------------------------------------
-  # OTHER NON-BLOOD DATASETS (values can be adjusted when the data is ready)
-  # ---------------------------------------------------------------------------
   breast:
-    path: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db_spatial_fine_and_coarse_annotated.h5ad
+    path: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db_fine_and_coarse_annotated.h5ad
     # null = raw counts are in .X; set to a layer name if they are stored there.
     counts_layer: null
     batch_key: donor_id
@@ -146,16 +158,16 @@ datasets:
         - pal_Patient 0177
         - wu_natgen_CID4471
         - TBB129
-        - BC392_Tumor
+        - pal_Patient 0337
       test:
         - pal_Patient 0176
         - TBB338
         - wu_natgen_CID44971
-        - BC393_Tumor
+        - pal_Patient 0114
 
     exclude:
-      coarse: []
-      fine: []
+      coarse: ["Unknown"]
+      fine: ["Unknown"]
 
     preprocess:
       min_counts: 10

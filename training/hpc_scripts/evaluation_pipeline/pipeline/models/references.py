@@ -95,6 +95,7 @@ class CellTypistWrapper(BaseEstimator, ClassifierMixin):
         balance_cell_type=False,
         feature_selection=False,
         genes=None,
+        seed=None,
     ):
         self.C = C
         self.solver = solver
@@ -108,29 +109,48 @@ class CellTypistWrapper(BaseEstimator, ClassifierMixin):
         self.balance_cell_type = balance_cell_type
         self.feature_selection = feature_selection
         self.genes = genes
+        self.seed = seed
 
     def fit(self, X, y):
         import celltypist
 
-        self.model_ = celltypist.train(
-            X=X,
-            labels=y,
-            C=self.C,
-            solver=self.solver,
-            max_iter=1000,
-            n_jobs=-1,
-            use_SGD=self.use_SGD,
-            alpha=self.alpha,
-            use_GPU=self.use_GPU,
-            mini_batch=self.mini_batch,
-            batch_number=self.batch_number,
-            batch_size=self.batch_size,
-            epochs=self.epochs,
-            balance_cell_type=self.balance_cell_type,
-            feature_selection=self.feature_selection,
-            check_expression=False,
-            genes=list(self.genes),
-        )
+        # CellTypist's mini-batch sampler uses the global numpy/random RNG, so
+        # seed it for the duration of the fit. Save and restore the surrounding
+        # state so this does not reset the RNG used by BayesSearchCV/skopt.
+        # The estimator-level random_state below controls the sklearn solver.
+        np_state = np.random.get_state()
+        py_state = random.getstate()
+        train_kwargs = {}
+        if self.seed is not None:
+            np.random.seed(int(self.seed))
+            random.seed(int(self.seed))
+            if not self.use_GPU:
+                train_kwargs["random_state"] = int(self.seed)
+
+        try:
+            self.model_ = celltypist.train(
+                X=X,
+                labels=y,
+                C=self.C,
+                solver=self.solver,
+                max_iter=1000,
+                n_jobs=-1,
+                use_SGD=self.use_SGD,
+                alpha=self.alpha,
+                use_GPU=self.use_GPU,
+                mini_batch=self.mini_batch,
+                batch_number=self.batch_number,
+                batch_size=self.batch_size,
+                epochs=self.epochs,
+                balance_cell_type=self.balance_cell_type,
+                feature_selection=self.feature_selection,
+                check_expression=False,
+                genes=list(self.genes),
+                **train_kwargs
+            )
+        finally:
+            np.random.set_state(np_state)
+            random.setstate(py_state)
         self.classes_ = np.unique(y)
         return self
 
@@ -145,8 +165,13 @@ class CellTypistWrapper(BaseEstimator, ClassifierMixin):
 
 
 class CellTypistAdapter(ModelAdapter):
-    def __init__(self, params: dict | None = None, genes: list[str] | None = None):
-        self.estimator = CellTypistWrapper(**dict(params or {}), genes=genes)
+    def __init__(
+        self,
+        params: dict | None = None,
+        genes: list[str] | None = None,
+        seed: int | None = None,
+    ):
+        self.estimator = CellTypistWrapper(**dict(params or {}), genes=genes, seed=seed)
 
     def fit(self, X, y, meta=None):
         self.estimator.fit(X.to_numpy(copy=False), y)
@@ -200,7 +225,7 @@ def tune_celltypist(
             "avg_time_per_iteration_sec": float("nan"),
         }
     opt = BayesSearchCV(
-        estimator=CellTypistWrapper(genes=genes),
+        estimator=CellTypistWrapper(genes=genes, seed=seed),
         search_spaces=param_distributions,
         n_iter=int(tune_cfg.get("n_iter", 30)),
         cv=cv,
@@ -281,6 +306,7 @@ def export_scgpt_input(config: dict, prepare_key: str | None = None) -> Path:
         },
         "feature_importance": "feature_importance_differential_expression.pkl",
         "prepare_cache_key": prepare_key,
+        "eval_seed_base": int(config["experiment"].get("eval_seed_base", 0)),
         "note": (
             "Run evaluation_pipeline/submit_scgpt.sh on the GPU cluster with this "
             "directory. Paths are relative to the dataset cache directory."

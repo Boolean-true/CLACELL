@@ -2,8 +2,8 @@
 # CLACELL non-blood evaluation pipeline
 # =============================================================================
 # Full run: breast, all CLACELL approaches + reference models, 10 seeds.
-# Exact settings follow run_multiple_trainings_hierarchical_custom_ensemble_rf_stacking_spatial_breast.py
-# (10 runs, tuning once per hierarchy node).
+# Hyperparameters are tuned once per model and hierarchy node with tuning_seed
+# and then reused for all 10 runs (tuning_per_seed: false).
 # scGPT is exported for the external GPU cluster (experiment.export_scgpt) and
 # is NOT part of the CPU run/aggregate, because its adapter is external.
 # =============================================================================
@@ -38,8 +38,8 @@ experiment:
   # The old breast script runs 10 runs; keep the same run indices.
   seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-  # Exact comparison with the old hierarchical breast script: tune once per
-  # run/seed and hierarchy node, not once for all seeds.
+  # Tune once per model and hierarchy node, then reuse the same parameters for
+  # every run/seed. Set this to true only for a per-seed tuning pilot.
   tuning_per_seed: false
 
   # Seed used for all hyperparameter searches when tuning_per_seed is false.
@@ -56,7 +56,6 @@ experiment:
   max_parallel: 40
 
   hierarchy:
-    enabled: true
     # A coarse label needs at least this many fine classes to get a fine model.
     min_fine_classes: 2
 

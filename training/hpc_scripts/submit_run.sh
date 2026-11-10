@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=200G
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 #SBATCH --array=0-0
 #SBATCH --output=logs/%x_%A_%a.out
 #SBATCH --error=logs/%x_%A_%a.err
@@ -17,9 +17,9 @@ set -eo pipefail
 unset SLURM_EXPORT_ENV
 
 CONFIG="${1:?usage: submit_run.sh /absolute/path/to/experiment.yaml}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="$(realpath "$CONFIG")"
-cd "$SCRIPT_DIR"
+# SCRIPT_DIR is hardcoded because the job does not inherit the submit directory.
+SCRIPT_DIR="/home/woody/iwbn/iwbn133h"
 
 export OMP_PLACES=cores
 export OMP_PROC_BIND=true

@@ -32,6 +32,7 @@ export SCGPT_LABEL_LEVEL="$LEVEL"
 for i in $(seq 0 $((NUM_RUNS - 1))); do
   echo "=== scGPT run $i ($LEVEL) ==="
   export SCGPT_SEED="$i"
+  export SCGPT_RUN_INDEX="$i"
   export SCGPT_RESULT_CSV="$DATA_DIR/results/$LEVEL/result_$i.csv"
   python -u "$SCRIPT_DIR/pipeline/models/finetune_integration_adjusted.py"
 done

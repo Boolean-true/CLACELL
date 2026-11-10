@@ -249,7 +249,9 @@ def fit_model(
             adapter = SingleRAdapter(model_cfg.get("params", {}))
         elif adapter_name == "celltypist":
             adapter = CellTypistAdapter(
-                node_params, genes=X.columns.astype(str).tolist()
+                node_params,
+                genes=X.columns.astype(str).tolist(),
+                seed=seed,
             )
         elif adapter_name in {"scgpt", "scgpt_external"}:
             adapter = ScGPTExternalAdapter(model_cfg.get("params", {}))

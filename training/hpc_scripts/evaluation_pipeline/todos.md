@@ -1,20 +1,11 @@
 # TODOs bei der evaluation_pipeline
 
-- SCRIPT_DIR in allen sh scripts evtl hardcoden
-
-## Lesen
-- prüfen ob die zeitmessung jetzt wirklich alles beinhaltet
-
 ## Nach dem Probelauf
 
 !!- Datensätze vorbereiten (tonsil, pancreas, ovary)
 !- config für die 3 offenen Datensätze überarbeiten (Pfad zu Dataset, Unknown class in exlude usw)
-!!- Maximale Laufzeit für sh Scripte überarbeiten
 - rejection classes implementieren
-- alle cvs auf die werte aus den python files setzen und nicht dynamisch machen. macht aber keinen unterschied wenn ich immer mindestens 5 zellen pro zelltyp im train split habe
 
-- output path (aktuell: <output_root>/<experiment>/<dataset>/results/<model>/coarse/result_<i>.csv) evtl anpassen
-- prüfen ob das DataFrame als Input für das CustomEnsemble passt
 
 ## Evtl
 
@@ -22,6 +13,7 @@
 ?- noqa aus run_task.py entfernen?
 - orchestrate.py beinhaltet auch eine implementierung um mit einem job alles zu machen, das ist dann aber halt ein 24h job, der wird zeitlich nicht ausreichen und parallelisert dementsprechend weniger als einzelne jobs für z.b. tuning
 - preprocessing script kann evtl failen, wenn der test split andere gene und mehr layers als nur 'count' oder varm einträge hat. sollte für mich aber passen
+- alle cvs auf die werte aus den python files setzen und nicht dynamisch machen. macht aber keinen unterschied wenn ich immer mindestens 5 zellen pro zelltyp im train split habe
 
 
 ## Submitted Jobs
@@ -37,3 +29,7 @@ Breast Cancer Dense Datensatz Vorbereitet: Submitted batch job 1586008 on cluste
 Run Aggregate Re submit: Submitted batch job 12867317
 Submitted batch job 12867604
 Submitted batch job 12867607
+
+
+
+Evaluation Pipeline on Breast: Submitted batch job 12876806

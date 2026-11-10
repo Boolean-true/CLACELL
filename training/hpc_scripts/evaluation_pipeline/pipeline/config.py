@@ -32,7 +32,6 @@ DEFAULT_PREPROCESS = {
 }
 
 DEFAULT_HIERARCHY = {
-    "enabled": True,
     "min_fine_classes": 2,
 }
 

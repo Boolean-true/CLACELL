@@ -15,9 +15,9 @@ set -eo pipefail
 unset SLURM_EXPORT_ENV
 
 CONFIG="${1:?usage: submit_aggregate.sh /absolute/path/to/experiment.yaml}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="$(realpath "$CONFIG")"
-cd "$SCRIPT_DIR"
+# SCRIPT_DIR is hardcoded because the job does not inherit the submit directory.
+SCRIPT_DIR="/home/woody/iwbn/iwbn133h"
 
 export OMP_PLACES=cores
 export OMP_PROC_BIND=true

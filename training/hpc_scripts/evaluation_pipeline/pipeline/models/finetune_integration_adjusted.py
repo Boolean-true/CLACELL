@@ -43,7 +43,6 @@ from test_robustness_higher_dropout import test_robustness
 import pandas as pd
 import pickle
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
-import random
 
 import torchtext; torchtext.disable_torchtext_deprecation_warning()
 
@@ -51,8 +50,14 @@ sc.set_figure_params(figsize=(4, 4))
 os.environ["KMP_WARNINGS"] = "off"
 os.environ["WANDB_MODE"] = "offline"
 
+# Single source of truth for the run: SCGPT_SEED is the model-training seed,
+# SCGPT_RUN_INDEX is the 0-based run index (defaults to the same value).
+run_seed = int(os.environ.get("SCGPT_SEED", 0))
+run_index = int(os.environ.get("SCGPT_RUN_INDEX", run_seed))
+
 hyperparameter_defaults = dict(
-    seed=int(os.environ.get("SCGPT_SEED", random.randint(0, 999999))),
+    seed=run_seed,
+    run_index=run_index,
     dataset_name="CellTypist_HumanCellAtlas_Merged",
     export_json=os.environ.get("SCGPT_EXPORT_JSON", "scgpt_export.json"),
     do_train=True,
@@ -87,6 +92,7 @@ config = wandb.config
 print(config)
 
 print(f"Seed: {config.seed}")
+print(f"Run index: {run_index}")
 set_seed(config.seed)
 
 # %%
@@ -122,6 +128,12 @@ if not label_col:
     raise ValueError("The dataset has no labels for the requested label level.")
 ori_batch_col = scgpt_export["batch_col"]
 cache_dir = export_path.parents[1]
+
+# Match the CPU pipeline: run i uses eval_seed_base + i for the robustness
+# perturbation draws. run_seed is the model-training seed; run_index is the
+# 0-based run index set by submit_scgpt.sh.
+eval_seed = int(scgpt_export["eval_seed_base"]) + run_index
+print(f"Evaluation seed: {eval_seed}")
 
 adata = sc.read_h5ad(cache_dir / scgpt_export["train_h5ad"])
 adata_test = sc.read_h5ad(cache_dir / scgpt_export["test_h5ad"])
@@ -1138,6 +1150,7 @@ robustness_results = test_robustness(
     feature_importance,
     log_to_console=True,
     log_to_file=False,
+    seed=eval_seed,
 )
 
 result_csv = os.environ.get("SCGPT_RESULT_CSV")

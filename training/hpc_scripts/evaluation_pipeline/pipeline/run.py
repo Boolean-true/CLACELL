@@ -207,6 +207,7 @@ def _add_technical_metrics(
     feature_task_time_min: float,
     tuning_time_min: float,
     run_task_time_min: float,
+    total_tuning_time_min: float | None = None,
     training_time_min: float,
     eval_time_min: float,
     peak_ram_gb: float,
@@ -233,7 +234,16 @@ def _add_technical_metrics(
     # (partly parallel) Slurm jobs, so queue/startup time and parallelism are
     # not represented in this sum. The run task itself includes cache/FI
     # loading, training and evaluation.
-    run_with_setup = attributed_feature_time + tuning_time_min + run_task_time_min
+    # Total_Pipeline/Run_With_Setup describe the complete work for one run. For
+    # flat models the run task fits/evaluates every configured level, so the
+    # total must use the combined tuning cost of all those levels. The
+    # Hyperparameter_Tuning_Time_Min column itself stays level-specific.
+    effective_tuning_time = (
+        float(tuning_time_min)
+        if total_tuning_time_min is None
+        else float(total_tuning_time_min)
+    )
+    run_with_setup = attributed_feature_time + effective_tuning_time + run_task_time_min
     frame[base + ("Run_With_Setup_Time_Min",)] = round(float(run_with_setup), 2)
     frame[base + ("Total_Pipeline_Time_Min",)] = round(
         float(preprocessing_time_min + run_with_setup),
@@ -463,6 +473,7 @@ def _run_hierarchical(
             feature_task_time_min=feature_task_time,
             tuning_time_min=tuning["time_min"],
             run_task_time_min=run_task_time_min,
+            total_tuning_time_min=tuning["time_min"],
             training_time_min=training_time_min,
             eval_time_min=eval_min,
             peak_ram_gb=peak_ram,
@@ -604,6 +615,10 @@ def _run_flat(
     # row only its partial time and the fine row the cumulative time.
     run_task_time_min = (time.time() - task_start) / 60.0
     peak_ram = _peak_ram_gb()
+    # The run task fits every level. Total_Pipeline/Run_With_Setup therefore use
+    # the combined tuning cost of all levels, while the displayed
+    # Hyperparameter_Tuning_Time_Min stays level-specific.
+    total_tuning_time = sum(result["tuning"]["time_min"] for result in level_results)
 
     for result in level_results:
         level = result["level"]
@@ -615,6 +630,7 @@ def _run_flat(
             feature_task_time_min=feature_task_time,
             tuning_time_min=tuning["time_min"],
             run_task_time_min=run_task_time_min,
+            total_tuning_time_min=total_tuning_time,
             training_time_min=result["training_time_min"],
             eval_time_min=result["eval_min"],
             peak_ram_gb=peak_ram,

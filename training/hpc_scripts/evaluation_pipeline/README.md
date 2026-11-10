@@ -47,14 +47,17 @@ The pipeline itself needs `PyYAML` (`pip install pyyaml` if it is missing). The
 SingleR reference additionally needs the `singler` package; it is imported
 lazily and only when that model is enabled. See `requirements.txt`.
 
-## Pilot workflow
+## Current full-run workflow
 
 The config is already set to:
 
 - dataset: `breast`
-- models: `autoencoder_linsvc`, `custom_ensemble_rf_stacking`
-- seeds: `0..9` (10 runs, matching the old breast script)
-- `tuning_per_seed: true` (one tuning job per run/seed, matching the old script)
+- models: all 12 custom ensembles, 4 autoencoders and the 2 reference models
+  listed in `experiment.models`
+- seeds: `0..9` (10 runs)
+- `tuning_per_seed: false`: one tuning job per model × hierarchy node with
+  `tuning_seed: 42`, reused for all 10 runs. Set this to `true` only for a
+  per-seed tuning pilot.
 - differential-expression ranking for `test_robustness`, computed once by the
   prepare stage from the training expression matrix
 
@@ -185,9 +188,10 @@ Hyperparameters are searched **once** per dataset, model and hierarchy node:
 
 The result is `best_params.json` plus `tuning_meta.json` (tuning wall time, CV,
 `Avg_Time_per_Iteration_Sec`, peak RAM). With `experiment.tuning_per_seed:
-true` there is one tuning task per model × node × seed, matching the old breast
-script. With `false` the parameters are tuned once and reused for all seeds.
-The run stage only loads the parameters; it does not tune.
+false` (the current config) the parameters are tuned once per model × node with
+`experiment.tuning_seed` and reused for all runs. With `true` there is one
+tuning task per model × node × seed. The run stage only loads the parameters;
+it does not tune.
 
 For the custom ensembles the internal gene ranking is the one you specified:
 
@@ -252,13 +256,20 @@ whole experiment. The stages run as separate Slurm jobs and can run in parallel
 For comparing the compute cost of methods this is the intended metric; for
 "when did the experiment finish" use the Slurm accounting data instead.
 
+`Total_Pipeline_Time_Min` is the metric to report for **one complete run**:
+preprocessing + feature task (only for models that use it) + the combined tuning
+cost of every node/level that the run task uses + the complete run task
+(loading, all fits, both evaluations). It is identical in the coarse and fine
+row because it describes the same run. For flat models the combined tuning cost
+covers all levels fitted by the run task, even though the displayed
+`Hyperparameter_Tuning_Time_Min` column stays level-specific. With
+`tuning_per_seed: false` the tuning time is the same for every seed.
+
 The existing metrics are preserved:
 
 - `Training_Time_Min`
 - `Inference_Evaluation_Time_Min`
-- `Total_Pipeline_Time_Min` (attributed sum of preprocessing + features task
-  incl. FI computation + tuning + cache/FI loading + training + evaluation;
-  autoencoders exclude the features task, see below)
+- `Total_Pipeline_Time_Min` (complete attributed cost for one run; see above)
 - `Run_With_Setup_Time_Min` (the same without dataset-wide preprocessing)
 - `Peak_RAM_GB`
 - `Autoencoder_Epochs`
@@ -304,9 +315,12 @@ coarse and fine rows must not be added together.
 
 For flat models (`singler`, `celltypist`) one run task fits and evaluates both
 levels. `Run_With_Setup_Time_Min` and `Total_Pipeline_Time_Min` therefore use
-the complete task wall time for both the coarse and the fine row; they are not
-per-level times. `Training_Time_Min`, `Hyperparameter_Tuning_Time_Min` and
-`Inference_Evaluation_Time_Min` remain level-specific.
+the complete task wall time **and the combined tuning cost of all levels** for
+both the coarse and the fine row; they are not per-level times.
+`Training_Time_Min`, `Hyperparameter_Tuning_Time_Min` and
+`Inference_Evaluation_Time_Min` remain level-specific. This means a flat row's
+displayed tuning column and the total are intentionally not reconstructible by
+adding the columns; use `Total_Pipeline_Time_Min` for the run cost.
 
 Even when prepare/features/tune are served from cache, the persisted timings are
 read from `prepare_meta.json`, `features_meta.json` and `tuning_meta.json` and
@@ -316,7 +330,8 @@ fails with a clear error instead of silently writing 0.0.
 `test_robustness_higher_dropout.py` is called with
 `seed=eval_seed_base + run_index`; the random dropout therefore uses a
 reproducible seed and all models in the same run see the same perturbation
-draws. The log line `No out-of-distribution dataset path provided. Skipping ...`
+draws. The external scGPT evaluation uses the same seed from the export manifest.
+The log line `No out-of-distribution dataset path provided. Skipping ...`
 is expected for the non-blood datasets, which have only a train/test split.
 
 The conditional autoencoder uses the real donor one-hot matrix during
@@ -357,7 +372,8 @@ has its own cache and result tree.
 - `celltypist`: uses the `CellTypistWrapper`/BayesSearchCV implementation from
   `train_celltypist_bayessearch.py`; it tunes `C`, `alpha`, `use_SGD`,
   `mini_batch`, `balance_cell_type` and `feature_selection` on the cached
-  expression and predicts through `celltypist.annotate`.
+  expression and predicts through `celltypist.annotate`. Model fitting is
+  seeded through `random_state` and the global numpy/random RNG.
 - `scgpt`: external GPU model. Set `experiment.export_scgpt: true` (or run
   `python evaluation_pipeline/run_task.py export-scgpt --config ...`) to write
   `<cache>/<dataset>/scgpt/scgpt_export.json`. The manifest points to the same
@@ -369,8 +385,12 @@ has its own cache and result tree.
   and `feature_importance_differential_expression.pkl` to the GPU cluster
   (relative layout must stay the same) and start
   `evaluation_pipeline/submit_scgpt.sh <scgpt_export_dir> [coarse|fine] [num_runs]`.
-  The submit job sets `SCGPT_EXPORT_JSON`, `SCGPT_LABEL_LEVEL`, `SCGPT_SEED`
-  and `SCGPT_RESULT_CSV` per run and writes `results/<level>/result_<i>.csv`.
+  The submit job sets `SCGPT_EXPORT_JSON`, `SCGPT_LABEL_LEVEL`, `SCGPT_SEED`,
+  `SCGPT_RUN_INDEX` and `SCGPT_RESULT_CSV` per run and writes
+  `results/<level>/result_<i>.csv`. `SCGPT_SEED` is the model-training seed;
+  `SCGPT_RUN_INDEX` is the 0-based run index. The robustness evaluation seed is
+  `eval_seed_base + SCGPT_RUN_INDEX` from the manifest, so scGPT uses the same
+  perturbation draws as the CPU models.
 
 ## Debugging
 

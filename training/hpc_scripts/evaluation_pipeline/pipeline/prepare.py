@@ -139,9 +139,9 @@ def _preprocess(
     batch_key = dataset["batch_key"]
 
     if cfg.get("remove_mt_ribo_hb", True):
-        adata.var["mt"] = adata.var_names.str.startswith("MT-").to_numpy()
-        adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL")).to_numpy()
-        adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]").to_numpy()
+        adata.var["mt"] = adata.var_names.str.startswith("MT-")#.to_numpy()
+        adata.var["ribo"] = adata.var_names.str.startswith(("RPS", "RPL"))#.to_numpy()
+        adata.var["hb"] = adata.var_names.str.contains("^HB[^(P)]")#.to_numpy()
         sc.pp.calculate_qc_metrics(
             adata,
             qc_vars=["mt", "ribo", "hb"],

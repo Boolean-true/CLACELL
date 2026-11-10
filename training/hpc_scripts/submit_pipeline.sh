@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=200G
-#SBATCH --time=24:00:00
+#SBATCH --time=1:00:00
 #SBATCH --constraint=icx
 #SBATCH --export=NONE
 #SBATCH --output=clacell-submit_%j.out
@@ -14,14 +14,14 @@
 set -euo pipefail
 unset SLURM_EXPORT_ENV
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-mkdir -p "$SCRIPT_DIR/logs"
+# SCRIPT_DIR is hardcoded because the job does not inherit the submit directory.
+SCRIPT_DIR="/home/woody/iwbn/iwbn133h"
 
 source /apps/python/3.12-conda/etc/profile.d/conda.sh
 conda activate test_clacell
 
-CONFIG="$SCRIPT_DIR/evaluation_pipeline/configs/experiment.yaml"
+CONFIG="${1:-$SCRIPT_DIR/evaluation_pipeline/configs/experiment.yaml}"
+CONFIG="$(realpath "$CONFIG")"
 
 if ! command -v sbatch >/dev/null 2>&1; then
   echo "ERROR: sbatch ist auf diesem Node nicht verfuegbar." >&2

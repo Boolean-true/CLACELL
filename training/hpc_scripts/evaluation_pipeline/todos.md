@@ -33,3 +33,14 @@ Submitted batch job 12867607
 
 
 Evaluation Pipeline on Breast: Submitted batch job 12876806
+
+
+
+
+
+Evaluation run of prepare and downsample: Submitted batch job 1620207 on cluster tinyfat
+
+TODOs downsample and prepare
+- sollte ich das konvertieren in dense nicht pro row machen und nicht die ganze matrix auf einmal? also in der for schleife drinnen
+- prüfen ob ich die verteilung der counts abhängig von der originalcounts mache
+- kommentare bei downsampling ergänzen

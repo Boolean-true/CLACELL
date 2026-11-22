@@ -1,0 +1,121 @@
+datasets:
+  breast:
+    input: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db.h5ad
+    outputs:
+      downsample: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db_spatial.h5ad
+      prepare: /home/woody/iwbn/iwbn133h/data/10x-gex/breast/0fbf6fa3-8463-46ab-bda8-9703848b58db_fine_and_coarse_annotated.h5ad
+    downsample_from: prepare
+    counts: raw
+    symbol_column: "feature_name"
+    backup_column: "ensembl_id"
+    label_column: "author_cell_type"
+    mapping:
+      "epi_0": ["Epithelial cell", "Epithelial cell"]
+      "epi_1": ["Epithelial cell", "Epithelial cell"]
+      "epi_2": ["Epithelial cell", "Epithelial cell"]
+      "epi_3": ["Epithelial cell", "Epithelial cell"]
+      "epi_4": ["Epithelial cell", "Epithelial cell"]
+      "epi_5": ["Epithelial cell", "Epithelial cell"]
+      "epi_6": ["Epithelial cell", "Epithelial cell"]
+      "epi_8": ["Epithelial cell", "Epithelial cell"]
+      "epi_13": ["Epithelial cell", "Epithelial cell"]
+      "epi_14": ["Epithelial cell", "Epithelial cell"]
+      "epi_15": ["Epithelial cell", "Epithelial cell"]
+      "epi_16": ["Epithelial cell", "Epithelial cell"]
+      "epi_17": ["Epithelial cell", "Epithelial cell"]
+      "epi_18": ["Epithelial cell", "Epithelial cell"]
+      "epi_20": ["Epithelial cell", "Epithelial cell"]
+      "epi_22": ["Epithelial cell", "Epithelial cell"]
+      "epi_low_ent": ["Epithelial cell", "Epithelial cell"]
+      "CD8_Tem": ["T cell", "CD8_Tem"]
+      "CD4_Tem": ["T cell", "CD4_Tem"]
+      "CD4_Treg": ["T cell", "CD4_Treg"]
+      "CD4_Naive": ["T cell", "CD4_Naive"]
+      "CD8_Tex": ["T cell", "CD8_Tex"]
+      "CD8_Isg": ["T cell", "CD8_Isg"]
+      "T_Prolif.": ["T cell", "T_Prolif."]
+      "CD4_Tfh": ["T cell", "CD4_Tfh"]
+      "CD4_Th": ["T cell", "CD4_Th"]
+      "NK": ["Natural killer cell", "NK"]
+      "NK_rNK": ["Natural killer cell", "NK_rNK"]
+      "NK_Cyto.": ["Natural killer cell", "NK_Cyto."]
+      "Plasma_IgG": ["Plasma cell", "Plasma_IgG"]
+      "B_ACB": ["B cell", "B_ACB"]
+      "B_Naive": ["B cell", "B_Naive"]
+      "B_Cell": ["B cell", "B_Cell"]
+      "B_IFIT": ["B cell", "B_IFIT"]
+      "B_GCB": ["B cell", "B_GCB"]
+      "Mac/Mono": ["Myeloid cell", "Mac/Mono"]
+      "cDC2": ["Myeloid cell", "cDC2"]
+      "Mac_RTM_LA": ["Myeloid cell", "Mac_RTM_LA"]
+      "Mac_RTM_IFN": ["Myeloid cell", "Mac_RTM_IFN"]
+      "Mac_LA": ["Myeloid cell", "Mac_LA"]
+      "Mac_RTM_MT": ["Myeloid cell", "Mac_RTM_MT"]
+      "Mac_IFN": ["Myeloid cell", "Mac_IFN"]
+      "Mac_Anti.": ["Myeloid cell", "Mac_Anti."]
+      "Mac_ES": ["Myeloid cell", "Mac_ES"]
+      "pDC": ["Myeloid cell", "pDC"]
+      "mDC": ["Myeloid cell", "mDC"]
+      "cDC1": ["Myeloid cell", "cDC1"]
+      "Mast": ["Myeloid cell", "Mast"]
+      "CAFs (COL11A1+)": ["Stromal cell", "CAFs (COL11A1+)"]
+      "CAFs (LAMP5)": ["Stromal cell", "CAFs (LAMP5)"]
+      "CAFs (PI16+)": ["Stromal cell", "CAFs (PI16+)"]
+      "CAFs (DPT+)": ["Stromal cell", "CAFs (DPT+)"]
+      "CAFs (CA12+)": ["Stromal cell", "CAFs (CA12+)"]
+      "PCs (ECM)": ["Stromal cell", "PCs (ECM)"]
+      "VSMC": ["Stromal cell", "VSMC"]
+      "Myofibroblast": ["Stromal cell", "Myofibroblast"]
+      "Prolif Stromal": ["Stromal cell", "Prolif Stromal"]
+      "Endo Imm.": ["Endothelial cell", "Endo Imm."]
+      "Endo Ven.": ["Endothelial cell", "Endo Ven."]
+      "Endo Capil.": ["Endothelial cell", "Endo Capil."]
+      "Endo Arter.": ["Endothelial cell", "Endo Arter."]
+      "Endo Lymph.": ["Endothelial cell", "Endo Lymph."]
+
+  tonsil:
+    input: /home/woody/iwbn/iwbn133h/data/10x-gex/tonsil/tonsil.h5ad
+    outputs:
+      downsample: /home/woody/iwbn/iwbn133h/data/10x-gex/tonsil/tonsil_spatial.h5ad
+      prepare: /home/woody/iwbn/iwbn133h/data/10x-gex/tonsil/tonsil_fine_and_coarse_annotated.h5ad
+    downsample_from: prepare
+    counts: "layer:counts"
+    symbol_column: "varnames"
+    backup_column: "original_varnames"
+    label_column: "annotation_figure_1"
+    mapping:
+      "GCBC": ["B cell", "GCBC"]
+      "NBC": ["B cell", "NBC"]
+      "MBC": ["B cell", "MBC"]
+      "Activated NBC": ["B cell", "Activated NBC"]
+      "PC": ["Plasma cell", "PC"]
+      "CD4 T": ["CD4+ T cell", "CD4 T"]
+      "Naive CD4 T": ["CD4+ T cell", "Naive CD4 T"]
+      "CD8 T": ["Cytotoxic T cell", "CD8 T"]
+      "Naive CD8 T": ["Cytotoxic T cell", "Naive CD8 T"]
+      "cycling T": ["T cell", "cycling T"]
+      "DN": ["T cell", "DN"]
+      "NK": ["Lymphoid Cell / NK", "NK"]
+      "ILC": ["Lymphoid Cell / NK", "ILC"]
+      "Mono/Macro": ["Myeloid cell", "Mono/Macro"]
+      "cycling myeloid": ["Myeloid cell", "cycling myeloid"]
+      "Granulocytes": ["Myeloid cell", "Granulocytes"]
+      "Mast": ["Myeloid cell", "Mast"]
+      "DC": ["Dendritic cell", "DC"]
+      "PDC": ["Dendritic cell", "PDC"]
+      "FDC": ["Stromal", "FDC"]
+      "cycling FDC": ["Stromal", "cycling FDC"]
+      "epithelial": ["Epithelial", "epithelial"]
+      "preB/T": ["Progenitor", "preB/T"]
+
+  ovary:
+    input: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd.h5ad
+    outputs:
+      downsample: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd_spatial.h5ad
+      prepare: /home/woody/iwbn/iwbn133h/data/10x-gex/ovarian/f8f7f2b0-b8a5-4087-8048-8d3f5b6a49dd_fine_and_coarse_annotated.h5ad
+    downsample_from: prepare
+    counts: raw
+    symbol_column: "feature_name"
+    backup_column: "ensembl_id"
+    label_column: "author_cell_type"
+    mapping: null
